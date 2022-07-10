@@ -1,0 +1,5 @@
+project Default is
+    for Source_Dirs use ("arch", ".");
+
+
+end Default;

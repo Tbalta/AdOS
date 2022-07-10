@@ -1,0 +1,7 @@
+*.o
+*.elf
+*.o
+*.stderr
+*.stdout
+*.img
+*.ali
