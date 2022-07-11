@@ -1,0 +1,70 @@
+library project Runtime is
+   --  Tells Gprbuild to create any missing directories in the build process.
+   for Create_Missing_Dirs use "True";
+   --  The source files for the run-time library.
+   --  The 'build' directory is used in this case so that GNAT can use our
+   --  run-time as the selected run-time library during the build process. 
+   --  To facilitate this, we copy our source files to the build directory.
+   --  This serves two purposes, one is to build the run-time itself, the 
+   --  second is to function as the run-time library's spec includes.
+   for Source_Dirs use ("build/adainclude");
+   --  The directory used for build artifacts.
+   for Object_Dir use "obj";
+ 
+   for Languages use (
+     "Ada",
+     "Asm_Cpp"
+   );
+ 
+   package Builder is
+      for Global_Configuration_Pragmas use "runtime.adc";
+      for Switches ("Ada") use (
+        "-nostdlib",
+        "-nostdinc"
+      );
+   end Builder;
+ 
+   --  For a list of all compiler switches refer to: https://gcc.gnu.org/onlinedocs/gcc-9.2.0/gnat_ugn/Alphabetical-List-of-All-Switches.html#Alphabetical-List-of-All-Switches
+   package Compiler is
+      for Default_Switches ("Ada") use (
+        "-O0",
+        --  Using these directives instructs the Gnat GCC backend to place
+        --  each function and data object in its own section in the resulting
+        --  object file. GNAT requires this in order for the linker to 
+        --  perform dead code elimination within the runtime library.
+        --  For more information refer to:
+        --    https://gcc.gnu.org/onlinedocs/gnat_ugn/Compilation-options.html
+        "-ffunction-sections", 
+        "-fdata-sections",
+        "-gnat2012",
+        --  This switch enables GNAT's Internal implementation mode. This 
+        --  allows us to modify internal packages such as 'Ada' or 'System'
+        --  which are needed to build a run-time library. This switch is only
+        --  needed when building the run-time and should be disabled for all 
+        --  other development.
+        "-gnatg",
+        --  Instructs GNAT to remove dead code from the runtime library.
+        --  Requires the use of the '-ffunction-sections' and
+        --  '-fdata-sections' directives as detailed above.
+        "-Wl,--gc-sections"
+      );
+   end Compiler;
+ 
+   --  The destination directory for the final library artifacts.
+   --  We need to select a static library for this purpose to ensure that the 
+   --  run-time is linked staticly againt our executable.
+   --  For more information on library project options refer to: 
+   --   http://docs.adacore.com/live/wave/gprbuild/html/gprbuild_ug/gprbuild_ug/gnat_project_manager.html#library-projects
+   for Library_Dir use "build/adalib";
+   for Library_Kind use "static";
+   for Library_Name use "gnat";
+ 
+   --  We require a valid run-time library to build our run-time. 
+   --  We need to ensure that the run-time we use for this purpose is built 
+   --  using the same compiler and targets the same platform. A reliable way
+   --  to do this is to use our run-time's sources as a run-time to build
+   --  itself.
+   for Runtime ("Ada") use "build";
+ 
+   for Target use "i386-elf";
+end Runtime;

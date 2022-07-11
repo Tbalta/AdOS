@@ -6,3 +6,8 @@
 *.img
 *.ali
 log.txt
+*.pp
+.vscode
+*/obj/*
+*.npp
+*/build/*
