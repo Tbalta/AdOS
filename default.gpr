@@ -2,4 +2,25 @@ project Default is
     for Source_Dirs use ("./**");
     for Object_Dir   use  "obj";
 
+
+    package Compiler is
+      for Default_Switches ("Ada") use (
+        "-m32",
+        "-O0",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-fno-omit-frame-pointer",
+        "-ggdb",
+        "-gnat2012",
+        "-gnatwadehl",
+        "-gnatVa"
+      );
+
+      for Default_Switches ("Asm_Cpp") use (
+        "-ggdb"
+      );
+   end Compiler;
+
+
+    -- for Target use "i386-elf";
 end Default;

@@ -1,5 +1,4 @@
 with System.Machine_Code;
- 
 package body x86.Port_IO is
    ----------------------------------------------------------------------------
    --  Inb
@@ -18,10 +17,9 @@ package body x86.Port_IO is
           Interfaces.Unsigned_8'Asm_Output ("=a", Data)
         ),
         Volatile => True);
- 
       return Data;
    end Inb;
- 
+
    ----------------------------------------------------------------------------
    --  Outb
    ----------------------------------------------------------------------------
