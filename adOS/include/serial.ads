@@ -8,7 +8,9 @@ package SERIAL is
    subtype Divisor is Unsigned_16 range 0 .. Unsigned_16'Last;
    procedure serial_init (rate : Baudrate);
    procedure send_char (c : Character);
+   procedure send_string (data : String);
 
 private
    procedure set_baud_rate (serial_divisor : Divisor);
+   function can_send_byte return Standard.Boolean;
 end SERIAL;

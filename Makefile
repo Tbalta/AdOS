@@ -23,7 +23,7 @@ main.elf: makeall entry.o
 
 
 clean:
-	rm -f *.ali *.elf *.o iso/boot/*.elf *.img obj/*
+	rm -f *.ali *.elf *.o iso/boot/*.elf *.img obj/* *.pp *.npp log.txt
 
 run: obj/entry.elf
 	"/mnt/c/program files/qemu/qemu-system-i386.exe" -kernel '$<' $(qemu_param)
