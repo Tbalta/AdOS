@@ -19,7 +19,7 @@ main.elf: makeall entry.o
 	ld -m elf_i386 -T linker.ld -o '$@' $(OBJ)/*.o
 
 entry.o: entry.asm
-	nasm -f elf32 '$<' -o "$(OBJ)/'$@'"
+	nasm -f elf32 '$<' -o "$(OBJ)/$@"
 
 main.o: main.adb
 	gcc -c -m32 -Os -o '$@' -Wall -Wextra '$<'
