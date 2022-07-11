@@ -1,10 +1,32 @@
-with x86;
-
+with x86.Port_IO;
 package body SERIAL is
-    pragma Preelaborate;
+   pragma Suppress (Index_Check);
+   pragma Suppress (Overflow_Check);
+   pragma Suppress (All_Checks);
 
-    procedure serial_init (baudrate : in baudrate_T) is
+
+    procedure set_baud_rate (serial_divisor : in Divisor) is
+        divisor_low  : Interfaces.Unsigned_8;
+        divisor_high : Interfaces.Unsigned_8;
+        port : System.Address := To_Address (16#3F8#);
     begin
-        x86.outb(SERIAL_PORT, SERIAL_INIT);
+        divisor_low  := Unsigned_8 (serial_divisor and 16#FF#);
+        divisor_high := Unsigned_8 (Shift_Right (serial_divisor, 8) and 16#FF#);
+        x86.Port_IO.Outb (port + Storage_Offset (4), 16#80#);
+        x86.Port_IO.Outb (port + Storage_Offset (1), divisor_low);
+        x86.Port_IO.Outb (port + Storage_Offset (2), divisor_high);
+        x86.Port_IO.Outb (port + Storage_Offset (4), 16#03#);
+        x86.Port_IO.Outb (port + Storage_Offset (3), 16#47#);
+    end set_baud_rate;
+
+    procedure send_char (c : in Character) is
+        port : System.Address := To_Address (16#3F8#);
+    begin
+        x86.Port_IO.Outb (port + Storage_Offset (0), Character'Pos(c));
+    end send_char;
+
+    procedure serial_init (rate : in Baudrate) is
+    begin
+        set_baud_rate (Divisor(rate / Baudrate'Last));
     end serial_init;
 end SERIAL;
