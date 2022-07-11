@@ -17,12 +17,7 @@ begin
    --  Clear (BLACK);
    --  Put_String (0, 0, BRIGHT, BLACK, "Ada says: Hello world!");
    SERIAL.serial_init (SERIAL.Baudrate'Last);
-   SERIAL.send_char ('H');
-   SERIAL.send_char ('e');
-   SERIAL.send_char ('l');
-   SERIAL.send_char ('l');
-   SERIAL.send_char ('o');
-
+   SERIAL.send_string ("Hello world!");
    --  Loop forever.
    while True loop
       null;
