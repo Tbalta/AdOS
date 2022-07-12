@@ -36,6 +36,7 @@ with System.Parameters;
 with System.Storage_Elements;
 package System.Secondary_Stack is
    pragma Preelaborate;
+   pragma Suppress (All_Checks);
    use type System.Parameters.Size_Type;
 
    package SP renames System.Parameters;

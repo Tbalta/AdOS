@@ -25,7 +25,7 @@ SECTIONS
 
     . = ALIGN (4K);
 		kernel_stack_bottom = .;
-		. += KERNEL_STACK_SIZE;
+		. += KERNEL_SEC_STACK_SIZE;
 		kernel_stack_top = .;
   }
 }

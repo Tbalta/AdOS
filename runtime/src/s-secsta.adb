@@ -30,14 +30,13 @@
 ------------------------------------------------------------------------------
 with Interfaces;
 pragma Compiler_Unit_Warning;
-
-with Ada.Unchecked_Deallocation;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
 with System.Address_To_Access_Conversions;
-with System.Parameters; use System.Parameters;
+with System.Parameters;       use System.Parameters;
 package body System.Secondary_Stack is
-
+   pragma Suppress (All_Checks);
+   pragma Suppress (Index_Check);
    package SS_Stack_Ptr_Conv is new System.Address_To_Access_Conversions
      (SS_Stack);
 
@@ -77,9 +76,6 @@ package body System.Secondary_Stack is
    -- Local subprograms --
    -----------------------
 
-   procedure Allocate_Dynamic
-     (Stack : SS_Stack_Ptr; Mem_Size : Memory_Size; Addr : out Address);
-   pragma Inline (Allocate_Dynamic);
    --  Allocate enough space on dynamic secondary stack Stack to fit a request
    --  of size Mem_Size. Addr denotes the address of the first byte of the
    --  allocation.
@@ -101,12 +97,6 @@ package body System.Secondary_Stack is
    --  Allocate enough space on static secondary stack Stack to fit a request
    --  of size Mem_Size. Addr denotes the address of the first byte of the
    --  allocation.
-
-   procedure Free is new Ada.Unchecked_Deallocation (SS_Chunk, SS_Chunk_Ptr);
-   --  Free a dynamically allocated chunk
-
-   procedure Free is new Ada.Unchecked_Deallocation (SS_Stack, SS_Stack_Ptr);
-   --  Free a dynamically allocated secondary stack
 
    function Has_Enough_Free_Memory
      (Chunk : SS_Chunk_Ptr; Byte : Memory_Index; Mem_Size : Memory_Size)
@@ -162,139 +152,6 @@ package body System.Secondary_Stack is
           (SS_Stack_Ptr_Conv.To_Pointer
              (To_Address (Integer_Address (kernel_stack_top))));
    end Get_Sec_Stack;
-
-   ----------------------
-   -- Allocate_Dynamic --
-   ----------------------
-
-   procedure Allocate_Dynamic
-     (Stack : SS_Stack_Ptr; Mem_Size : Memory_Size; Addr : out Address)
-   is
-      function Allocate_New_Chunk return SS_Chunk_Ptr;
-      pragma Inline (Allocate_New_Chunk);
-      --  Create a new chunk which is big enough to fit a request of size
-      --  Mem_Size.
-
-      ------------------------
-      -- Allocate_New_Chunk --
-      ------------------------
-
-      function Allocate_New_Chunk return SS_Chunk_Ptr is
-         Chunk_Size : Memory_Size;
-
-      begin
-         --  The size of the new chunk must fit the memory request precisely.
-         --  In the case where the memory request is way too small, use the
-         --  default chunk size. This avoids creating multiple tiny chunks.
-
-         Chunk_Size := Mem_Size;
-
-         if Chunk_Size < Stack.Default_Chunk_Size then
-            Chunk_Size := Stack.Default_Chunk_Size;
-         end if;
-
-         return new SS_Chunk (Chunk_Size);
-
-      --  The creation of the new chunk may exhaust the heap. Raise a new
-      --  Storage_Error to indicate that the secondary stack is exhausted
-      --  as well.
-      end Allocate_New_Chunk;
-
-      --  Local variables
-
-      Next_Chunk : SS_Chunk_Ptr;
-
-      --  Start of processing for Allocate_Dynamic
-
-   begin
-      --  Determine whether the chunk indicated by the stack pointer is big
-      --  enough to fit the memory request and if it is, allocate on it.
-
-      if Has_Enough_Free_Memory
-          (Chunk    => Stack.Top.Chunk, Byte => Stack.Top.Byte,
-           Mem_Size => Mem_Size)
-      then
-         Allocate_On_Chunk
-           (Stack => Stack, Prev_Chunk => null, Chunk => Stack.Top.Chunk,
-            Byte  => Stack.Top.Byte, Mem_Size => Mem_Size, Addr => Addr);
-
-         return;
-      end if;
-
-      --  At this point it is known that the chunk indicated by the stack
-      --  pointer is not big enough to fit the memory request. Examine all
-      --  subsequent chunks, and apply the following criteria:
-      --
-      --    * If the current chunk is too small, free it
-      --
-      --    * If the current chunk is big enough, allocate on it
-      --
-      --  This ensures that no space is wasted. The process is costly, however
-      --  allocation is costly in general. Paying the price here keeps routines
-      --  SS_Mark and SS_Release cheap.
-
-      while Stack.Top.Chunk.Next /= null loop
-
-         --  The current chunk is big enough to fit the memory request,
-         --  allocate on it.
-
-         if Has_Enough_Free_Memory
-             (Chunk => Stack.Top.Chunk.Next,
-              Byte  => Stack.Top.Chunk.Next.Memory'First, Mem_Size => Mem_Size)
-         then
-            Allocate_On_Chunk
-              (Stack => Stack, Prev_Chunk => Stack.Top.Chunk,
-               Chunk => Stack.Top.Chunk.Next,
-               Byte => Stack.Top.Chunk.Next.Memory'First, Mem_Size => Mem_Size,
-               Addr  => Addr);
-
-            return;
-
-            --  Otherwise the chunk is too small, free it
-
-         else
-            Next_Chunk := Stack.Top.Chunk.Next.Next;
-
-            --  Unchain the chunk from the stack. This keeps the next candidate
-            --  chunk situated immediately after Top.Chunk.
-            --
-            --    Top.Chunk     Top.Chunk.Next   Top.Chunk.Next.Next
-            --        |               |              (Next_Chunk)
-            --        v               v                   v
-            --    +-------+     +------------+     +--------------+
-            --    |       | --> |            | --> |              |
-            --    +-------+     +------------+     +--------------+
-            --                   to be freed
-
-            Free (Stack.Top.Chunk.Next);
-            Stack.Top.Chunk.Next := Next_Chunk;
-         end if;
-      end loop;
-
-      --  At this point one of the following outcomes took place:
-      --
-      --    * Top.Chunk is the last chunk in the stack
-      --
-      --    * Top.Chunk was not the last chunk originally. It was followed by
-      --      chunks which were too small and as a result were deleted, thus
-      --      making Top.Chunk the last chunk in the stack.
-      --
-      --  Either way, nothing should be hanging off the chunk indicated by the
-      --  stack pointer.
-
-      pragma Assert (Stack.Top.Chunk.Next = null);
-
-      --  Create a new chunk big enough to fit the memory request, and allocate
-      --  on it.
-
-      Stack.Top.Chunk.Next := Allocate_New_Chunk;
-
-      Allocate_On_Chunk
-        (Stack => Stack, Prev_Chunk => Stack.Top.Chunk,
-         Chunk => Stack.Top.Chunk.Next,
-         Byte  => Stack.Top.Chunk.Next.Memory'First, Mem_Size => Mem_Size,
-         Addr  => Addr);
-   end Allocate_Dynamic;
 
    -----------------------
    -- Allocate_On_Chunk --
@@ -569,9 +426,7 @@ package body System.Secondary_Stack is
 
       Mem_Size := Round_Up (Storage_Size);
 
-      if Sec_Stack_Dynamic then
-         Allocate_Dynamic (Stack, Mem_Size, Addr);
-      else
+      if not Sec_Stack_Dynamic then
          Allocate_Static (Stack, Mem_Size, Addr);
       end if;
    end SS_Allocate;
@@ -580,36 +435,7 @@ package body System.Secondary_Stack is
    -- SS_Free --
    -------------
 
-   procedure SS_Free (Stack : in out SS_Stack_Ptr) is
-      Static_Chunk : constant SS_Chunk_Ptr := Stack.Static_Chunk'Access;
-      Next_Chunk   : SS_Chunk_Ptr;
-
-   begin
-      --  Free all dynamically allocated chunks. The first dynamic chunk is
-      --  found immediately after the static chunk of the stack.
-
-      while Static_Chunk.Next /= null loop
-         Next_Chunk := Static_Chunk.Next.Next;
-         Free (Static_Chunk.Next);
-         Static_Chunk.Next := Next_Chunk;
-      end loop;
-
-      --  At this point one of the following outcomes has taken place:
-      --
-      --    * The stack lacks any dynamic chunks
-      --
-      --    * The stack had dynamic chunks which were all freed
-      --
-      --  Either way, there should be nothing hanging off the static chunk
-
-      pragma Assert (Static_Chunk.Next = null);
-
-      --  Free the stack only when it was dynamically allocated
-
-      if Stack.Freeable then
-         Free (Stack);
-      end if;
-   end SS_Free;
+   procedure SS_Free (Stack : in out SS_Stack_Ptr) is null;
 
    ----------------
    -- SS_Get_Max --

@@ -46,8 +46,6 @@
 --  Note: do not introduce any pragma Inline statements into this unit, since
 --  otherwise the relinking and rebinding capability would be deactivated.
 
-pragma Compiler_Unit_Warning;
-
 package System.Parameters is
    pragma Pure;
 
@@ -55,9 +53,9 @@ package System.Parameters is
    -- Task And Stack Allocation Control --
    ---------------------------------------
 
-   type Size_Type is range
-     -(2 ** (Integer'(Standard'Address_Size) - 1)) ..
-     +(2 ** (Integer'(Standard'Address_Size) - 1)) - 1;
+   type Size_Type is
+     range -(2**(Integer'(Standard'Address_Size) - 1)) ..
+         +(2**(Integer'(Standard'Address_Size) - 1)) - 1;
    --  Type used to provide task stack sizes to the runtime. Sized to permit
    --  stack sizes of up to half the total addressable memory space. This may
    --  seem excessively large (even for 32-bit systems), however there are many
@@ -67,13 +65,13 @@ package System.Parameters is
    Unspecified_Size : constant Size_Type := Size_Type'First;
    --  Value used to indicate that no size type is set
 
-   function Default_Stack_Size return Size_Type;
-   --  Default task stack size used if none is specified
+   --  function Default_Stack_Size return Size_Type;
+   --  --  Default task stack size used if none is specified
 
-   function Minimum_Stack_Size return Size_Type;
-   --  Minimum task stack size permitted
+   --  function Minimum_Stack_Size return Size_Type;
+   --  --  Minimum task stack size permitted
 
-   function Adjust_Storage_Size (Size : Size_Type) return Size_Type;
+   --  function Adjust_Storage_Size (Size : Size_Type) return Size_Type;
    --  Given the storage size stored in the TCB, return the Storage_Size
    --  value required by the RM for the Storage_Size attribute. The
    --  required adjustment is as follows:
@@ -87,12 +85,12 @@ package System.Parameters is
    --  available. This value is used when stack checking is enabled and
    --  no GNAT_STACK_LIMIT environment variable is set.
 
-   Stack_Grows_Down  : constant Boolean := True;
+   Stack_Grows_Down : constant Boolean := True;
    --  This constant indicates whether the stack grows up (False) or
    --  down (True) in memory as functions are called. It is used for
    --  proper implementation of the stack overflow check.
 
-   Runtime_Default_Sec_Stack_Size : constant Size_Type := 10 * 1024;
+   Runtime_Default_Sec_Stack_Size : constant Size_Type := 10 * 1_024;
    --  The run-time chosen default size for secondary stacks that may be
    --  overriden by the user with the use of binder -D switch.
 
@@ -109,11 +107,11 @@ package System.Parameters is
    --  is that this is the same as type Long_Integer, but this may not be true
    --  of all targets.
 
-   ptr_bits  : constant := Standard'Address_Size;
+   ptr_bits : constant := Standard'Address_Size;
    subtype C_Address is System.Address;
    --  Number of bits in Interfaces.C pointers, normally a standard address
 
-   C_Malloc_Linkname : constant String := "__gnat_malloc";
+   --  C_Malloc_Linkname : constant String := "__gnat_malloc";
    --  Name of runtime function used to allocate such a pointer
 
    ----------------------------------------------
