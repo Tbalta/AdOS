@@ -1,4 +1,6 @@
 with SERIAL;
+with x86.gdt;
+with Interfaces;
 procedure Main is
 
    --  Suppress some checks to prevent undefined references during linking to
@@ -18,6 +20,13 @@ begin
    --  Put_String (0, 0, BRIGHT, BLACK, "Ada says: Hello world!");
    SERIAL.serial_init (SERIAL.Baudrate'Last);
    SERIAL.send_string ("Hello world!");
+
+   for i in 0 .. 16 loop
+      SERIAL.send_hex (Interfaces.Unsigned_32 (i));
+   end loop;
+
+   x86.gdt.initialize_gdt;
+   SERIAL.send_string ("finish");
    --  Loop forever.
    while True loop
       null;

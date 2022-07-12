@@ -34,6 +34,32 @@ package body SERIAL is
       end loop;
    end send_string;
 
+   procedure send_uint (data : Interfaces.Unsigned_32) is
+   begin
+      if data /= 0 then
+         send_uint (data / 10);
+      end if;
+      send_char (Character'Val ((data mod 10) + (Character'Pos ('0'))));
+   end send_uint;
+
+   procedure send_hex (data : Interfaces.Unsigned_32) is
+      hex_array : constant String := "0123456789ABCDEF";
+      procedure recur (number : Interfaces.Unsigned_32);
+      procedure recur (number : Interfaces.Unsigned_32) is
+      begin
+         if number = 0 then
+            return;
+         end if;
+         recur (number / 16);
+         send_char (hex_array (Integer (number mod 16) + 1));
+      end recur;
+   begin
+      if data = 0 then
+         send_char ('0');
+      end if;
+      recur (data);
+   end send_hex;
+
    procedure send_char (c : Character) is
       port : constant System.Address := To_Address (16#3F8#);
    begin
