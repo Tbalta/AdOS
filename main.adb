@@ -27,6 +27,11 @@ begin
 
    x86.gdt.initialize_gdt;
    SERIAL.send_string ("finish");
+   declare
+      test : Interfaces.Unsigned_32 := Interfaces.Unsigned_32 (25);
+   begin
+      SERIAL.send_string (Interfaces.Unsigned_32'Image (test));
+   end;
    --  Loop forever.
    while True loop
       null;
