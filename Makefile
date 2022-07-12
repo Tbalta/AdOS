@@ -15,11 +15,11 @@ makeall:
 	gprbuild
 
 
-main.elf: makeall entry.o
-	ld -m elf_i386 -T linker.ld -o '$@' $(OBJ)/*.o
+main.elf: makeall entry.o gdt.o
+	ld -m elf_i386 -T linker.ld -o '$@' $(OBJ)/*.o -g
 
-entry.o: entry.asm
-	nasm -f elf32 '$<' -o "$(OBJ)/$@"
+%.o: %.asm
+	nasm -f elf32 '$<' -o "$(OBJ)/$@" -g
 
 main.o: main.adb
 	gcc -c -m32 -Os -o '$@' -Wall -Wextra '$<'

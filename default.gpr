@@ -11,6 +11,7 @@ project Default is
         "-fdata-sections",
         "-fno-omit-frame-pointer",
         "-ggdb",
+        "-g",
         "-gnat2012",
         "-gnatwadehl",
         "-gnatVa",
