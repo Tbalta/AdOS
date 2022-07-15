@@ -11,3 +11,4 @@ log.txt
 */obj/*
 *.npp
 */build/*
+dump.txt

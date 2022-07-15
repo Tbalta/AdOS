@@ -15,7 +15,7 @@ makeall:
 	gprbuild
 
 
-main.elf: makeall entry.o gdt.o
+main.elf: makeall entry.o gdt.o stubs.o idt.o
 	ld -m elf_i386 -T linker.ld -o '$@' $(OBJ)/*.o -g
 
 %.o: %.asm

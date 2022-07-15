@@ -1,8 +1,9 @@
-
-Some parts of the code are extracted for this sources: <br />
+# Disclaimer
+Some parts of the code are extracted for these sources: <br />
 https://github.com/cirosantilli/x86-bare-metal-examples <br />
 https://github.com/ajxs/cxos/ <br />
 https://wiki.osdev.org/Ada_Bare_bones <br />
+This kernel is a proof of concept in ada as well an opportunity for me to learn Ada. <br />
 
 # Cross compiler
 Follow this tutorial: <br />
@@ -13,3 +14,6 @@ You can also edit the `Library_Builder` inside `linker.xml` in case gprlib is no
 
 # Secondary Stack
 There is a non negligible amount of luck that there is an UB inside `s-secsta.abd` and that it’s will cause a bug that later will be hard to fix. <br />
+
+# __gnat_rcheck_CE_Invalid_Data
+Because I have no idea of where `__gnat_rcheck_CE_Invalid_Data` come from, i created it as a dummy symbol inside `stubs.asm`.
