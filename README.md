@@ -17,3 +17,6 @@ There is a non negligible amount of luck that there is an UB inside `s-secsta.ab
 
 # __gnat_rcheck_CE_Invalid_Data
 Because I have no idea of where `__gnat_rcheck_CE_Invalid_Data` come from, i created it as a dummy symbol inside `stubs.asm`.
+
+# dependencies
+qemu-system-i386, nasm, grub-pc-bin, grub-common

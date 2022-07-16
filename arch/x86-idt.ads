@@ -19,8 +19,8 @@ package x86.idt is
       offset      : Unsigned_16;
       selector    : Unsigned_16;
       entry_type  : gate_type;
-      DPL         : Unsigned_8 range 0 .. 3;
       zero        : Unsigned_8 range 0 .. 1;
+      DPL         : Unsigned_8 range 0 .. 3;
       present     : Boolean;
       offset_high : Unsigned_16;
    end record with
@@ -37,9 +37,13 @@ package x86.idt is
 
    type interrupt_vector_t is array (0 .. 255) of idt_entry;
    interrupt_vector : interrupt_vector_t with
-      Alignment => 16;
+      Export,
+      Alignment     => 16,
+      Convention    => Assembler,
+      External_Name => "interrupt_descriptor_table",
+      Volatile;
 
-   type error_vector_t is array (0 .. 32) of Unsigned_32;
+   type error_vector_t is array (0 .. 31) of Unsigned_32;
    type error_vector_ptr_t is access error_vector_t;
 
    type idt_ptr_t is record
@@ -55,8 +59,15 @@ package x86.idt is
    error_vector : error_vector_t;
    pragma Import (C, error_vector, "x86_handler_vector");
    procedure init_idt;
-   procedure handler (error_code : Unsigned_32; interrupt_code : Unsigned_32);
+   procedure handler
+     (interrupt_code : Unsigned_32; error_code : Unsigned_32;
+      eip            : Unsigned_32; cs : Unsigned_32);
    pragma Export (C, handler, "handler");
+
+   subtype Byte is Interfaces.Unsigned_8;
+   type Byte_Array is array (Positive range <>) of Byte;
+   subtype Record_Bytes is Byte_Array (1 .. idt_entry'Size / Byte'Size);
+   function Convert (Input : idt_entry) return Record_Bytes;
 
 private
 end x86.idt;

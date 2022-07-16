@@ -2,20 +2,25 @@ extern handler
 
 section .text
 common_handler:
+    cli
     call handler
+    add esp, 8
+    sti
     iret
 
 
 %macro isr_no_err 1
+global isr_stub_%+%1
 isr_stub_%+%1:
-    push 0
-    push %1
+    push DWORD 0
+    push DWORD %1
     jmp common_handler
 %endmacro
 
 %macro isr_err 1
+global isr_stub_%+%1
 isr_stub_%+%1:
-    push %1
+    push DWORD %1
     jmp common_handler
 %endmacro
 
@@ -52,13 +57,13 @@ isr_no_err 28
 isr_no_err 29
 isr_err    30
 isr_no_err 31
+isr_no_err 32
+
 
 
 global __gnat_rcheck_CE_Invalid_Data
 __gnat_rcheck_CE_Invalid_Data:
-    push 0
-    push 0
-    jmp common_handler
+    ret
 
 section .rodata
 global x86_handler_vector
