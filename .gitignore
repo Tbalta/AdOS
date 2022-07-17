@@ -12,3 +12,5 @@ log.txt
 *.npp
 */build/*
 dump.txt
+*.iso
+*.lock
