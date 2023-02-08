@@ -19,21 +19,16 @@ package x86.Port_IO is
    --  Exceptions:
    --    None.
    ----------------------------------------------------------------------------
-   function Inb (
-     Port : System.Address
-   ) return Interfaces.Unsigned_8
-   with Volatile_Function;
+   function Inb (Port : System.Address) return Interfaces.Unsigned_8 with
+      Volatile_Function;
 
    ----------------------------------------------------------------------------
-   --  Outb
-   --
-   --  Purpose:
-   --    This function writes a byte to a particular IO port.
-   --  Exceptions:
-   --    None.
+      --  Outb
+      --
+      --  Purpose:
+      --    This function writes a byte to a particular IO port.
+      --  Exceptions:
+      --    None.
    ----------------------------------------------------------------------------
-   procedure Outb (
-     Port : System.Address;
-     Data : Interfaces.Unsigned_8
-   );
+   procedure Outb (Port : System.Address; Data : Interfaces.Unsigned_8);
 end x86.Port_IO;

@@ -5,8 +5,11 @@ package x86.gdt is
 
    procedure initialize_gdt;
    procedure set_gdt_entry
-     (index       : Integer; base : System.Address; limit : Unsigned_32;
-      access_byte : Unsigned_8; flags : Unsigned_8);
+     (index       : Integer;
+      base        : System.Address;
+      limit       : Unsigned_32;
+      access_byte : Unsigned_8;
+      flags       : Unsigned_8);
 
    type segment_descriptor is record
       limit_low   : Unsigned_16;

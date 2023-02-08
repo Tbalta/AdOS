@@ -3,7 +3,7 @@
 
 OBJ = obj
 
-qemu_param = -vga std -D ./log.txt -d int,guest_errors -boot d -M q35 -serial mon:stdio -m 1G
+qemu_param = -vga std -D ./log.txt -d int,guest_errors,in_asm -boot d -M q35 -serial mon:stdio -m 1G
 
 main.iso: main.elf
 	cp '$<' iso/boot
@@ -39,6 +39,8 @@ clean:
 
 run: main.elf
 	"/mnt/c/program files/qemu/qemu-system-i386.exe" -kernel '$<' $(qemu_param)
+debug: main.elf
+	"/mnt/c/program files/qemu/qemu-system-i386.exe" -kernel '$<' $(qemu_param) -
 
 run-img: main.img
 	"/mnt/c/program files/qemu/qemu-system-i386.exe" -hda '$<'

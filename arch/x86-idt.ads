@@ -7,12 +7,17 @@ package x86.idt is
    pragma Suppress (All_Checks);
 
    type gate_type is
-     (task_gate, interrupt_16_bits, trap_gate_16_bits, interrupt_32_bits,
+     (task_gate,
+      interrupt_16_bits,
+      trap_gate_16_bits,
+      interrupt_32_bits,
       trap_gate_32_bits) with
-      Size => 4;
+        Size => 4;
    for gate_type use
-     (task_gate         => 16#5#, interrupt_16_bits => 16#6#,
-      trap_gate_16_bits => 16#7#, interrupt_32_bits => 16#E#,
+     (task_gate         => 16#5#,
+      interrupt_16_bits => 16#6#,
+      trap_gate_16_bits => 16#7#,
+      interrupt_32_bits => 16#E#,
       trap_gate_32_bits => 16#F#);
 
    type idt_entry is record
@@ -60,8 +65,10 @@ package x86.idt is
    pragma Import (C, error_vector, "x86_handler_vector");
    procedure init_idt;
    procedure handler
-     (interrupt_code : Unsigned_32; error_code : Unsigned_32;
-      eip            : Unsigned_32; cs : Unsigned_32);
+     (interrupt_code : Unsigned_32;
+      error_code     : Unsigned_32;
+      eip            : Unsigned_32;
+      cs             : Unsigned_32);
    pragma Export (C, handler, "handler");
 
    subtype Byte is Interfaces.Unsigned_8;
