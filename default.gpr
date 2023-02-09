@@ -13,16 +13,19 @@ project Default is
         "-ggdb",
         "-g",
         "-gnat2012",
-        "-gnatwadehl",
-        "-gnatVa",
-        "-gnatg"
+        -- "-gnatwadehl",
+        -- "-gnatVa",
+        "-gnatg",
+        "-gnatwM"
       );
 
       for Default_Switches ("Asm_Cpp") use (
         "-ggdb"
       );
+      
    end Compiler;
   for Runtime("Ada") use "runtime/build";
+
 
     for Target use "i386-elf";
 end Default;

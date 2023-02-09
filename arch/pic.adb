@@ -11,6 +11,8 @@ package body pic is
       CASCADE : constant Unsigned_8 := 16#08#;
       INIT    : constant Unsigned_8 := 16#10#;
 
+      pragma Unreferenced (SINGLE, EDGE, CASCADE);
+
    begin
       Outb (Rep (MASTER_CMD), INIT or ICW4); -- ICW1
       Outb (Rep (SLAVE_CMD), INIT or ICW4); -- ICW1

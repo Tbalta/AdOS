@@ -3,7 +3,7 @@
 
 OBJ = obj
 
-qemu_param = -vga std -D ./log.txt -d int,guest_errors,in_asm -boot d -M q35 -serial mon:stdio -m 1G
+qemu_param = -no-reboot -D ./log.txt -d int,guest_errors,in_asm -serial mon:stdio -m 1G
 
 main.iso: main.elf
 	cp '$<' iso/boot
@@ -15,36 +15,41 @@ makeall:
 	gprbuild
 
 
+CCFLAGS = -m32 -L. -lk
 main.elf: makeall entry.o gdt.o stubs.o idt.o util.o
-	ld -m elf_i386 -T linker.ld -o '$@' $(OBJ)/*.o -g
+	ld -m elf_i386 -T linker.ld -o '$@' $(OBJ)/*.o -g -Llibc -lc
 
 %.o: %.asm
-	nasm -f elf32 '$<' -o "$(OBJ)/$@" -g
+	nasm -f elf32 '$<' -o "$(OBJ)/$@" -g 
 
 main.o: main.adb
-	gcc -c -m32 -Os -o '$@' -Wall -Wextra '$<'
+	gcc -c -m32 -Os -o '$@' -Wall -Wextra '$<' -m32 -L. -lk
 
 
 %.o: %.adb
-	gcc -c -m32 -Os -o '$@' -Wall -Wextra '$<'
+	gcc -c -m32 -Os -o '$@' -Wall -Wextra '$<' -m32 -L. -lk
 %.o: arch/%.adb
-	gcc -c -m32 -Os -o '$@' -Wall -Wextra '$<'
+	gcc -c -m32 -Os -o '$@' -Wall -Wextra '$<' -m32 -L. -lk
 
 
 %.o: %.c
-	gcc -c -m32 -Os -o obj/'$@' -Wall -Wextra '$<'
+	gcc -c -m32 -Os -o obj/'$@' -Wall -Wextra '$<' -m32 -L. -lk
 
 clean:
-	rm -f *.ali *.elf *.o iso/boot/*.elf *.img obj/* *.pp *.npp log.txt
+	rm -f *.ali *.elf *.o iso/boot/*.elf *.img obj/* *.pp *.npp log.txt *.pp arch/*.pp
 
 run: main.elf
 	"/mnt/c/program files/qemu/qemu-system-i386.exe" -kernel '$<' $(qemu_param)
 debug: main.elf
 	"/mnt/c/program files/qemu/qemu-system-i386.exe" -kernel '$<' $(qemu_param) -
 
-run-img: main.img
-	"/mnt/c/program files/qemu/qemu-system-i386.exe" -hda '$<'
+run-iso: main.iso
+	"/mnt/c/program files/qemu/qemu-system-i386.exe" -cdrom '$<' $(qemu_param)
 
-iso: main.img
+iso: main.iso
 	cp '$<' iso/
-	mkisofs -o main.iso -V MyOSName -b main.img iso
+	mkisofs -o main.iso -V MyOSName -b main.iso iso
+
+
+format:
+	gnatpp $(wildcard **/*.adb) $(wildcard **/*.ads) -rnb

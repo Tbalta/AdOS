@@ -1,6 +1,5 @@
 *.o
 *.elf
-*.o
 *.stderr
 *.stdout
 *.img
@@ -14,3 +13,6 @@ log.txt
 dump.txt
 *.iso
 *.lock
+*.pp
+*.d
+*.a

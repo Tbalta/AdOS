@@ -1,5 +1,8 @@
 #include <stdint.h>
 
+__attribute__((__visibility__("default")))
+int _end = 0;
+
 static inline void outb(uint16_t port, uint8_t val)
 {
     asm volatile("outb %0, %1"

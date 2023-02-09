@@ -3,6 +3,7 @@ with x86.gdt;
 with x86.idt;
 with pic;
 with System.Machine_Code;
+with Atapi;
 --  with Interfaces; use Interfaces;
 procedure Main is
 
@@ -16,6 +17,8 @@ procedure Main is
    pragma Suppress (Index_Check);
    pragma Suppress (Overflow_Check);
    pragma Suppress (All_Checks);
+   --  procedure discover_atapi_drive;
+   --  pragma Import (C, discover_atapi_drive, "discover_atapi_drive");
 begin
 
    --  Clear (BLACK);
@@ -26,6 +29,8 @@ begin
    SERIAL.send_line ("test");
    pic.init;
 
+   Atapi.discoverAtapiDevices;
+   --  discover_atapi_drive;
    System.Machine_Code.Asm (Template => "sti", Volatile => True);
    SERIAL.send_line ("trac");
    SERIAL.send_line ("plouf");
