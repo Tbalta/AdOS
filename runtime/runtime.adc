@@ -13,8 +13,6 @@ pragma Restrictions (No_Finalization);
 pragma Restrictions (No_Tasking);
 pragma Restrictions (No_Protected_Types);
 pragma Restrictions (No_Delay);
-pragma Restrictions (No_Recursion);
 pragma Restrictions (No_Allocators);
 pragma Restrictions (No_Dispatch);
 pragma Restrictions (No_Implicit_Dynamic_Code);
-pragma Restrictions (No_Secondary_Stack);

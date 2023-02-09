@@ -1,6 +1,7 @@
 project Default is
-    for Source_Dirs use ("./**");
+    for Source_Dirs use ("./adOS/**");
     for Object_Dir   use  "obj";
+    for Create_Missing_Dirs use "True";
 
 
     package Compiler is

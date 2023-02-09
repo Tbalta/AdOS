@@ -7,13 +7,13 @@ library project Runtime is
    --  To facilitate this, we copy our source files to the build directory.
    --  This serves two purposes, one is to build the run-time itself, the 
    --  second is to function as the run-time library's spec includes.
-   for Source_Dirs use ("build/adainclude");
+   for Source_Dirs use ("build/adainclude/**", "libc/**");
    --  The directory used for build artifacts.
    for Object_Dir use "obj";
  
    for Languages use (
      "Ada",
-     "Asm_Cpp"
+     "C"
    );
  
    package Builder is

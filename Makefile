@@ -4,6 +4,9 @@
 OBJ = obj
 
 qemu_param = -no-reboot -D ./log.txt -d int,guest_errors,in_asm -serial mon:stdio -m 1G
+makeall:
+	cd runtime && gprbuild
+	gprbuild
 
 main.iso: main.elf
 	cp '$<' iso/boot
@@ -11,13 +14,11 @@ main.iso: main.elf
 
 # main.elf is the the multiboot file.
 
-makeall:
-	gprbuild
 
 
 CCFLAGS = -m32 -L. -lk
 main.elf: makeall entry.o gdt.o stubs.o idt.o util.o
-	ld -m elf_i386 -T linker.ld -o '$@' $(OBJ)/*.o -g -Llibc -lc
+	ld -m elf_i386 -T linker.ld -o '$@' $(OBJ)/*.o -g -Lruntime/build/adalib -lgnat
 
 %.o: %.asm
 	nasm -f elf32 '$<' -o "$(OBJ)/$@" -g 
