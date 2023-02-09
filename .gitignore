@@ -9,7 +9,6 @@ log.txt
 .vscode
 */obj/*
 *.npp
-*/build/*
 dump.txt
 *.iso
 *.lock

@@ -38,6 +38,9 @@ main.o: main.adb
 
 clean:
 	rm -f *.ali *.elf *.o iso/boot/*.elf *.img obj/* *.pp *.npp log.txt *.pp arch/*.pp
+	$(RM) -r obj/
+	$(RM) -r runtime/obj
+	$(RM) -r runtime/build/adalib
 
 run: main.elf
 	"/mnt/c/program files/qemu/qemu-system-i386.exe" -kernel '$<' $(qemu_param)
