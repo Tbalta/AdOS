@@ -22,9 +22,8 @@ STACKSIZE equ 0x4000
 
 loader:
   mov esp, stack+STACKSIZE
-  push eax
   push ebx
-
+  push eax
   call _ada_main 
 
   cli

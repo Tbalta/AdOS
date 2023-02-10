@@ -5,9 +5,14 @@ with pic;
 with System.Machine_Code;
 with Atapi;
 with Ada.Unchecked_Conversion;
-with Interfaces;
+with Interfaces; use Interfaces;
+With Interfaces.C;
+with System.Address_To_Access_Conversions;
+with System; use System;
+with System.Storage_Elements; use System.Storage_Elements;
+with MultiBoot;
 --  with Interfaces; use Interfaces;
-procedure Main is
+procedure Main (magic : Interfaces.Unsigned_32; info : access MultiBoot.multiboot_info) is
 
    --  Suppress some checks to prevent undefined references during linking to
    --
@@ -30,6 +35,15 @@ begin
    x86.gdt.initialize_gdt;
    x86.idt.init_idt;
    SERIAL.send_line ("test");
+   SERIAL.send_line ("magic: " & magic'Image);
+   SERIAL.send_line ("flags: " & info.all.flags'Image);
+   declare
+      type cmdLine is new Interfaces.C.char_array (1 .. 15);
+      package Conversion is new System.Address_To_Access_Conversions(cmdLine);
+      cmdLine_access : access cmdLine := Conversion.To_Pointer (To_Address (Integer_Address (info.all.cmdline)));
+   begin
+      SERIAL.send_line ("cmdline: " & (Character (cmdLine_access.all (1))));
+   end;
    pic.init;
 
    Atapi.discoverAtapiDevices;

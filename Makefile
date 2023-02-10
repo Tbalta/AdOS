@@ -3,7 +3,7 @@
 
 OBJ = obj
 
-qemu_param = -no-reboot -D ./log.txt -d int,guest_errors,in_asm -serial mon:stdio -m 1G
+qemu_param = -no-reboot -D ./log.txt -d int,guest_errors -serial mon:stdio -m 1G
 makeall:
 	cd runtime && gprbuild
 	gprbuild
@@ -28,13 +28,13 @@ main.o: main.adb
 
 
 %.o: %.adb
-	gcc -c -m32 -Os -o '$@' -Wall -Wextra '$<' -m32 -L. -lk
+	gcc -c -m32 -Os -o '$@' -Wall -Wextra '$<'  -L. -lk
 %.o: arch/%.adb
-	gcc -c -m32 -Os -o '$@' -Wall -Wextra '$<' -m32 -L. -lk
+	gcc -c -m32 -Os -o '$@' -Wall -Wextra '$<'  -L. -lk
 
 
 %.o: %.c
-	gcc -c -m32 -Os -o obj/'$@' -Wall -Wextra '$<' -m32 -L. -lk
+	# gcc -c -m32 -Os -o obj/'$@' -Wall -Wextra '$<' -m32 -L. -lk -nostdlib
 
 clean:
 	rm -f *.ali *.elf *.o iso/boot/*.elf *.img obj/* *.pp *.npp log.txt *.pp arch/*.pp
