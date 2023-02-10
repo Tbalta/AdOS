@@ -18,7 +18,7 @@ main.iso: main.elf
 
 CCFLAGS = -m32 -L. -lk
 main.elf: makeall entry.o gdt.o stubs.o idt.o util.o
-	ld -m elf_i386 -T linker.ld -o '$@' $(OBJ)/*.o -g -Lruntime/build/adalib -lgnat
+	ld -m elf_i386 -T linker.ld -o '$@' $(OBJ)/*.o -g -Lruntime/build/adalib -lgnat -L. -lk
 
 %.o: %.asm
 	nasm -f elf32 '$<' -o "$(OBJ)/$@" -g 
@@ -56,4 +56,4 @@ iso: main.iso
 
 
 format:
-	gnatpp $(wildcard **/*.adb) $(wildcard **/*.ads) -rnb
+	gnatpp $(wildcard adOS/**/*.adb) $(wildcard adOS/**/*.ads) -rnb

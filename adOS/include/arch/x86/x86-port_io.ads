@@ -31,4 +31,26 @@ package x86.Port_IO is
       --    None.
    ----------------------------------------------------------------------------
    procedure Outb (Port : System.Address; Data : Interfaces.Unsigned_8);
+
+
+   ----------------------------------------------------------------------------
+   --  Inw
+   --
+   --  Purpose:
+   --    This function reads a word from a particular IO port.
+   --  Exceptions:
+   --    None.
+   ----------------------------------------------------------------------------
+   function Inw (Port : System.Address) return Interfaces.Unsigned_16 with
+      Volatile_Function;
+   
+   ----------------------------------------------------------------------------
+   --  Outw
+   --
+   --  Purpose:
+   --    This function writes a word to a particular IO port.
+   --  Exceptions:
+   --    None.
+   ----------------------------------------------------------------------------
+   procedure Outw (Port : System.Address; Data : Interfaces.Unsigned_16);
 end x86.Port_IO;

@@ -4,6 +4,8 @@ with x86.idt;
 with pic;
 with System.Machine_Code;
 with Atapi;
+with Ada.Unchecked_Conversion;
+with Interfaces;
 --  with Interfaces; use Interfaces;
 procedure Main is
 
@@ -19,6 +21,7 @@ procedure Main is
    pragma Suppress (All_Checks);
    --  procedure discover_atapi_drive;
    --  pragma Import (C, discover_atapi_drive, "discover_atapi_drive");
+   read : Integer;
 begin
 
    --  Clear (BLACK);
@@ -30,6 +33,19 @@ begin
    pic.init;
 
    Atapi.discoverAtapiDevices;
+   read := Atapi.read_block (16#10#, Atapi.sector_data'Access);
+   declare
+      type Identifier_Type is new String (1 .. 6);
+      Identifier : Identifier_Type;
+   begin
+      for i in 1 .. 6 loop
+         Identifier (i) := Character'Val (Atapi.sector_data (i));
+      end loop;
+      SERIAL.send_line ("Identifier: ");
+      SERIAL.send_line (String (Identifier));
+      SERIAL.send_line ("");
+   end;
+
    --  discover_atapi_drive;
    System.Machine_Code.Asm (Template => "sti", Volatile => True);
    SERIAL.send_line ("trac");
