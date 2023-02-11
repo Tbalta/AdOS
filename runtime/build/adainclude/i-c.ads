@@ -44,6 +44,7 @@ package Interfaces.C is
    type unsigned_int  is mod 2 ** int'Size;
    type unsigned_short is mod 2 ** short'Size;
    type unsigned_long  is mod 2 ** long'Size;
+   type unsigned_long_long is mod 2 ** 64;
 
    type unsigned_char is mod (UCHAR_MAX + 1);
    for unsigned_char'Size use CHAR_BIT;

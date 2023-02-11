@@ -6,6 +6,7 @@ package MultiBoot is
     subtype multiboot_uint8_t is unsigned_char;
     subtype multiboot_uint16_t is unsigned_short;
     subtype multiboot_uint32_t is unsigned_int;
+    subtype multiboot_uint64_t is unsigned_long_long;
 
     type multiboot_header is record
         --      Must be MULTIBOOT_MAGIC - see above.
@@ -74,6 +75,18 @@ package MultiBoot is
     end record with
         Convention => C,
         Pack => True;
+    
+    type multiboot_mmap_entry is record
+        size : multiboot_uint32_t;
+        base_addr : multiboot_uint64_t;
+        length : multiboot_uint64_t;
+        entry_type : multiboot_uint32_t;
+    end record with
+        Convention => C,
+        Pack => True;
+
+
+
 
 private
 end MultiBoot;

@@ -1,6 +1,7 @@
 with SERIAL;
 with x86.gdt;
 with x86.idt;
+with x86.pmm;                 use x86.pmm;
 with pic;
 with System.Machine_Code;
 with Atapi;
@@ -10,7 +11,7 @@ with Interfaces.C;            use Interfaces.C;
 with System.Address_To_Access_Conversions;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
-with MultiBoot;
+with MultiBoot;               use MultiBoot;
 --  with Interfaces; use Interfaces;
 procedure Main
   (magic : Interfaces.Unsigned_32; info : access MultiBoot.multiboot_info)
@@ -58,6 +59,20 @@ begin
       end loop;
       SERIAL.send_line ("cmdline: " & str);
    end;
+
+   -- PMM initialization
+   declare
+      entry_map_size  : constant Unsigned_64 :=
+        Unsigned_64 (info.all.mmap_length);
+      entry_map_count : constant Unsigned_64 :=
+        entry_map_size / (multiboot_mmap_entry'Size / 8);
+      subtype multiboot_mmap_array is multiboot_mmap (1 .. Integer (entry_map_count));
+      package Conversion is new System.Address_To_Access_Conversions (multiboot_mmap_array);
+      entry_map : access multiboot_mmap_array := (Conversion.To_Pointer (To_Address (Integer_Address (info.all.mmap_addr))));
+   begin
+      x86.pmm.Init (entry_map.all);
+   end;
+
    pic.init;
 
    Atapi.discoverAtapiDevices;
