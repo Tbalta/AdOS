@@ -5,14 +5,16 @@ with pic;
 with System.Machine_Code;
 with Atapi;
 with Ada.Unchecked_Conversion;
-with Interfaces; use Interfaces;
-With Interfaces.C;
+with Interfaces;              use Interfaces;
+with Interfaces.C;            use Interfaces.C;
 with System.Address_To_Access_Conversions;
-with System; use System;
+with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
 with MultiBoot;
 --  with Interfaces; use Interfaces;
-procedure Main (magic : Interfaces.Unsigned_32; info : access MultiBoot.multiboot_info) is
+procedure Main
+  (magic : Interfaces.Unsigned_32; info : access MultiBoot.multiboot_info)
+is
 
    --  Suppress some checks to prevent undefined references during linking to
    --
@@ -38,11 +40,23 @@ begin
    SERIAL.send_line ("magic: " & magic'Image);
    SERIAL.send_line ("flags: " & info.all.flags'Image);
    declare
-      type cmdLine is new Interfaces.C.char_array (1 .. 15);
-      package Conversion is new System.Address_To_Access_Conversions(cmdLine);
-      cmdLine_access : access cmdLine := Conversion.To_Pointer (To_Address (Integer_Address (info.all.cmdline)));
+      function strlen (s : System.Address) return Interfaces.C.size_t;
+      pragma Import (C, strlen, "strlen");
+      length : Integer :=
+        Integer (strlen (To_Address (Integer_Address (info.all.cmdline))));
+      subtype cmdLine is
+        Interfaces.C.char_array (1 .. Interfaces.C.size_t (length));
+      str : String (1 .. length);
+
+      package Conversion is new System.Address_To_Access_Conversions (cmdLine);
+      cmdLine_access : access cmdLine :=
+        Conversion.To_Pointer
+          (To_Address (Integer_Address (info.all.cmdline)));
    begin
-      SERIAL.send_line ("cmdline: " & (Character (cmdLine_access.all (1))));
+      for i in 1 .. length loop
+         str (i) := Character (cmdLine_access.all (size_t (i)));
+      end loop;
+      SERIAL.send_line ("cmdline: " & str);
    end;
    pic.init;
 
