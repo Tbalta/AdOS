@@ -92,14 +92,6 @@ package body Ada.Exceptions is
    function Image (Index : Integer) return String;
    --  Return string image corresponding to Index
 
-   --  Little routine to output string to stderr that is also used
-   --  in the tasking run time.
-
-   --  Little routine to output a character to stderr, used by some of
-   --  the separate units below.
-
-   procedure Complete_Occurrence (X : EOA);
-
    --  Create and build an exception occurrence using exception id E and
    --  nul-terminated message M. Return the machine occurrence.
 
@@ -647,35 +639,6 @@ package body Ada.Exceptions is
       --    (Constraint_Error_Def'Access, File, Line, Column, Msg);
       Raise_Exception (0, "Constaint_Error");
    end Raise_Constraint_Error_Msg;
-
-   -------------------------
-   -- Complete_Occurrence --
-   -------------------------
-
-   procedure Complete_Occurrence (X : EOA) is
-   begin
-      --  Compute the backtrace for this occurrence if the corresponding
-      --  binder option has been set. Call_Chain takes care of the reraise
-      --  case.
-
-      --  ??? Using Call_Chain here means we are going to walk up the stack
-      --  once only for backtracing purposes before doing it again for the
-      --  propagation per se.
-
-      --  The first inspection is much lighter, though, as it only requires
-      --  partial unwinding of each frame. Additionally, although we could use
-      --  the personality routine to record the addresses while propagating,
-      --  this method has two drawbacks:
-
-      --  1) the trace is incomplete if the exception is handled since we
-      --  don't walk past the frame with the handler,
-
-      --    and
-
-      --  2) we would miss the frames for which our personality routine is not
-      --  called, e.g. if C or C++ calls are on the way.
-      null;
-   end Complete_Occurrence;
 
    ---------------------
    -- Raise_Exception --
