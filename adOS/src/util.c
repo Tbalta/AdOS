@@ -49,11 +49,23 @@ void print_mmap(multiboot_info_t *mbi)
     for (unsigned long long i = 0; i < mmap_entry_count; i++)
     {
         LOG(" size = 0x%x, base_addr = 0x%x%x, length = 0x%x%x, type = 0x%x",
-               (unsigned)mmap[i].size,
-               (unsigned)(mmap[i].addr >> 32),
-               (unsigned)(mmap[i].addr & 0xffffffff),
-               (unsigned)(mmap[i].len >> 32),
-               (unsigned)(mmap[i].len & 0xffffffff),
-               (unsigned)mmap[i].type);
+            (unsigned)mmap[i].size,
+            (unsigned)(mmap[i].addr >> 32),
+            (unsigned)(mmap[i].addr & 0xffffffff),
+            (unsigned)(mmap[i].len >> 32),
+            (unsigned)(mmap[i].len & 0xffffffff),
+            (unsigned)mmap[i].type);
     }
+}
+
+void PANIC(const char *text)
+{
+    LOG("PANIC: %s", text);
+    while (1)
+        asm volatile("hlt");
+}
+
+int plouf()
+{
+    return 3;
 }

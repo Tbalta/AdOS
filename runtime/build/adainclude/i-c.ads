@@ -18,6 +18,11 @@ with System.Parameters;
 package Interfaces.C is
    pragma Pure;
 
+   pragma Suppress (Index_Check);
+   pragma Suppress (Overflow_Check);
+   pragma Suppress (All_Checks);
+   pragma Suppress (Range_Check);
+
    --  Declaration's based on C's <limits.h>
 
    CHAR_BIT  : constant := 8;
@@ -32,19 +37,20 @@ package Interfaces.C is
    --  avoid ambiguities when compiling in the presence of s-auxdec.ads and
    --  a non-private system.address type.
 
-   type int   is new Integer;
+   type int is new Integer;
    type short is new Short_Integer;
-   type long  is range -(2 ** (System.Parameters.long_bits - Integer'(1)))
-     .. +(2 ** (System.Parameters.long_bits - Integer'(1))) - 1;
+   type long is
+     range -(2**(System.Parameters.long_bits - Integer'(1))) ..
+         +(2**(System.Parameters.long_bits - Integer'(1))) - 1;
 
    type signed_char is range SCHAR_MIN .. SCHAR_MAX;
    for signed_char'Size use CHAR_BIT;
 
-   type unsigned       is mod 2 ** int'Size;
-   type unsigned_int  is mod 2 ** int'Size;
-   type unsigned_short is mod 2 ** short'Size;
-   type unsigned_long  is mod 2 ** long'Size;
-   type unsigned_long_long is mod 2 ** 64;
+   type unsigned is mod 2**int'Size;
+   type unsigned_int is mod 2**int'Size;
+   type unsigned_short is mod 2**short'Size;
+   type unsigned_long is mod 2**long'Size;
+   type unsigned_long_long is mod 2**64;
 
    type unsigned_char is mod (UCHAR_MAX + 1);
    for unsigned_char'Size use CHAR_BIT;
@@ -56,15 +62,15 @@ package Interfaces.C is
    --  a non-private system.address type.
 
    type ptrdiff_t is
-     range -(2 ** (System.Parameters.ptr_bits - Integer'(1))) ..
-           +(2 ** (System.Parameters.ptr_bits - Integer'(1)) - 1);
+     range -(2**(System.Parameters.ptr_bits - Integer'(1))) ..
+         +(2**(System.Parameters.ptr_bits - Integer'(1)) - 1);
 
-   type size_t is mod 2 ** System.Parameters.ptr_bits;
+   type size_t is mod 2**System.Parameters.ptr_bits;
 
    --  Floating-Point
 
-   type C_float     is new Float;
-   type double      is new Standard.Long_Float;
+   type C_float is new Float;
+   type double is new Standard.Long_Float;
    type long_double is new Standard.Long_Long_Float;
 
    ----------------------------
@@ -75,8 +81,8 @@ package Interfaces.C is
 
    nul : constant char := char'First;
 
-   function To_C   (Item : Character) return char;
-   function To_Ada (Item : char)      return Character;
+   function To_C (Item : Character) return char;
+   function To_Ada (Item : char) return Character;
 
    type char_array is array (size_t range <>) of aliased char;
    for char_array'Component_Size use CHAR_BIT;
@@ -84,23 +90,17 @@ package Interfaces.C is
    function Is_Nul_Terminated (Item : char_array) return Boolean;
 
    function To_C
-     (Item       : String;
-      Append_Nul : Boolean := True) return char_array;
+     (Item : String; Append_Nul : Boolean := True) return char_array;
 
    function To_Ada
-     (Item     : char_array;
-      Trim_Nul : Boolean := True) return String;
+     (Item : char_array; Trim_Nul : Boolean := True) return String;
 
    procedure To_C
-     (Item       : String;
-      Target     : out char_array;
-      Count      : out size_t;
+     (Item       : String; Target : out char_array; Count : out size_t;
       Append_Nul : Boolean := True);
 
    procedure To_Ada
-     (Item     : char_array;
-      Target   : out String;
-      Count    : out Natural;
+     (Item     : char_array; Target : out String; Count : out Natural;
       Trim_Nul : Boolean := True);
 
    ------------------------------------
@@ -112,31 +112,25 @@ package Interfaces.C is
 
    wide_nul : constant wchar_t := wchar_t'First;
 
-   function To_C   (Item : Wide_Character) return wchar_t;
-   function To_Ada (Item : wchar_t)        return Wide_Character;
+   function To_C (Item : Wide_Character) return wchar_t;
+   function To_Ada (Item : wchar_t) return Wide_Character;
 
    type wchar_array is array (size_t range <>) of aliased wchar_t;
 
    function Is_Nul_Terminated (Item : wchar_array) return Boolean;
 
    function To_C
-     (Item       : Wide_String;
-      Append_Nul : Boolean := True) return wchar_array;
+     (Item : Wide_String; Append_Nul : Boolean := True) return wchar_array;
 
    function To_Ada
-     (Item     : wchar_array;
-      Trim_Nul : Boolean := True) return Wide_String;
+     (Item : wchar_array; Trim_Nul : Boolean := True) return Wide_String;
 
    procedure To_C
-     (Item       : Wide_String;
-      Target     : out wchar_array;
-      Count      : out size_t;
+     (Item       : Wide_String; Target : out wchar_array; Count : out size_t;
       Append_Nul : Boolean := True);
 
    procedure To_Ada
-     (Item     : wchar_array;
-      Target   : out Wide_String;
-      Count    : out Natural;
+     (Item     : wchar_array; Target : out Wide_String; Count : out Natural;
       Trim_Nul : Boolean := True);
 
    --  The remaining declarations are for Ada 2005 (AI-285)
@@ -162,26 +156,20 @@ package Interfaces.C is
    pragma Ada_05 (Is_Nul_Terminated);
 
    function To_C
-     (Item       : Wide_String;
-      Append_Nul : Boolean := True) return char16_array;
+     (Item : Wide_String; Append_Nul : Boolean := True) return char16_array;
    pragma Ada_05 (To_C);
 
    function To_Ada
-     (Item     : char16_array;
-      Trim_Nul : Boolean := True) return Wide_String;
+     (Item : char16_array; Trim_Nul : Boolean := True) return Wide_String;
    pragma Ada_05 (To_Ada);
 
    procedure To_C
-     (Item       : Wide_String;
-      Target     : out char16_array;
-      Count      : out size_t;
+     (Item       : Wide_String; Target : out char16_array; Count : out size_t;
       Append_Nul : Boolean := True);
    pragma Ada_05 (To_C);
 
    procedure To_Ada
-     (Item     : char16_array;
-      Target   : out Wide_String;
-      Count    : out Natural;
+     (Item     : char16_array; Target : out Wide_String; Count : out Natural;
       Trim_Nul : Boolean := True);
    pragma Ada_05 (To_Ada);
 
@@ -204,26 +192,21 @@ package Interfaces.C is
    pragma Ada_05 (Is_Nul_Terminated);
 
    function To_C
-     (Item       : Wide_Wide_String;
-      Append_Nul : Boolean := True) return char32_array;
+     (Item : Wide_Wide_String; Append_Nul : Boolean := True)
+      return char32_array;
    pragma Ada_05 (To_C);
 
    function To_Ada
-     (Item     : char32_array;
-      Trim_Nul : Boolean := True) return Wide_Wide_String;
+     (Item : char32_array; Trim_Nul : Boolean := True) return Wide_Wide_String;
    pragma Ada_05 (To_Ada);
 
    procedure To_C
-     (Item       : Wide_Wide_String;
-      Target     : out char32_array;
-      Count      : out size_t;
+     (Item : Wide_Wide_String; Target : out char32_array; Count : out size_t;
       Append_Nul : Boolean := True);
    pragma Ada_05 (To_C);
 
    procedure To_Ada
-     (Item     : char32_array;
-      Target   : out Wide_Wide_String;
-      Count    : out Natural;
+     (Item : char32_array; Target : out Wide_Wide_String; Count : out Natural;
       Trim_Nul : Boolean := True);
    pragma Ada_05 (To_Ada);
 

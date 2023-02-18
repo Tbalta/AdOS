@@ -34,6 +34,7 @@ package body Interfaces.C is
    pragma Suppress (Index_Check);
    pragma Suppress (Overflow_Check);
    pragma Suppress (All_Checks);
+   pragma Suppress (Range_Check);
 
    -----------------------
    -- Is_Nul_Terminated --

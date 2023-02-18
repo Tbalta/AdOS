@@ -62,6 +62,7 @@ begin
       SERIAL.send_line ("cmdline: " & str);
    end;
 
+   pic.init;
    -- PMM initialization
    declare
       entry_map_size  : constant Unsigned_64 :=
@@ -80,7 +81,6 @@ begin
       x86.pmm.Init (entry_map.all);
    end;
 
-   pic.init;
 
    Atapi.discoverAtapiDevices;
    read := Atapi.read_block (16#10#, Atapi.sector_data'Access);

@@ -24,7 +24,7 @@
     serial_read(COM2, __FILE__buffer, 1); \
   }
 
-#define PANIC(fmt, ...) \
+#define LOG_PANIC(fmt, ...) \
   while (1)             \
   LOG(fmt, __VA_ARGS__)
 #endif

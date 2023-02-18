@@ -15,6 +15,7 @@ project Default is
         "-fno-omit-frame-pointer",
         "-ggdb",
         "-g",
+        "-gnata",
         -- "-gnat2012",
         -- "-gnatwadehl",
         -- "-gnatVa",
