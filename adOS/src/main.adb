@@ -27,8 +27,10 @@ is
    pragma Suppress (Index_Check);
    pragma Suppress (Overflow_Check);
    pragma Suppress (All_Checks);
-   --  procedure discover_atapi_drive;
-   --  pragma Import (C, discover_atapi_drive, "discover_atapi_drive");
+   procedure discover_atapi_drive;
+   pragma Import (C, discover_atapi_drive, "discover_atapi_drive");
+   procedure print_mmap (s : System.Address);
+   pragma Import (C, print_mmap, "print_mmap");
    read : Integer;
 begin
 
@@ -66,10 +68,15 @@ begin
         Unsigned_64 (info.all.mmap_length);
       entry_map_count : constant Unsigned_64 :=
         entry_map_size / (multiboot_mmap_entry'Size / 8);
-      subtype multiboot_mmap_array is multiboot_mmap (1 .. Integer (entry_map_count));
-      package Conversion is new System.Address_To_Access_Conversions (multiboot_mmap_array);
-      entry_map : access multiboot_mmap_array := (Conversion.To_Pointer (To_Address (Integer_Address (info.all.mmap_addr))));
+      subtype multiboot_mmap_array is
+        multiboot_mmap (1 .. Integer (entry_map_count));
+      package Conversion is new System.Address_To_Access_Conversions
+        (multiboot_mmap_array);
+      entry_map : access multiboot_mmap_array :=
+        (Conversion.To_Pointer
+           (To_Address (Integer_Address (info.all.mmap_addr))));
    begin
+      print_mmap (info.all'Address);
       x86.pmm.Init (entry_map.all);
    end;
 
@@ -89,7 +96,7 @@ begin
       SERIAL.send_line ("");
    end;
 
-   --  discover_atapi_drive;
+   discover_atapi_drive;
    System.Machine_Code.Asm (Template => "sti", Volatile => True);
    SERIAL.send_line ("trac");
    SERIAL.send_line ("plouf");

@@ -3,6 +3,8 @@ project Default is
     for Object_Dir   use  "obj";
     for Create_Missing_Dirs use "True";
 
+    for Languages use ("Ada", "C");
+
 
     package Compiler is
       for Default_Switches ("Ada") use (
@@ -17,6 +19,19 @@ project Default is
         -- "-gnatwadehl",
         -- "-gnatVa",
         "-gnatwM"
+      );
+
+      for Default_Switches ("C") use (
+        "-m32",
+        "-O0",
+        "-ffreestanding",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-fno-omit-frame-pointer",
+        "-ggdb",
+        "-g",
+        "-nostdlib",
+        "-Iruntime/libc/include"
       );
 
       for Default_Switches ("Asm_Cpp") use (

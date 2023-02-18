@@ -28,4 +28,5 @@ SECTIONS
 		. += KERNEL_SEC_STACK_SIZE;
 		kernel_stack_top = .;
   }
+  kernel_end = .;
 }
