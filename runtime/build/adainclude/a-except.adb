@@ -64,31 +64,6 @@ package body Ada.Exceptions is
    --  we are in big trouble. If an exceptional situation does occur, better
    --  that it not be raised, since raising it can cause confusing chaos.
 
-   --  Return start and end of procedures in this package
-   --
-   --  These procedures are used to provide exclusion bounds in
-   --  calls to Call_Chain at exception raise points from this unit. The
-   --  purpose is to arrange for the exception tracebacks not to include
-   --  frames from subprograms involved in the raise process, as these are
-   --  meaningless from the user's standpoint.
-   --
-   --  For these bounds to be meaningful, we need to ensure that the object
-   --  code for the subprograms involved in processing a raise is located
-   --  after the object code Code_Address_For_AAA and before the object
-   --  code Code_Address_For_ZZZ. This will indeed be the case as long as
-   --  the following rules are respected:
-   --
-   --  1) The bodies of the subprograms involved in processing a raise
-   --     are located after the body of Code_Address_For_AAA and before the
-   --     body of Code_Address_For_ZZZ.
-   --
-   --  2) No pragma Inline applies to any of these subprograms, as this
-   --     could delay the corresponding assembly output until the end of
-   --     the unit.
-
-   --  Store up to Max_Tracebacks in Excep, corresponding to the current
-   --  call chain.
-
    function Image (Index : Integer) return String;
    --  Return string image corresponding to Index
 
@@ -116,9 +91,9 @@ package body Ada.Exceptions is
      (File   : System.Address;
       Line   : Integer;
       Column : Integer;
-      Msg    : System.Address);
-   pragma Export
-     (C, Raise_Constraint_Error_Msg, "__gnat_raise_constraint_error_msg");
+      Msg    : String);
+   --  pragma Export
+   --    (C, Raise_Constraint_Error_Msg, "__gnat_raise_constraint_error_msg");
    --  pragma No_Return (Raise_Constraint_Error_Msg);
 
    procedure Raise_With_Location_And_Msg
@@ -146,7 +121,7 @@ package body Ada.Exceptions is
    procedure Raise_Program_Error_Msg
      (File : System.Address;
       Line : Integer;
-      Msg  : System.Address);
+      Msg  : String);
    pragma No_Return (Raise_Program_Error_Msg);
    pragma Export
      (C, Raise_Program_Error_Msg, "__gnat_raise_program_error_msg");
@@ -160,7 +135,7 @@ package body Ada.Exceptions is
    procedure Raise_Storage_Error_Msg
      (File : System.Address;
       Line : Integer;
-      Msg  : System.Address);
+      Msg  : String);
    pragma No_Return (Raise_Storage_Error_Msg);
    pragma Export
      (C, Raise_Storage_Error_Msg, "__gnat_raise_storage_error_msg");
@@ -632,12 +607,17 @@ package body Ada.Exceptions is
      (File   : System.Address;
       Line   : Integer;
       Column : Integer;
-      Msg    : System.Address)
+      Msg    : String)
    is
+      Error : String := Msg & " at " &
+         To_Integer (File)'Image & ":" & Line'Image &
+         ":" & Image (Column);
    begin
+      --  Msg_C'Address := Msg;
       --  Raise_With_Location_And_Msg
       --    (Constraint_Error_Def'Access, File, Line, Column, Msg);
-      Raise_Exception (0, "Constaint_Error");
+      --  Raise_Exception (0, "Constaint_Error");
+      PANIC (To_C (Error));
    end Raise_Constraint_Error_Msg;
 
    ---------------------
@@ -736,7 +716,7 @@ package body Ada.Exceptions is
       Line : Integer)
    is
    begin
-      PANIC (To_C ("Raise_Program_Error not implemented"));
+      Raise_Exception (0, "Program_Error");
    end Raise_Program_Error;
 
    -----------------------------
@@ -746,7 +726,7 @@ package body Ada.Exceptions is
    procedure Raise_Program_Error_Msg
      (File : System.Address;
       Line : Integer;
-      Msg  : System.Address)
+      Msg  : String)
    is
    begin
       --  Raise_With_Location_And_Msg (File, Line, M => Msg);
@@ -773,7 +753,7 @@ package body Ada.Exceptions is
    procedure Raise_Storage_Error_Msg
      (File : System.Address;
       Line : Integer;
-      Msg  : System.Address)
+      Msg  : String)
    is
    begin
       Raise_Exception (0, "Storage_Error");
@@ -821,282 +801,270 @@ package body Ada.Exceptions is
    -----------------------------------------
    -- Calls to Run-Time Check Subprograms --
    -----------------------------------------
-   procedure Raise_Constraint_Error_Msg
-     (File : System.Address; Line : Integer; Code : Integer;
-      Msg  : String) is
-      procedure PANIC (msg : char_array);
-      pragma Import (C, PANIC, "PANIC");
-      pragma No_Return (PANIC);
-      error_Message : String := "[Constraint_Error](" &
-         System.Storage_Elements.To_Integer (File)'Image & ") " & Msg;
-   begin
-      PANIC (To_C (error_Message));
-   end Raise_Constraint_Error_Msg;
-
    procedure Rcheck_CE_Access_Check
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_00'Address);
+      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_00);
    end Rcheck_CE_Access_Check;
 
    procedure Rcheck_CE_Null_Access_Parameter
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_01'Address);
+      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_01);
    end Rcheck_CE_Null_Access_Parameter;
 
    procedure Rcheck_CE_Discriminant_Check
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_02'Address);
+      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_02);
    end Rcheck_CE_Discriminant_Check;
 
    procedure Rcheck_CE_Divide_By_Zero
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_03'Address);
+      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_03);
    end Rcheck_CE_Divide_By_Zero;
 
    procedure Rcheck_CE_Explicit_Raise
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_04'Address);
+      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_04);
    end Rcheck_CE_Explicit_Raise;
 
    procedure Rcheck_CE_Index_Check
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_05'Address);
+      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_05);
    end Rcheck_CE_Index_Check;
 
    procedure Rcheck_CE_Invalid_Data
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_06'Address);
+      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_06);
    end Rcheck_CE_Invalid_Data;
 
    procedure Rcheck_CE_Length_Check
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_07'Address);
+      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_07);
    end Rcheck_CE_Length_Check;
 
    procedure Rcheck_CE_Null_Exception_Id
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_08'Address);
+      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_08);
    end Rcheck_CE_Null_Exception_Id;
 
    procedure Rcheck_CE_Null_Not_Allowed
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_09'Address);
+      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_09);
    end Rcheck_CE_Null_Not_Allowed;
 
    procedure Rcheck_CE_Overflow_Check
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_10'Address);
+      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_10);
    end Rcheck_CE_Overflow_Check;
 
    procedure Rcheck_CE_Partition_Check
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_11'Address);
+      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_11);
    end Rcheck_CE_Partition_Check;
 
    procedure Rcheck_CE_Range_Check
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_12'Address);
+      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_12);
    end Rcheck_CE_Range_Check;
 
    procedure Rcheck_CE_Tag_Check
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_13'Address);
+      Raise_Constraint_Error_Msg (File, Line, 0, Rmsg_13);
    end Rcheck_CE_Tag_Check;
 
    procedure Rcheck_PE_Access_Before_Elaboration
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_14'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_14);
    end Rcheck_PE_Access_Before_Elaboration;
 
    procedure Rcheck_PE_Accessibility_Check
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_15'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_15);
    end Rcheck_PE_Accessibility_Check;
 
    procedure Rcheck_PE_Address_Of_Intrinsic
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_16'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_16);
    end Rcheck_PE_Address_Of_Intrinsic;
 
    procedure Rcheck_PE_Aliased_Parameters
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_17'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_17);
    end Rcheck_PE_Aliased_Parameters;
 
    procedure Rcheck_PE_All_Guards_Closed
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_18'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_18);
    end Rcheck_PE_All_Guards_Closed;
 
    procedure Rcheck_PE_Bad_Predicated_Generic_Type
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_19'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_19);
    end Rcheck_PE_Bad_Predicated_Generic_Type;
 
    procedure Rcheck_PE_Build_In_Place_Mismatch
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_37'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_37);
    end Rcheck_PE_Build_In_Place_Mismatch;
 
    procedure Rcheck_PE_Current_Task_In_Entry_Body
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_20'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_20);
    end Rcheck_PE_Current_Task_In_Entry_Body;
 
    procedure Rcheck_PE_Duplicated_Entry_Address
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_21'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_21);
    end Rcheck_PE_Duplicated_Entry_Address;
 
    procedure Rcheck_PE_Explicit_Raise
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_22'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_22);
    end Rcheck_PE_Explicit_Raise;
 
    procedure Rcheck_PE_Implicit_Return
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_24'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_24);
    end Rcheck_PE_Implicit_Return;
 
    procedure Rcheck_PE_Misaligned_Address_Value
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_25'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_25);
    end Rcheck_PE_Misaligned_Address_Value;
 
    procedure Rcheck_PE_Missing_Return
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_26'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_26);
    end Rcheck_PE_Missing_Return;
 
    procedure Rcheck_PE_Non_Transportable_Actual
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_31'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_31);
    end Rcheck_PE_Non_Transportable_Actual;
 
    procedure Rcheck_PE_Overlaid_Controlled_Object
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_27'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_27);
    end Rcheck_PE_Overlaid_Controlled_Object;
 
    procedure Rcheck_PE_Potentially_Blocking_Operation
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_28'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_28);
    end Rcheck_PE_Potentially_Blocking_Operation;
 
    procedure Rcheck_PE_Stream_Operation_Not_Allowed
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_36'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_36);
    end Rcheck_PE_Stream_Operation_Not_Allowed;
 
    procedure Rcheck_PE_Stubbed_Subprogram_Called
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_29'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_29);
    end Rcheck_PE_Stubbed_Subprogram_Called;
 
    procedure Rcheck_PE_Unchecked_Union_Restriction
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Program_Error_Msg (File, Line, Rmsg_30'Address);
+      Raise_Program_Error_Msg (File, Line, Rmsg_30);
    end Rcheck_PE_Unchecked_Union_Restriction;
 
    procedure Rcheck_SE_Empty_Storage_Pool
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Storage_Error_Msg (File, Line, Rmsg_32'Address);
+      Raise_Storage_Error_Msg (File, Line, Rmsg_32);
    end Rcheck_SE_Empty_Storage_Pool;
 
    procedure Rcheck_SE_Explicit_Raise
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Storage_Error_Msg (File, Line, Rmsg_33'Address);
+      Raise_Storage_Error_Msg (File, Line, Rmsg_33);
    end Rcheck_SE_Explicit_Raise;
 
    procedure Rcheck_SE_Infinite_Recursion
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Storage_Error_Msg (File, Line, Rmsg_34'Address);
+      Raise_Storage_Error_Msg (File, Line, Rmsg_34);
    end Rcheck_SE_Infinite_Recursion;
 
    procedure Rcheck_SE_Object_Too_Large
      (File : System.Address; Line : Integer)
    is
    begin
-      Raise_Storage_Error_Msg (File, Line, Rmsg_35'Address);
+      Raise_Storage_Error_Msg (File, Line, Rmsg_35);
    end Rcheck_SE_Object_Too_Large;
 
    procedure Rcheck_CE_Access_Check_Ext
      (File : System.Address; Line, Column : Integer)
    is
    begin
-      Raise_Constraint_Error_Msg (File, Line, Column, Rmsg_00'Address);
+      Raise_Constraint_Error_Msg (File, Line, Column, Rmsg_00);
    end Rcheck_CE_Access_Check_Ext;
 
    procedure Rcheck_CE_Index_Check_Ext
@@ -1105,9 +1073,9 @@ package body Ada.Exceptions is
       Msg : constant String :=
               Rmsg_05 (Rmsg_05'First .. Rmsg_05'Last - 1) & ASCII.LF
               & "index " & Image (Index) & " not in " & Image (First)
-              & ".." & Image (Last) & ASCII.NUL;
+              & ".." & Image (Last);
    begin
-      Raise_Constraint_Error_Msg (File, Line, Column, Msg'Address);
+      Raise_Constraint_Error_Msg (File, Line, Column, Msg);
    end Rcheck_CE_Index_Check_Ext;
 
    procedure Rcheck_CE_Invalid_Data_Ext
@@ -1116,9 +1084,9 @@ package body Ada.Exceptions is
       Msg : constant String :=
               Rmsg_06 (Rmsg_06'First .. Rmsg_06'Last - 1) & ASCII.LF
               & "value " & Image (Index) & " not in " & Image (First)
-              & ".." & Image (Last) & ASCII.NUL;
+              & ".." & Image (Last);
    begin
-      Raise_Constraint_Error_Msg (File, Line, Column, Msg'Address);
+      Raise_Constraint_Error_Msg (File, Line, Column, Msg);
    end Rcheck_CE_Invalid_Data_Ext;
 
    procedure Rcheck_CE_Range_Check_Ext
@@ -1127,9 +1095,9 @@ package body Ada.Exceptions is
       Msg : constant String :=
               Rmsg_12 (Rmsg_12'First .. Rmsg_12'Last - 1) & ASCII.LF
               & "value " & Image (Index) & " not in " & Image (First)
-              & ".." & Image (Last) & ASCII.NUL;
+              & ".." & Image (Last);
    begin
-      Raise_Constraint_Error_Msg (File, Line, Column, Msg'Address);
+      Raise_Constraint_Error_Msg (File, Line, Column, Msg);
    end Rcheck_CE_Range_Check_Ext;
 
    procedure Rcheck_PE_Finalize_Raised_Exception

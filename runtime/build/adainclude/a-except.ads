@@ -79,10 +79,6 @@ package Ada.Exceptions is
    pragma Import (C, PANIC, "PANIC");
    pragma No_Return (PANIC);
 
-   procedure Raise_Constraint_Error_Msg
-     (File : System.Address; Line : Integer; Code : Integer; Msg : String);
-   pragma No_Return (Raise_Constraint_Error_Msg);
-
    --  Note: In accordance with AI-466, CE is raised if E = Null_Id
 
    function Exception_Message (X : Exception_Occurrence) return String;
