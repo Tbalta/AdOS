@@ -79,6 +79,7 @@ begin
    begin
       print_mmap (info.all'Address);
       x86.pmm.Init (entry_map.all);
+      SERIAL.send_line ("Next free page: " & x86.pmm.Offset_To_Address (x86.pmm.Get_Next_Free_Page)'Image);
    end;
 
 

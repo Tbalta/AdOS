@@ -64,13 +64,13 @@ package System is
 
    --  Storage-related Declarations
 
-   type Address is private;
-   pragma Preelaborable_Initialization (Address);
+   Memory_Size  : constant := 2 ** Long_Integer'Size;
+   type Address is mod Memory_Size;
+   --  pragma Preelaborable_Initialization (Address);
    Null_Address : constant Address;
 
    Storage_Unit : constant := 8;
    Word_Size    : constant := Standard'Word_Size;
-   Memory_Size  : constant := 2 ** Long_Integer'Size;
 
    --  Address comparison
 
@@ -113,7 +113,6 @@ package System is
 
 private
    Run_Time_Name : constant String := "Bare Bones Run Time";
-   type Address is mod Memory_Size;
    Null_Address : constant Address := 0;
 
    --------------------------------------
