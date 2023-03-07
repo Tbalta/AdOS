@@ -31,9 +31,6 @@ package x86.pmm is
 
   procedure Init (MB : multiboot_mmap);
 
-  --   subtype Aligned_Address is System.Address with
-  --       Dynamic_Predicate => (To_Integer (Aligned_Address) mod Integer_Address (PMM_PAGE_SIZE) = 0);
-
   type PMM_Header_Info is record
     Bitmap_Length : Positive;
     Header_Count  : Positive;
@@ -76,6 +73,18 @@ package x86.pmm is
 
   function Get_Next_Free_Page return Natural;
 
+  function Allocate_Page return System.Address with
+   Post =>
+    check
+     (Get_Next_Free_Page > Address_To_Offset (Allocate_Page'Result),
+      "Allocate_Page: Free page available but not returned");
+
+  procedure Free_Page (addr : System.Address) with
+   Post =>
+    check
+     (Get_Next_Free_Page <= Address_To_Offset (addr),
+      "Free_Page: Page not freed");
+
   generic
     PMM_Address : System.Address;
   package PMM_Utils is
@@ -83,10 +92,9 @@ package x86.pmm is
      PMM_Header_Conv.To_Pointer (PMM_Address);
 
     subtype PMM_Headers is PMM_Headers_Array (1 .. PMM_Info.Header_Count);
-    type PMM_Bitmap is array (0 .. (PMM_Info.Bitmap_Length - 1)) of PMM_Bitmap_Entry
-     with
-      Convention => C,
-      Pack => True;
+    type PMM_Bitmap is
+     array (0 .. (PMM_Info.Bitmap_Length - 1)) of PMM_Bitmap_Entry with
+     Convention => C, Pack => True;
     package PMM_Header_Conv is new System.Address_To_Access_Conversions
      (PMM_Headers);
     package PMM_Bitmap_Conv is new System.Address_To_Access_Conversions

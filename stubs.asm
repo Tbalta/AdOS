@@ -59,12 +59,6 @@ isr_err    30
 isr_no_err 31
 isr_no_err 32
 
-
-
-global __gnat_rcheck_CE_Invalid_Data
-__gnat_rcheck_CE_Invalid_Data:
-    ret
-
 section .rodata
 global x86_handler_vector
 x86_handler_vector:

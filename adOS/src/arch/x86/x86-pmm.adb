@@ -67,6 +67,30 @@ package body x86.pmm is
         return -1;
     end Get_Next_Free_Page;
 
+    function Allocate_Page return System.Address is
+        package Util is new PMM_Utils (PMM_Header_Address);
+        use Util;
+        Offset : Natural := Get_Next_Free_Page;
+    begin
+        if Offset = -1 then
+            return System.Address (0);
+        end if;
+        Util.Bitmap (Offset) := PMM_Bitmap_Entry_Used;
+        return Offset_To_Address (Offset);
+    end Allocate_Page;
+
+    procedure Free_Page (addr : System.Address) is
+        package Util is new PMM_Utils (PMM_Header_Address);
+        use Util;
+        Offset : Natural := Address_To_Offset (addr);
+
+    begin
+        if Offset = -1 then
+            return;
+        end if;
+        Util.Bitmap (Offset) := PMM_Bitmap_Entry_Free;
+    end Free_Page;
+
     --  pragma Suppress (All_Checks);
     procedure Init (MB : multiboot_mmap) is
         package ASA is new Aligned_System_Address (PMM_PAGE_SIZE);

@@ -7,7 +7,7 @@ package Aligned_System_Address is
 
     subtype Aligned_Address is System.Address with
           Dynamic_Predicate =>
-           (To_Integer (Aligned_Address) mod Integer_Address (Alignment) = 0);
+           ((To_Integer (System.Address'(Aligned_Address)) mod Integer_Address (Alignment)) = 0);
     function Align (Address : System.Address) return Aligned_Address is
         (Aligned_Address ((Positive (To_Integer (Address)) + Alignment - 1) / Alignment * Alignment));
 
