@@ -129,13 +129,13 @@ package body Atapi is
       wait_packet_request (currentController);
       for i in to_send'Range loop
          Outw (getReg (currentController, ATA_REG_DATA), to_send (i));
-         SERIAL.send_line ("Sent " & to_send (i)'Image);
+         --  SERIAL.send_line ("Sent " & to_send (i)'Image);
       end loop;
-      SERIAL.send_line ("Sent packet");
-      SERIAL.send_line ("Controller " & currentController'Image);
-      SERIAL.send_line
-        ("port " &
-         Unsigned_16 (ATA_CONTROLLER'Enum_Rep (currentController))'Image);
+      --  SERIAL.send_line ("Sent packet");
+      --  SERIAL.send_line ("Controller " & currentController'Image);
+      --  SERIAL.send_line
+      --    ("port " &
+      --     Unsigned_16 (ATA_CONTROLLER'Enum_Rep (currentController))'Image);
       while Inb (getReg (currentController, ATA_REG_SECTOR_COUNT)) /=
         PACKET_DATA_TRANSMIT
       loop
@@ -159,12 +159,12 @@ package body Atapi is
       function toWordPtr is new Ada.Unchecked_Conversion
         (Source => SECTOR_BUFFER_PTR, Target => SECTOR_BUFFER_WORD_PTR);
       buffer_word : SECTOR_BUFFER_WORD_PTR := toWordPtr (buffer);
-      size_read   : Integer            := 0;
+      size_read   : Integer                := 0;
 
    begin
-      SERIAL.send_line ("Sending packet");
+      --  SERIAL.send_line ("Sending packet");
       send_packet (packet);
-      SERIAL.send_line ("Reading block");
+      --  SERIAL.send_line ("Reading block");
       declare
          size_hi : Unsigned_16 :=
            Unsigned_16 (Inb (getReg (currentController, ATA_REG_LBA_HI)));

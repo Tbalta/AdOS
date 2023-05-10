@@ -142,15 +142,15 @@ package body System.Secondary_Stack is
    -- Get_Sec_Stack --
    -------------------
    function Get_Sec_Stack return SS_Stack_Ptr is
-      kernel_stack_top : Interfaces.Unsigned_32;
+      kernel_sec_stack_bottom : Interfaces.Unsigned_32;
       pragma Import
-        (Convention    => C, Entity => kernel_stack_top,
-         External_Name => "kernel_stack_top");
+        (Convention    => C, Entity => kernel_sec_stack_bottom,
+         External_Name => "kernel_sec_stack_bottom");
    begin
       return
         SS_Stack_Ptr
           (SS_Stack_Ptr_Conv.To_Pointer
-             (To_Address (Integer_Address (kernel_stack_top))));
+             (kernel_sec_stack_bottom'Address));
    end Get_Sec_Stack;
 
    -----------------------
@@ -425,10 +425,7 @@ package body System.Secondary_Stack is
       --  alignment to ensure efficient access.
 
       Mem_Size := Round_Up (Storage_Size);
-
-      if not Sec_Stack_Dynamic then
-         Allocate_Static (Stack, Mem_Size, Addr);
-      end if;
+      Allocate_Static (Stack, Mem_Size, Addr);
    end SS_Allocate;
 
    -------------
@@ -536,11 +533,36 @@ package body System.Secondary_Stack is
    procedure SS_Init
      (Stack : in out SS_Stack_Ptr; Size : Size_Type := Unspecified_Size)
    is
+
+   --  Local variables
+
       known_stack : constant SS_Stack_Ptr := Get_Sec_Stack;
+   --  Start of processing for SS_Init
+
    begin
       if Size = Unspecified_Size then
          Stack := known_stack;
       end if;
+      --  The static chunk becomes the chunk indicated by the stack pointer.
+      --  Note that the stack may still hold dynamic chunks, which in turn may
+      --  be reused or freed.
+
+      Stack.Top.Chunk := Stack.Static_Chunk'Access;
+
+      --  The first free byte is the first free byte of the chunk indicated by
+      --  the stack pointer.
+
+      Stack.Top.Byte := Stack.Top.Chunk.Memory'First;
+
+      --  Since the chunk indicated by the stack pointer is also the first
+      --  chunk in the stack, there are no prior chunks, therefore the size
+      --  of the stack up to the chunk is zero.
+
+      Stack.Top.Chunk.Size_Up_To_Chunk := 0;
+
+      --  Reset the high water mark to account for brand new allocations
+
+      Stack.High_Water_Mark := 0;
 
    end SS_Init;
 

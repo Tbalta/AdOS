@@ -1,6 +1,4 @@
-
 KERNEL_SEC_STACK_SIZE = 0x1000;
-
 ENTRY (loader)
 SECTIONS
 {
@@ -24,9 +22,9 @@ SECTIONS
     ebss = .;
 
     . = ALIGN (4K);
-		kernel_stack_bottom = .;
-		. += KERNEL_SEC_STACK_SIZE;
-		kernel_stack_top = .;
+    kernel_sec_stack_bottom = .;
+    . += KERNEL_SEC_STACK_SIZE;
+    kernel_sec_stack_top = .;
   }
   kernel_end = .;
 }

@@ -12,6 +12,7 @@ with System.Address_To_Access_Conversions;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
 with MultiBoot;               use MultiBoot;
+with ISO;
 --  with Interfaces; use Interfaces;
 procedure Main
   (magic : Interfaces.Unsigned_32; info : access MultiBoot.multiboot_info)
@@ -79,22 +80,42 @@ begin
    begin
       print_mmap (info.all'Address);
       x86.pmm.Init (entry_map.all);
-      SERIAL.send_line ("Next free page: " & x86.pmm.Offset_To_Address (x86.pmm.Get_Next_Free_Page)'Image);
+      SERIAL.send_line
+        ("Next free page: " &
+         x86.pmm.Offset_To_Address (x86.pmm.Get_Next_Free_Page)'Image);
    end;
 
+   SERIAL.send_line ("Atapi setup");
 
    Atapi.discoverAtapiDevices;
-   read := Atapi.read_block (16#10#, Atapi.sector_data'Access);
+   --  read := Atapi.read_block (16#10#, Atapi.sector_data'Access);
    declare
+      subtype Index is  Positive range 1 .. 2048;
+      use Atapi;
+      function Read_Block (Lba : Integer) return System.Address is
+         read : Integer;
+      begin
+         read := Atapi.read_block (Unsigned_32 (Lba), Atapi.sector_data'Access);
+         SERIAL.send_line (Atapi.sector_data (2)'Image);
+         SERIAL.send_line (Atapi.sector_data (3)'Image);
+         SERIAL.send_line (Atapi.sector_data (4)'Image);
+         SERIAL.send_line (Atapi.sector_data (5)'Image);
+         SERIAL.send_line (Atapi.sector_data (6)'Image);
+         return Atapi.sector_data'Address;
+      end Read_Block;
+      package MYISO is new ISO
+        (Read_Block => Read_Block,
+        BLOCK_SIZE => Positive (Atapi.CD_BLOCK_SIZE));
       type Identifier_Type is new String (1 .. 6);
       Identifier : Identifier_Type;
    begin
-      for i in 1 .. 6 loop
-         Identifier (i) := Character'Val (Atapi.sector_data (i));
-      end loop;
-      SERIAL.send_line ("Identifier: ");
-      SERIAL.send_line (String (Identifier));
-      SERIAL.send_line ("");
+      MYISO.init;
+      --  for i in 1 .. 6 loop
+      --     Identifier (i) := Character'Val (Atapi.sector_data (i));
+      --  end loop;
+      --  SERIAL.send_line ("Identifier: ");
+      --  SERIAL.send_line (String (Identifier));
+      --  SERIAL.send_line ("");
    end;
 
    discover_atapi_drive;

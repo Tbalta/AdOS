@@ -16,13 +16,13 @@ library project Runtime is
      "C"
    );
  
-   package Builder is
+   package Archive_Builder is
       for Global_Configuration_Pragmas use "runtime.adc";
       for Switches ("Ada") use (
         "-nostdlib",
         "-nostdinc"
       );
-   end Builder;
+   end Archive_Builder;
  
    --  For a list of all compiler switches refer to: https://gcc.gnu.org/onlinedocs/gcc-9.2.0/gnat_ugn/Alphabetical-List-of-All-Switches.html#Alphabetical-List-of-All-Switches
    package Compiler is
@@ -46,7 +46,8 @@ library project Runtime is
         --  Instructs GNAT to remove dead code from the runtime library.
         --  Requires the use of the '-ffunction-sections' and
         --  '-fdata-sections' directives as detailed above.
-        "-Wl,--gc-sections"
+        "-Wl,--gc-sections",
+        "-g"
       );
    end Compiler;
  

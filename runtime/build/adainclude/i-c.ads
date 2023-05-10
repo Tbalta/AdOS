@@ -18,10 +18,10 @@ with System.Parameters;
 package Interfaces.C is
    pragma Pure;
 
-   pragma Suppress (Index_Check);
-   pragma Suppress (Overflow_Check);
-   pragma Suppress (All_Checks);
-   pragma Suppress (Range_Check);
+  --   pragma Suppress (Index_Check);
+  --   pragma Suppress (Overflow_Check);
+  --   pragma Suppress (All_Checks);
+  --   pragma Suppress (Range_Check);
 
    --  Declaration's based on C's <limits.h>
 
