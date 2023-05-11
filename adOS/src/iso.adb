@@ -37,19 +37,12 @@ package body ISO is
     begin
         --  SERIAL.send_line
         --     ("Identifier address: " & Integer (init_buffer'Address)'Image);
-        To_Ada (primary_descriptor.vol_id, Identifier, Count, False);
         SERIAL.send_line
            ("[iso.adb:38]Identifier (should be CD001)" &
             To_Ada (primary_descriptor.vol_id, False));
-        SERIAL.send_line (To_Ada (primary_descriptor.vol_id (0))'Image);
-        SERIAL.send_line (To_Ada (primary_descriptor.vol_id (1))'Image);
-        SERIAL.send_line (To_Ada (primary_descriptor.vol_id (2))'Image);
-        SERIAL.send_line (To_Ada (primary_descriptor.vol_id (3))'Image);
-        SERIAL.send_line (To_Ada (primary_descriptor.vol_id (4))'Image);
-
         --  SERIAL.send_line ("size: " & Integer (iso_dir'Size)'Image);
-        --  root_lba     := primary_descriptor.root_dir.data_blk.le;
-        --  root_dirsize := primary_descriptor.root_dir.file_size.le;
+        root_lba     := primary_descriptor.root_dir.data_blk.le;
+        root_dirsize := primary_descriptor.root_dir.file_size.le;
         --  SERIAL.send_line (primary_descriptor.root_dir.file_size.le'Image);
 
         --  SERIAL.send_line (primary_descriptor.root_dir.dir_size'Image);
@@ -76,17 +69,23 @@ package body ISO is
             while current_file.dir_size /= 0 loop
                 declare
                     subtype current_file_name is
-                       char_array (0 .. size_t (42 - 1));
+                       char_array (0 .. size_t (current_file.idf_len) - 1);
                     file_name : current_file_name;
-                    --  for file_name'Address use current_file.idf'Address;
+                    for file_name'Address use current_file.idf'Address;
                 begin
-                    --  SERIAL.send_line ("File: " & To_Ada (file_name, False));
-                    null;
+                    SERIAL.send_line ("File: " & To_Ada (file_name, False));
+                    current_file :=
+                       To_Pointer
+                          (To_Address (current_file) +
+                           Storage_Offset (current_file.dir_size));
+                    --  dir_size     := dir_size - Integer (current_file.dir_size);
                 end;
             end loop;
             dir_size    := dir_size - BLOCK_SIZE;
             lba         := lba + 1;
             file_buffer := Read_Block (Integer (lba));
+            current_file := iso_dir_ptr (To_Pointer (file_buffer));
+
         end loop;
 
     end list_file;

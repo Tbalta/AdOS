@@ -25,13 +25,13 @@ main.elf: makeall entry.o gdt.o idt.o stubs.o
 	nasm -f elf32 '$<' -o "$(OBJ)/$@" -g 
 
 main.o: main.adb
-	gcc -c -m32 -Os -o '$@' -Wall -Wextra '$<' -m32 -L. -lk
+	gcc -g -c -m32 -Os -o '$@' -Wall -Wextra '$<' -m32 -L. -lk
 
 
 %.o: %.adb
-	gcc -c -m32 -Os -o '$@' -Wall -Wextra '$<'  -L. -lk
+	gcc -g -c -m32 -Os -o '$@' -Wall -Wextra '$<'  -L. -lk
 %.o: arch/%.adb
-	gcc -c -m32 -Os -o '$@' -Wall -Wextra '$<'  -L. -lk
+	gcc -g -c -m32 -Os -o '$@' -Wall -Wextra '$<'  -L. -lk
 
 
 # %.o: %.c
@@ -43,7 +43,10 @@ clean:
 	$(RM) -r runtime/build/adalib
 
 run: main.iso
-	"/mnt/c/program files/qemu/qemu-system-i386.exe" -cdrom '$<' $(qemu_param)
+	qemu-system-i386 -cdrom '$<' $(qemu_param)
+
+debug: main.iso
+	qemu-system-i386 -cdrom '$<' $(qemu_param) -s -S
 
 format:
 	gnatpp $(wildcard adOS/**/*.adb) $(wildcard adOS/**/*.ads) -rnb
