@@ -165,34 +165,71 @@ package body ISO is
         return read_size;
     end read;
 
+    -------------------
+    -- ISO 9660 Seek --
+    -------------------
     function seek
        (fd : File_Descriptor; offset : off_t; wh : whence) return off_t
     is
+        f_offset : Natural renames File_Descriptors (fd).offset;
+        f_size   : Natural renames File_Descriptors (fd).size;
+        f_used   : Boolean renames File_Descriptors (fd).used;
     begin
-        return 0;
+        if (not f_used) then
+            return -1;
+        end if;
+        case wh is
+            when SEEK_SET =>
+                if offset < 0 then
+                    return -1;
+                end if;
+                f_offset := Natural (offset);
+            when SEEK_CUR =>
+                if (off_t (f_offset) + offset) < 0 then
+                    return -1;
+                end if;
+                f_offset := f_offset + Natural (offset);
+            when SEEK_END =>
+                if (off_t (f_size) + offset) < 0 then
+                    return -1;
+                end if;
+                f_offset := f_size + Natural (offset);
+        end case;
+        return off_t (f_offset);
     end seek;
 
+    --------------------
+    -- ISO 9660 Close --
+    --------------------
     function close (fd : File_Descriptor) return Integer is
+        f_used : Boolean renames File_Descriptors (fd).used;
     begin
+        if (not f_used) then
+            return -1;
+        end if;
+        File_Descriptors (fd).used := False;
         return 0;
     end close;
 
+    -------------------
+    -- ISO 9660 Init --
+    -------------------
     procedure init is
         use ISO_PRIM_DESC_CONVERTER;
         init_buffer        : System.Address       := Read_Block (16#10#);
         primary_descriptor : iso_prim_voldesc_ptr := To_Pointer (init_buffer);
         Count              : Natural              := 0;
     begin
-        --  SERIAL.send_line
-        --     ("Identifier address: " & Integer (init_buffer'Address)'Image);
         SERIAL.send_line
            ("[iso.adb:38]Identifier (should be CD001)" &
             To_Ada (primary_descriptor.vol_id, False));
         root_lba     := Natural (primary_descriptor.root_dir.data_blk.le);
         root_dirsize := Natural (primary_descriptor.root_dir.file_size.le);
-        --  list_file (root_lba, root_dirsize);
     end init;
 
+    ------------------------
+    -- ISO 9660 List_File --
+    ------------------------
     procedure list_file (dir_lba, dir_size_param : in Natural) is
         file_buffer : System.Address := Read_Block (dir_lba);
         use ISO_FILE_DESC_CONVERTER;
