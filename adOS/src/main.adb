@@ -88,40 +88,32 @@ begin
    SERIAL.send_line ("Atapi setup");
 
    Atapi.discoverAtapiDevices;
-   --  read := Atapi.read_block (16#10#, Atapi.sector_data'Access);
    declare
-      subtype Index is  Positive range 1 .. 2048;
+      subtype Index is Positive range 1 .. 2_048;
       use Atapi;
       function Read_Block (Lba : Integer) return System.Address is
          read : Integer;
       begin
-         read := Atapi.read_block (Unsigned_32 (Lba), Atapi.sector_data'Access);
-         SERIAL.send_line (Atapi.sector_data (2)'Image);
-         SERIAL.send_line (Atapi.sector_data (3)'Image);
-         SERIAL.send_line (Atapi.sector_data (4)'Image);
-         SERIAL.send_line (Atapi.sector_data (5)'Image);
-         SERIAL.send_line (Atapi.sector_data (6)'Image);
+         read :=
+           Atapi.read_block (Unsigned_32 (Lba), Atapi.sector_data'Access);
          return Atapi.sector_data'Address;
       end Read_Block;
       package MYISO is new ISO
         (Read_Block => Read_Block,
-        BLOCK_SIZE => Positive (Atapi.CD_BLOCK_SIZE));
-      type Identifier_Type is new String (1 .. 6);
-      Identifier : Identifier_Type;
+         BLOCK_SIZE => Positive (Atapi.CD_BLOCK_SIZE));
+      use MYISO;
+      fd     : File_Descriptor;
+      buffer : Interfaces.C.char_array (1 .. 1_024);
+      read   : Integer;
    begin
       MYISO.init;
-      --  for i in 1 .. 6 loop
-      --     Identifier (i) := Character'Val (Atapi.sector_data (i));
-      --  end loop;
-      --  SERIAL.send_line ("Identifier: ");
-      --  SERIAL.send_line (String (Identifier));
-      --  SERIAL.send_line ("");
+      fd   := MYISO.open ("lul.txt", 0);
+      read := MYISO.read (fd, buffer'Address, 1_024);
+      SERIAL.send_line ("read: " & read'Image);
+      SERIAL.send_line ("lul.txt" & To_Ada (buffer (1 .. size_t (read)), False));
    end;
 
-   discover_atapi_drive;
    System.Machine_Code.Asm (Template => "sti", Volatile => True);
-   SERIAL.send_line ("trac");
-   SERIAL.send_line ("plouf");
    while True loop
       System.Machine_Code.Asm (Template => "hlt", Volatile => True);
    end loop;
