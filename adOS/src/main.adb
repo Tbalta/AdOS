@@ -32,7 +32,6 @@ is
    pragma Import (C, discover_atapi_drive, "discover_atapi_drive");
    procedure print_mmap (s : System.Address);
    pragma Import (C, print_mmap, "print_mmap");
-   read : Integer;
 begin
 
    --  Clear (BLACK);
@@ -102,17 +101,26 @@ begin
         (Read_Block => Read_Block,
          BLOCK_SIZE => Positive (Atapi.CD_BLOCK_SIZE));
       use MYISO;
-      fd     : File_Descriptor;
+      fd     : File_Descriptor_With_Error;
       buffer : Interfaces.C.char_array (1 .. 1_024);
       read   : Integer;
    begin
       MYISO.init;
       fd   := MYISO.open ("lul.txt", 0);
+      if fd = -1 then
+         SERIAL.send_line ("Error opening file");
+         goto Init_End;
+      end if;
       read := MYISO.read (fd, buffer'Address, 1_024);
       SERIAL.send_line ("read: " & read'Image);
       SERIAL.send_line ("lul.txt" & To_Ada (buffer (1 .. size_t (read)), False));
+   -- Loading an ELF file
+
+
    end;
 
+
+   <<Init_End>>
    System.Machine_Code.Asm (Template => "sti", Volatile => True);
    while True loop
       System.Machine_Code.Asm (Template => "hlt", Volatile => True);

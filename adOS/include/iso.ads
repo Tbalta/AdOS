@@ -19,14 +19,14 @@ package ISO is
   MAX_FILES : constant Positive := 256;
 
   type off_t is new Integer;
-  type File_Descriptor is new Integer range -1 .. MAX_FILES - 1;
-
+  type File_Descriptor_With_Error is new Integer range -1 .. MAX_FILES - 1;
+  subtype File_Descriptor is File_Descriptor_With_Error range 0.. File_Descriptor_With_Error (MAX_FILES - 1);
   type whence is (SEEK_SET, SEEK_CUR, SEEK_END);
 
   root_lba     : Natural;
   root_dirsize : Natural;
 
-  function open (path : String; flag : Integer) return File_Descriptor;
+  function open (path : String; flag : Integer) return File_Descriptor_With_Error;
   function read
    (fd : File_Descriptor; buffer_param : System.Address; count_param : Natural)
     return Integer;
@@ -55,16 +55,16 @@ package ISO is
    Pack => True;
 
   type File_Information is record
-    size   : Natural;
-    lba    : Natural;
+    size   : Natural := 0;
+    lba    : Natural := 0;
     offset : Natural := 0;
+    used : Boolean := False;
   end record;
 
   type File_Information_Array is array (File_Descriptor) of File_Information;
   type File_Information_Counter is mod MAX_FILES;
 
-  File_Descriptors : File_Information_Array;
-  File_Count       : File_Information_Counter := 0;
+  File_Descriptors : File_Information_Array := (others => (others => <>));
   type iso_dir is record
     dir_size  : Unsigned_8;  -- iso9660.h:71
     ext_size  : Unsigned_8;  -- iso9660.h:72

@@ -29,7 +29,9 @@ package body ISO is
     -------------------
     -- ISO 9660 Open --
     -------------------
-    function open (path : String; flag : Integer) return File_Descriptor is
+    function open
+       (path : String; flag : Integer) return File_Descriptor_With_Error
+    is
         use ISO_FILE_DESC_CONVERTER;
         file_buffer : System.Address;
 
@@ -106,11 +108,20 @@ package body ISO is
         if file = null then
             return -1;
         end if;
-        File_Descriptors (File_Descriptor (File_Count)) :=
-           (size => Natural (file.file_size.le),
-            lba  => Natural (file.data_blk.le), offset => 0);
-        File_Count                                      := File_Count + 1;
-        return File_Descriptor (File_Count - 1);
+
+        for FD_Index in File_Descriptors'Range loop
+            SERIAL.send_line ("FD: " & Integer'Image (Integer (FD_Index)));
+            if (not File_Descriptors (FD_Index).used) then
+                File_Descriptors (File_Descriptor (FD_Index)) :=
+                   (size => Natural (file.file_size.le),
+                    lba  => Natural (file.data_blk.le), offset => 0,
+                    used => True);
+                return File_Descriptor (FD_Index);
+
+            end if;
+        end loop;
+
+        return -1;
 
     end open;
 
@@ -124,6 +135,7 @@ package body ISO is
         f_lba    : Natural renames File_Descriptors (fd).lba;
         f_offset : Natural renames File_Descriptors (fd).offset;
         f_size   : Natural renames File_Descriptors (fd).size;
+        f_used   : Boolean renames File_Descriptors (fd).used;
 
         out_buffer    : System.Address := buffer_param;
         read_buffer   : System.Address;
@@ -136,10 +148,9 @@ package body ISO is
            (dest : System.Address; src : System.Address; size : Natural);
         pragma Import (C, memcpy, "memcpy");
     begin
-        if fd = -1 then
+        if (not f_used) then
             return -1;
         end if;
-
         -- Adjust the offset of the lba
         for lba in base_lba .. (base_lba + sectors_count) loop
             read_buffer := Read_Block (lba);
