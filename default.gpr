@@ -6,6 +6,7 @@ project Default is
     for Object_Generated ("test") use "true";
     for Languages use ("Ada", "C", "nasm");
     for Main use ("entry.asm");
+    for Create_Missing_Dirs use "True";
 
     package Naming is
       for Body_Suffix ("nasm") use ".asm";
