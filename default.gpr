@@ -1,6 +1,7 @@
 project Default is
     for Source_Dirs use ("./adOS/**");
     for Object_Dir   use  "obj";
+    for Exec_Dir     use  ".";
     for Create_Missing_Dirs use "True";
 
     for Object_Generated ("test") use "true";
@@ -44,7 +45,9 @@ project Default is
    end Compiler;
 
   package Builder is
-    for Executable ("entry.s") use "main";
+    for Executable ("entry.asm") use "main";
+    for Executable_Suffix use ".elf";
+    for Global_Configuration_Pragmas use "ada.adc";
   end Builder;
 
   package Linker is
