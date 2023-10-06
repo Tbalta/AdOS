@@ -38,6 +38,8 @@ main.o: main.adb
 # 	# gcc -c -m32 -Os -o obj/'$@' -Wall -Wextra '$<' -m32 -L. -lk -nostdlib
 
 clean:
+	gprclean
+	cd runtime && gprclean
 	$(RM) -r obj/
 	$(RM) -r runtime/obj
 	$(RM) -r runtime/build/adalib

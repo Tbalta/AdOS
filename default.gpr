@@ -3,7 +3,13 @@ project Default is
     for Object_Dir   use  "obj";
     for Create_Missing_Dirs use "True";
 
-    for Languages use ("Ada", "C");
+    for Object_Generated ("test") use "true";
+    for Languages use ("Ada", "C", "nasm");
+    for Main use ("entry.asm");
+
+    package Naming is
+      for Body_Suffix ("nasm") use ".asm";
+    end Naming;
 
     package Compiler is
       for Default_Switches ("Ada") use (
@@ -15,9 +21,6 @@ project Default is
         "-ggdb",
         "-g",
         "-gnata",
-        -- "-gnat2012",
-        -- "-gnatwadehl",
-        -- "-gnatVa",
         "-gnatwM"
       );
 
@@ -32,8 +35,34 @@ project Default is
         "-g",
         "-nostdlib",
         "-Iruntime/libc/include"
-      );      
+      );
+
+      for Driver ("nasm") use "nasm";
+      for Default_Switches ("nasm") use ("-f elf32", "-g");
+      for Object_File_Switches ("nasm") use ("-o", "");
    end Compiler;
+
+  package Builder is
+    for Executable ("entry.s") use "main";
+  end Builder;
+
+  package Linker is
+    for Driver use "ld";
+    for Required_Switches use (
+        "-m elf_i386",
+        "-T linker.ld",
+        "-g",
+        "-Lruntime/build/adalib",
+        "-lgnat", 
+        "L.",
+        "-lk"
+      );
+  end Linker;
+
+  package Binder is
+    -- for Driver("Ada") use "gnatbind";
+    -- for Switches("Ada") use ("-n");
+  end Binder;
   
   for Runtime("Ada") use "runtime/build";
   for Target use "i386-elf";
