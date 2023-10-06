@@ -7,13 +7,13 @@ library project Runtime is
    --  To facilitate this, we copy our source files to the build directory.
    --  This serves two purposes, one is to build the run-time itself, the 
    --  second is to function as the run-time library's spec includes.
-   for Source_Dirs use ("build/adainclude");
+   for Source_Dirs use ("build/adainclude/**");
    --  The directory used for build artifacts.
    for Object_Dir use "obj";
  
    for Languages use (
      "Ada",
-     "Asm_Cpp"
+     "C"
    );
  
    package Builder is
@@ -46,7 +46,8 @@ library project Runtime is
         --  Instructs GNAT to remove dead code from the runtime library.
         --  Requires the use of the '-ffunction-sections' and
         --  '-fdata-sections' directives as detailed above.
-        "-Wl,--gc-sections"
+        "-Wl,--gc-sections",
+        "-g"
       );
    end Compiler;
  

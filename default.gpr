@@ -1,7 +1,15 @@
 project Default is
-    for Source_Dirs use ("./**");
+    for Source_Dirs use ("./adOS/**");
     for Object_Dir   use  "obj";
+    for Create_Missing_Dirs use "True";
 
+    for Object_Generated ("test") use "true";
+    for Languages use ("Ada", "nasm");
+    for Main use ("entry.asm");
+
+    package Naming is
+      for Body_Suffix ("nasm") use ".asm";
+    end Naming;
 
     package Compiler is
       for Default_Switches ("Ada") use (
@@ -11,17 +19,56 @@ project Default is
         "-fdata-sections",
         "-fno-omit-frame-pointer",
         "-ggdb",
-        "-gnat2012",
-        "-gnatwadehl",
-        "-gnatVa",
-        "-gnatg"
+        "-g",
+        "-gnata",
+        "-gnatwM"
       );
 
-      for Default_Switches ("Asm_Cpp") use (
-        "-ggdb"
+      for Default_Switches ("C") use (
+        "-m32",
+        "-O0",
+        "-ffreestanding",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-fno-omit-frame-pointer",
+        "-ggdb",
+        "-g",
+        "-nostdlib",
+        "-Iruntime/libc/include"
       );
+
+      for Driver ("nasm") use "nasm";
+      for Default_Switches ("nasm") use ("-f elf32", "-g");
+      for Object_File_Switches ("nasm") use ("-o", "");
    end Compiler;
-  for Runtime("Ada") use "runtime/build";
 
-    for Target use "i386-elf";
+  package Builder is
+    for Executable ("entry.s") use "main";
+    for Executable_Suffix use ".elf";
+    for Global_Configuration_Pragmas use "ada.adc";
+  end Builder;
+
+  package Linker is
+    for Default_Switches("C") use ("plouf");
+    for Linker_Options use ("plaf");
+    for Required_Switches use (
+        "-T" & Default'Project_Dir & "linker.ld",
+        "-static", "-nostartfiles", "-nodefaultlibs",
+        "-g"
+        -- "-Lruntime/build/adalib",
+        -- "-lgnat", 
+        -- "L.",
+        -- "-lk"
+      );
+    for Trailing_Switches ("Ada") use ("plouf");
+  end Linker;
+
+  package Binder is
+    -- for Driver("Ada") use "gnatbind";
+    -- for Switches("Ada") use ("-n");
+  end Binder;
+  
+  for Runtime("Ada") use "runtime/build";
+  for Runtime ("C") use "";
+  for Target use "i386-elf";
 end Default;

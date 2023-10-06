@@ -11,30 +11,21 @@ main.img: main.elf
 
 # main.elf is the the multiboot file.
 
-makeall:
+obj/entry.elf:
+	gprbuild
+
+makeall: run
 	gprbuild
 
 
 main.elf: makeall entry.o
 	ld -m elf_i386 -T linker.ld -o '$@' $(OBJ)/*.o
 
-entry.o: entry.asm
-	nasm -f elf32 '$<' -o "$(OBJ)/$@"
-
-main.o: main.adb
-	gcc -c -m32 -Os -o '$@' -Wall -Wextra '$<'
-
-
-%.o: %.adb
-	gcc -c -m32 -Os -o '$@' -Wall -Wextra '$<'
-%.o: arch/%.adb
-	gcc -c -m32 -Os -o '$@' -Wall -Wextra '$<'
-
 
 clean:
 	rm -f *.ali *.elf *.o iso/boot/*.elf *.img obj/*
 
-run: main.elf
+run: obj/entry.elf
 	"/mnt/c/program files/qemu/qemu-system-i386.exe" -kernel '$<' $(qemu_param)
 
 run-img: main.img
