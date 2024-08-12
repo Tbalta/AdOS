@@ -28,17 +28,17 @@
 -- Extensive contributions were provided by Ada Core Technologies Inc.      --
 --                                                                          --
 ------------------------------------------------------------------------------
-with Interfaces;
+--  with Interfaces;
 pragma Compiler_Unit_Warning;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
-with System.Address_To_Access_Conversions;
-with System.Parameters;       use System.Parameters;
+--  with System.Address_To_Access_Conversions;
+with System.Parameters; use System.Parameters;
 package body System.Secondary_Stack is
    pragma Suppress (All_Checks);
    pragma Suppress (Index_Check);
-   package SS_Stack_Ptr_Conv is new System.Address_To_Access_Conversions
-     (SS_Stack);
+   --  package SS_Stack_Ptr_Conv is new System.Address_To_Access_Conversions
+   --    (SS_Stack);
 
    ------------------------------------
    -- Binder Allocated Stack Support --
@@ -106,10 +106,6 @@ package body System.Secondary_Stack is
    --  size Mem_Size, starting from the first free byte of the chunk denoted by
    --  Byte.
 
-   function Number_Of_Chunks (Stack : SS_Stack_Ptr) return Chunk_Count;
-   pragma Inline (Number_Of_Chunks);
-   --  Count the number of static and dynamic chunks of secondary stack Stack
-
    function Size_Up_To_And_Including (Chunk : SS_Chunk_Ptr) return Memory_Size;
    pragma Inline (Size_Up_To_And_Including);
    --  Calculate the size of secondary stack which houses chunk Chunk, from the
@@ -121,11 +117,6 @@ package body System.Secondary_Stack is
    --
    --  This is a constant time operation, regardless of the secondary stack's
    --  nature.
-
-   function Top_Chunk_Id (Stack : SS_Stack_Ptr) return Chunk_Id_With_Invalid;
-   pragma Inline (Top_Chunk_Id);
-   --  Obtain the Chunk_Id of the chunk indicated by secondary stack Stack's
-   --  pointer.
 
    function Used_Memory_Size (Stack : SS_Stack_Ptr) return Memory_Size;
    pragma Inline (Used_Memory_Size);
@@ -142,15 +133,8 @@ package body System.Secondary_Stack is
    -- Get_Sec_Stack --
    -------------------
    function Get_Sec_Stack return SS_Stack_Ptr is
-      kernel_sec_stack_bottom : Interfaces.Unsigned_32;
-      pragma Import
-        (Convention    => C, Entity => kernel_sec_stack_bottom,
-         External_Name => "kernel_sec_stack_bottom");
    begin
-      return
-        SS_Stack_Ptr
-          (SS_Stack_Ptr_Conv.To_Pointer
-             (kernel_sec_stack_bottom'Address));
+      return Sec_Stack'Access;
    end Get_Sec_Stack;
 
    -----------------------
@@ -168,8 +152,6 @@ package body System.Secondary_Stack is
       --  must always be connected to some previous chunk.
 
       if Prev_Chunk /= null then
-         pragma Assert (Prev_Chunk.Next = Chunk);
-
          --  Update the Size_Up_To_Chunk because this value is invalidated for
          --  reused and new chunks.
          --
@@ -247,8 +229,6 @@ package body System.Secondary_Stack is
       --  chunk. There should be no dynamic chunks following the static chunk.
 
       pragma Assert (Stack.Top.Chunk = Stack.Static_Chunk'Access);
-      pragma Assert (Stack.Top.Chunk.Next = null);
-
       --  Raise Storage_Error if the static chunk does not have enough room to
       --  fit the memory request. This indicates that the stack is about to be
       --  depleted.
@@ -263,75 +243,6 @@ package body System.Secondary_Stack is
         (Stack => Stack, Prev_Chunk => null, Chunk => Stack.Top.Chunk,
          Byte  => Stack.Top.Byte, Mem_Size => Mem_Size, Addr => Addr);
    end Allocate_Static;
-
-   --------------------
-   -- Get_Chunk_Info --
-   --------------------
-
-   function Get_Chunk_Info
-     (Stack : SS_Stack_Ptr; C_Id : Chunk_Id) return Chunk_Info
-   is
-      function Find_Chunk return SS_Chunk_Ptr;
-      pragma Inline (Find_Chunk);
-      --  Find the chunk which corresponds to Id. Return null if no such chunk
-      --  exists.
-
-      ----------------
-      -- Find_Chunk --
-      ----------------
-
-      function Find_Chunk return SS_Chunk_Ptr is
-         Chunk : SS_Chunk_Ptr;
-         Id    : Chunk_Id;
-
-      begin
-         Chunk := Stack.Static_Chunk'Access;
-         Id    := 1;
-         while Chunk /= null loop
-            if Id = C_Id then
-               return Chunk;
-            end if;
-
-            Chunk := Chunk.Next;
-            Id    := Id + 1;
-         end loop;
-
-         return null;
-      end Find_Chunk;
-
-      --  Local variables
-
-      Chunk : constant SS_Chunk_Ptr := Find_Chunk;
-
-      --  Start of processing for Get_Chunk_Info
-
-   begin
-      if Chunk = null then
-         return Invalid_Chunk;
-
-      else
-         return
-           (Size => Chunk.Size, Size_Up_To_Chunk => Chunk.Size_Up_To_Chunk);
-      end if;
-   end Get_Chunk_Info;
-
-   --------------------
-   -- Get_Stack_Info --
-   --------------------
-
-   function Get_Stack_Info (Stack : SS_Stack_Ptr) return Stack_Info is
-      Info : Stack_Info;
-
-   begin
-      Info.Default_Chunk_Size := Stack.Default_Chunk_Size;
-      Info.Freeable           := Stack.Freeable;
-      Info.High_Water_Mark    := Stack.High_Water_Mark;
-      Info.Number_Of_Chunks   := Number_Of_Chunks (Stack);
-      Info.Top.Byte           := Stack.Top.Byte;
-      Info.Top.Chunk          := Top_Chunk_Id (Stack);
-
-      return Info;
-   end Get_Stack_Info;
 
    ----------------------------
    -- Has_Enough_Free_Memory --
@@ -349,25 +260,6 @@ package body System.Secondary_Stack is
 
       return Chunk.Size - (Byte - 1) >= Mem_Size;
    end Has_Enough_Free_Memory;
-
-   ----------------------
-   -- Number_Of_Chunks --
-   ----------------------
-
-   function Number_Of_Chunks (Stack : SS_Stack_Ptr) return Chunk_Count is
-      Chunk : SS_Chunk_Ptr;
-      Count : Chunk_Count;
-
-   begin
-      Chunk := Stack.Static_Chunk'Access;
-      Count := 0;
-      while Chunk /= null loop
-         Chunk := Chunk.Next;
-         Count := Count + 1;
-      end loop;
-
-      return Count;
-   end Number_Of_Chunks;
 
    ------------------------------
    -- Size_Up_To_And_Including --
@@ -425,7 +317,10 @@ package body System.Secondary_Stack is
       --  alignment to ensure efficient access.
 
       Mem_Size := Round_Up (Storage_Size);
-      Allocate_Static (Stack, Mem_Size, Addr);
+
+      if not Sec_Stack_Dynamic then
+         Allocate_Static (Stack, Mem_Size, Addr);
+      end if;
    end SS_Allocate;
 
    -------------
@@ -446,124 +341,26 @@ package body System.Secondary_Stack is
    end SS_Get_Max;
 
    -------------
-   -- SS_Info --
-   -------------
-
-   procedure SS_Info is
-      procedure SS_Info_Dynamic (Stack : SS_Stack_Ptr);
-      pragma Inline (SS_Info_Dynamic);
-      --  Output relevant information concerning dynamic secondary stack Stack
-
-      function Total_Memory_Size (Stack : SS_Stack_Ptr) return Memory_Size;
-      pragma Inline (Total_Memory_Size);
-      --  Calculate the size of stack Stack's total memory usage. This includes
-      --  the following kinds of memory:
-      --
-      --    * Free memory in used chunks due to alignment holes
-      --    * Free memory in the topmost chunk due to partial usage
-      --    * Free memory in unused chunks following the chunk indicated by the
-      --      stack pointer.
-      --    * Memory occupied by allocations
-      --
-      --  This is a linear-time operation on the number of chunks.
-
-      ---------------------
-      -- SS_Info_Dynamic --
-      ---------------------
-
-      procedure SS_Info_Dynamic (Stack : SS_Stack_Ptr) is
-      begin
-         Put_Line
-           ("  Number of Chunks        : " & Number_Of_Chunks (Stack)'Img);
-
-         Put_Line
-           ("  Default size of Chunks  : " & Stack.Default_Chunk_Size'Img);
-      end SS_Info_Dynamic;
-
-      -----------------------
-      -- Total_Memory_Size --
-      -----------------------
-
-      function Total_Memory_Size (Stack : SS_Stack_Ptr) return Memory_Size is
-         Chunk : SS_Chunk_Ptr;
-         Total : Memory_Size;
-
-      begin
-         --  The total size of the stack is equal to the size of the stack up
-         --  to the chunk indicated by the stack pointer, plus the size of the
-         --  indicated chunk, plus the size of any subsequent chunks.
-
-         Total := Size_Up_To_And_Including (Stack.Top.Chunk);
-
-         Chunk := Stack.Top.Chunk.Next;
-         while Chunk /= null loop
-            Total := Total + Chunk.Size;
-            Chunk := Chunk.Next;
-         end loop;
-
-         return Total;
-      end Total_Memory_Size;
-
-      --  Local variables
-
-      Stack : constant SS_Stack_Ptr := Get_Sec_Stack;
-
-      --  Start of processing for SS_Info
-
-   begin
-      Put_Line ("Secondary Stack information:");
-
-      Put_Line
-        ("  Total size              : " & Total_Memory_Size (Stack)'Img &
-         " bytes");
-
-      Put_Line
-        ("  Current allocated space : " & Used_Memory_Size (Stack)'Img &
-         " bytes");
-
-      if Sec_Stack_Dynamic then
-         SS_Info_Dynamic (Stack);
-      end if;
-   end SS_Info;
-
-   -------------
    -- SS_Init --
    -------------
 
    procedure SS_Init
      (Stack : in out SS_Stack_Ptr; Size : Size_Type := Unspecified_Size)
    is
-
-   --  Local variables
-
       known_stack : constant SS_Stack_Ptr := Get_Sec_Stack;
-   --  Start of processing for SS_Init
-
    begin
+      if Stack = null then
+         return;
+      end if;
+
       if Size = Unspecified_Size then
          Stack := known_stack;
       end if;
-      --  The static chunk becomes the chunk indicated by the stack pointer.
-      --  Note that the stack may still hold dynamic chunks, which in turn may
-      --  be reused or freed.
 
-      Stack.Top.Chunk := Stack.Static_Chunk'Access;
-
-      --  The first free byte is the first free byte of the chunk indicated by
-      --  the stack pointer.
-
-      Stack.Top.Byte := Stack.Top.Chunk.Memory'First;
-
-      --  Since the chunk indicated by the stack pointer is also the first
-      --  chunk in the stack, there are no prior chunks, therefore the size
-      --  of the stack up to the chunk is zero.
-
-      Stack.Top.Chunk.Size_Up_To_Chunk := 0;
-
-      --  Reset the high water mark to account for brand new allocations
-
-      Stack.High_Water_Mark := 0;
-
+      Stack.High_Water_Mark               := Memory_Size'First;
+      Stack.Top                           :=
+        (Chunk => Stack.Static_Chunk'Access, Byte => Memory_Index'First);
+      Stack.Static_Chunk.Size_Up_To_Chunk := 0;
    end SS_Init;
 
    -------------
@@ -585,29 +382,6 @@ package body System.Secondary_Stack is
    begin
       M.Stack.Top := M.Top;
    end SS_Release;
-
-   ------------------
-   -- Top_Chunk_Id --
-   ------------------
-
-   function Top_Chunk_Id (Stack : SS_Stack_Ptr) return Chunk_Id_With_Invalid is
-      Chunk : SS_Chunk_Ptr;
-      Id    : Chunk_Id;
-
-   begin
-      Chunk := Stack.Static_Chunk'Access;
-      Id    := 1;
-      while Chunk /= null loop
-         if Chunk = Stack.Top.Chunk then
-            return Id;
-         end if;
-
-         Chunk := Chunk.Next;
-         Id    := Id + 1;
-      end loop;
-
-      return Invalid_Chunk_Id;
-   end Top_Chunk_Id;
 
    ----------------------
    -- Used_Memory_Size --

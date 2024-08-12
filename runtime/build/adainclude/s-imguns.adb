@@ -39,12 +39,14 @@ package body System.Img_Uns is
    --------------------
 
    procedure Image_Unsigned
-     (V : System.Unsigned_Types.Unsigned; S : in out String; P : out Natural)
+     (V : System.Unsigned_Types.Unsigned;
+      S : in out String;
+      P : out Natural)
    is
       pragma Assert (S'First = 1);
    begin
       S (1) := ' ';
-      P     := 1;
+      P := 1;
       Set_Image_Unsigned (V, S, P);
    end Image_Unsigned;
 
@@ -53,48 +55,20 @@ package body System.Img_Uns is
    ------------------------
 
    procedure Set_Image_Unsigned
-     (V : Unsigned; S : in out String; P : in out Natural)
+     (V : Unsigned;
+      S : in out String;
+      P : in out Natural)
    is
    begin
       if V >= 10 then
          Set_Image_Unsigned (V / 10, S, P);
-         P     := P + 1;
+         P := P + 1;
          S (P) := Character'Val (48 + (V rem 10));
 
       else
-         P     := P + 1;
+         P := P + 1;
          S (P) := Character'Val (48 + V);
       end if;
    end Set_Image_Unsigned;
-
-   ------------------
-   -- Hex_Unsigned --
-   ------------------
-
-   function Hex_Unsigned (V : Integer) return String is
-      S : String (1 .. (Integer'Width));
-      P : Natural range 1 .. (Integer'Width) := 1;
-   begin
-      S (1) := ' ';
-      P     := 1;
-      Set_Hex_Unsigned (V, S, P);
-      return S (1 .. P);
-   end Hex_Unsigned;
-
-   ----------------------
-   -- Set_Hex_Unsigned --
-   ----------------------
-   procedure Set_Hex_Unsigned
-     (V : Integer; S : in out String; P : in out Natural)
-   is
-      hexString : constant String := "0123456789ABCDEF";
-   begin
-      if V >= 16 then
-         Set_Hex_Unsigned (V / 16, S, P);
-         P := P + 1;
-      end if;
-      P     := P + 1;
-      S (P) := hexString (Integer ((V rem 16) + 1));
-   end Set_Hex_Unsigned;
 
 end System.Img_Uns;

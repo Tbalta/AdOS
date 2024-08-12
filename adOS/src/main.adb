@@ -1,6 +1,7 @@
 with SERIAL;
 with x86.gdt;
 with Interfaces;
+with System;
 procedure Main is
 
    --  Suppress some checks to prevent undefined references during linking to
@@ -14,6 +15,10 @@ procedure Main is
    pragma Suppress (Overflow_Check);
    pragma Suppress (All_Checks);
 
+   function e_test return String is
+   begin
+      return "test";
+   end;
 begin
 
    --  Clear (BLACK);
@@ -27,6 +32,22 @@ begin
 
    x86.gdt.initialize_gdt;
    SERIAL.send_string ("finish");
+   declare
+      test : constant Interfaces.Unsigned_32 := Interfaces.Unsigned_32 (25);
+   begin
+      SERIAL.send_string (Interfaces.Unsigned_32'Image (test));
+      SERIAL.send_string ("addr is:" & test'Image'Address'Image);
+      --  SERIAL.send_string (e_test);
+   end;
+
+   declare
+      kernel_sec_stack_bottom : Interfaces.Unsigned_32;
+      pragma Import
+        (Convention    => C, Entity => kernel_sec_stack_bottom,
+         External_Name => "kernel_sec_stack_bottom");
+   begin
+      SERIAL.send_string (kernel_sec_stack_bottom'Address'Image);
+   end;
    --  Loop forever.
    while True loop
       null;

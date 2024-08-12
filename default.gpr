@@ -23,7 +23,8 @@ project Default is
         "-ggdb",
         "-g",
         "-gnata",
-        "-gnatwM"
+        "-gnatwM",
+        "-fno-exceptions"
       );
 
       for Default_Switches ("C") use (
@@ -36,8 +37,10 @@ project Default is
         "-ggdb",
         "-g",
         "-nostdlib",
-        "-Iruntime/libc/include"
-      );
+        "-Iruntime/libc/include",
+        "-fno-exceptions",
+        "-fno-rtti"
+        );
 
       for Driver ("nasm") use "nasm";
       for Default_Switches ("nasm") use ("-f elf32", "-g");
@@ -53,13 +56,14 @@ project Default is
   package Linker is
     for Driver use "ld";
     for Required_Switches use (
-        "-m elf_i386",
-        "-T linker.ld",
-        "-g",
-        "-Lruntime/build/adalib",
-        "-lgnat", 
-        "L.",
-        "-lk"
+        "-T" & Default'Project_Dir & "linker.ld",
+        "-static", "-nostartfiles", "-nodefaultlibs",
+        "-g", "-fno-exceptions", "-fno-rtti"
+        -- "-Lruntime/build/adalib",
+        -- "-lgnat", 
+        -- "L.",
+        -- "-lk"
+
       );
   end Linker;
 
