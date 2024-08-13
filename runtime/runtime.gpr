@@ -47,7 +47,8 @@ library project Runtime is
         --  Requires the use of the '-ffunction-sections' and
         --  '-fdata-sections' directives as detailed above.
         "-Wl,--gc-sections",
-        "-g"
+        "-g",
+        "-fno-exceptions"
       );
    end Compiler;
  

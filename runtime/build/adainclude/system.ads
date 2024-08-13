@@ -126,7 +126,7 @@ private
    --  of the individual switch values.
 
    Backend_Divide_Checks     : constant Boolean := False;
-   Backend_Overflow_Checks   : constant Boolean := True;
+   Backend_Overflow_Checks   : constant Boolean := False;
    Command_Line_Args         : constant Boolean := False;
    Configurable_Run_Time     : constant Boolean := True;
    Denorm                    : constant Boolean := True;

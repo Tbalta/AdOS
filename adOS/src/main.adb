@@ -19,6 +19,7 @@ procedure Main is
    begin
       return "test";
    end;
+
 begin
 
    --  Clear (BLACK);
@@ -37,7 +38,7 @@ begin
    begin
       SERIAL.send_string (Interfaces.Unsigned_32'Image (test));
       SERIAL.send_string ("addr is:" & test'Image'Address'Image);
-      --  SERIAL.send_string (e_test);
+      SERIAL.send_string (e_test);
    end;
 
    declare
