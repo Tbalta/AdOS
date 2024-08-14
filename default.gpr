@@ -1,18 +1,22 @@
 project Default is
     for Source_Dirs use ("./adOS/**");
     for Object_Dir   use  "obj";
+    for Exec_Dir     use  ".";
+
+    for Languages use ("ada", "c", "nasm");
+    for Main use ("entry.asm");
     for Create_Missing_Dirs use "True";
 
-    for Object_Generated ("test") use "true";
-    for Languages use ("Ada", "C", "nasm");
-    for Main use ("entry.asm");
+    External_Object_Files := (
+      Default'Project_Dir & Default'Object_Dir & "/cutil.o"
+    );
 
     package Naming is
       for Body_Suffix ("nasm") use ".asm";
     end Naming;
 
     package Compiler is
-      for Default_Switches ("Ada") use (
+      for Default_Switches ("ada") use (
         "-m32",
         "-O0",
         "-ffunction-sections",
@@ -21,10 +25,11 @@ project Default is
         "-ggdb",
         "-g",
         "-gnata",
-        "-gnatwM"
+        "-gnatwM",
+        "-fno-exceptions"
       );
 
-      for Default_Switches ("C") use (
+      for Default_Switches ("c") use (
         "-m32",
         "-O0",
         "-ffreestanding",
@@ -34,8 +39,10 @@ project Default is
         "-ggdb",
         "-g",
         "-nostdlib",
-        "-Iruntime/libc/include"
-      );
+        "-Iruntime/libc/include",
+        "-fno-exceptions",
+        "-fno-rtti"
+        );
 
       for Driver ("nasm") use "nasm";
       for Default_Switches ("nasm") use ("-f elf32", "-g");
@@ -43,27 +50,30 @@ project Default is
    end Compiler;
 
   package Builder is
-    for Executable ("entry.s") use "main";
+    for Executable ("entry.asm") use "main";
+    for Executable_Suffix use ".elf";
+    for Global_Configuration_Pragmas use "ada.adc";
+    for Default_Switches ("ada") use ("-nostdlib", "-nostdinc");
   end Builder;
 
   package Linker is
-    for Driver use "ld";
+    for Leading_Switches ("nasm") use External_Object_Files;
     for Required_Switches use (
-        "-m elf_i386",
-        "-T linker.ld",
-        "-g",
-        "-Lruntime/build/adalib",
-        "-lgnat", 
-        "L.",
-        "-lk"
+        "-T" & Default'Project_Dir & "linker.ld",
+        "-static", "-nostartfiles", "-nodefaultlibs",
+        "-g", "-fno-exceptions", "-fno-rtti"
+        -- "-Lruntime/build/adalib",
+        -- "-lgnat", 
+        -- "L.",
+        -- "-lk"
       );
   end Linker;
 
   package Binder is
-    -- for Driver("Ada") use "gnatbind";
-    -- for Switches("Ada") use ("-n");
+    -- for Driver("ada") use "gnatbind";
+    -- for Switches("ada") use ("-n");
   end Binder;
   
-  for Runtime("Ada") use "runtime/build";
+  for Runtime("ada") use "runtime/build";
   for Target use "i386-elf";
 end Default;

@@ -60,13 +60,17 @@ package body ISO is
                 while current_file.dir_size /= 0 and current_file.idf_len >= 0
                 loop
                     declare
-                        file_name_char_array :
-                           char_array (0 .. size_t (current_file.idf_len));
-                        for file_name_char_array'Address use current_file.idf'
-                              Address;
-                        file_name          : String :=
-                           To_Upper (To_Ada (file_name_char_array, False));
-                        stripped_file_name : String :=
+                    subtype current_file_name is
+                       char_array (0 .. size_t (current_file.idf_len));
+                    package To_Ada_Conversions is new System
+                       .Address_To_Access_Conversions
+                       (current_file_name);
+                    file_name_char_array : access current_file_name :=
+                       To_Ada_Conversions.To_Pointer
+                          (current_file.idf'Address);
+                        file_name            : String :=
+                           To_Upper (To_Ada (file_name_char_array.all, False));
+                        stripped_file_name   : String :=
                            file_name
                               (file_name'First ..
                                      Min
@@ -249,10 +253,15 @@ package body ISO is
                 declare
                     subtype current_file_name is
                        char_array (0 .. size_t (current_file.idf_len));
-                    file_name : current_file_name;
-                    for file_name'Address use current_file.idf'Address;
+                    package To_Ada_Conversions is new System
+                       .Address_To_Access_Conversions
+                       (current_file_name);
+                    file_name : access current_file_name :=
+                       To_Ada_Conversions.To_Pointer
+                          (current_file.idf'Address);
                 begin
-                    SERIAL.send_line ("File: " & To_Ada (file_name, False));
+                    SERIAL.send_line
+                       ("File: " & To_Ada (file_name.all, False));
                     if current_file.flags (Directory) then
                         list_file
                            (Natural (current_file.data_blk.le),

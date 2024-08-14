@@ -1,10 +1,8 @@
 with System.Storage_Elements; use System.Storage_Elements;
---  with System.Img_Uns;          use System.Img_Uns;
-with SERIAL; use SERIAL;
+with SERIAL;                  use SERIAL;
 package body x86.gdt is
    pragma Suppress (Index_Check);
    pragma Suppress (Range_Check);
-   pragma Suppress (All_Checks);
 
    procedure set_gdt_entry
      (index       : Integer; base : System.Address; limit : Unsigned_32;
@@ -44,13 +42,25 @@ package body x86.gdt is
       set_gdt_entry
         (4, base_address, limit, 16#F2#, 16#C#); -- User Data descriptor
 
+      send_string ("gdt is set");
       gdt_pointer.limit := (Global_Descriptor_Table'Size - 1) / 8;
       gdt_pointer.base  := Global_Descriptor_Table'Address;
-
-      SERIAL.send_line
-        ("gdt size = " & gdt_pointer.limit'Image & " gdt base = " &
-         To_Integer (gdt_pointer.base)'Image);
-
+      send_uint (Unsigned_32 (gdt_pointer.limit));
+      send_string (" ");
+      send_uint (Unsigned_32 (To_Integer (gdt_pointer.base)));
+      send_string (" ");
+      send_hex (Unsigned_32 (To_Integer (gdt_pointer.base)));
+      send_string (" ");
+      send_hex (Unsigned_32 (To_Integer (gdt_pointer'Address)));
+      send_string ("dump of gdt");
+      declare
+         test : constant Record_Bytes := Convert (gdt_pointer);
+      begin
+         for item in test'Range loop
+            send_string (" ");
+            send_hex (Unsigned_32 (test (item)));
+         end loop;
+      end;
       load_gdt (Unsigned_32 (To_Integer (gdt_pointer'Address)));
    end initialize_gdt;
 end x86.gdt;

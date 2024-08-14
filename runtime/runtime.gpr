@@ -23,7 +23,10 @@ library project Runtime is
         "-nostdinc"
       );
    end Archive_Builder;
- 
+   
+   package Builder is
+      for Global_Configuration_Pragmas use "runtime.adc";
+   end Builder;
    --  For a list of all compiler switches refer to: https://gcc.gnu.org/onlinedocs/gcc-9.2.0/gnat_ugn/Alphabetical-List-of-All-Switches.html#Alphabetical-List-of-All-Switches
    package Compiler is
       for Default_Switches ("Ada") use (
@@ -47,8 +50,10 @@ library project Runtime is
         --  Requires the use of the '-ffunction-sections' and
         --  '-fdata-sections' directives as detailed above.
         "-Wl,--gc-sections",
-        "-g"
+        "-g",
+        "-fno-exceptions"
       );
+      for Default_Switches ("C") use ("-g");
    end Compiler;
  
    --  The destination directory for the final library artifacts.

@@ -15,3 +15,8 @@ dump.txt
 *.pp
 *.d
 *.a
+*.bexch
+*.a
+*.deps
+entry
+obj/*

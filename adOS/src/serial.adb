@@ -60,12 +60,6 @@ package body SERIAL is
       recur (data);
    end send_hex;
 
-   procedure send_line (data : String) is
-   begin
-      send_string (data);
-      send_char (Character'Val (10));
-   end send_line;
-
    procedure send_char (c : Character) is
       port : constant System.Address := To_Address (16#3F8#);
    begin
@@ -78,4 +72,16 @@ package body SERIAL is
       end loop;
       set_baud_rate (Divisor (rate / Baudrate'Last));
    end serial_init;
+
+   procedure send_cchar (c : Interfaces.C.char) is 
+   begin
+      send_char (To_Ada (c));
+   end send_cchar;
+
+   procedure send_line (data : String) is
+   begin
+      send_string (data);
+      send_char (Character'Val (10));
+   end send_line;
+
 end SERIAL;

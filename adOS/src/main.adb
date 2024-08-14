@@ -12,8 +12,7 @@ with System.Address_To_Access_Conversions;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
 with MultiBoot;               use MultiBoot;
-with VFS;                     use VFS;
-with VFS.ISO;
+with ISO;
 --  with Interfaces; use Interfaces;
 procedure Main
   (magic : Interfaces.Unsigned_32; info : access MultiBoot.multiboot_info)
@@ -98,7 +97,7 @@ begin
            Atapi.read_block (Unsigned_32 (Lba), Atapi.sector_data'Access);
          return Atapi.sector_data'Address;
       end Read_Block;
-      package MYISO is new VFS.ISO
+      package MYISO is new ISO
         (Read_Block => Read_Block,
          BLOCK_SIZE => Positive (Atapi.CD_BLOCK_SIZE));
       use MYISO;
@@ -107,15 +106,19 @@ begin
       read   : Integer;
    begin
       MYISO.init;
-      fd := MYISO.open ("lul.txt", 0);
+      fd := MYISO.open ("test2.txt", 0);
       if fd = -1 then
          SERIAL.send_line ("Error opening file");
          goto Init_End;
       end if;
+
       read := MYISO.read (fd, buffer'Address, 1_024);
-      SERIAL.send_line ("read: " & read'Image);
-      SERIAL.send_line
-        ("lul.txt" & To_Ada (buffer (1 .. size_t (read)), False));
+      declare
+         str : String (1 .. read) := To_Ada (buffer (1 .. Interfaces.C.size_t (read)), False);
+      begin
+      SERIAL.send_line (str & "h");
+      SERIAL.send_line (To_Ada (buffer (1 .. Interfaces.C.size_t (read)), False));
+      end;
       -- Loading an ELF file
 
    end;
