@@ -53,6 +53,7 @@ library project Runtime is
         "-g",
         "-fno-exceptions"
       );
+      for Default_Switches ("C") use ("-g");
    end Compiler;
  
    --  The destination directory for the final library artifacts.

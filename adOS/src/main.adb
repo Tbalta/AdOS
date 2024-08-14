@@ -106,15 +106,19 @@ begin
       read   : Integer;
    begin
       MYISO.init;
-      fd := MYISO.open ("lul.txt", 0);
+      fd := MYISO.open ("test2.txt", 0);
       if fd = -1 then
          SERIAL.send_line ("Error opening file");
          goto Init_End;
       end if;
+
       read := MYISO.read (fd, buffer'Address, 1_024);
-      SERIAL.send_line ("read: " & read'Image);
-      SERIAL.send_line
-        ("lul.txt" & To_Ada (buffer (1 .. size_t (read)), False));
+      declare
+         str : String (1 .. read) := To_Ada (buffer (1 .. Interfaces.C.size_t (read)), False);
+      begin
+      SERIAL.send_line (str & "h");
+      SERIAL.send_line (To_Ada (buffer (1 .. Interfaces.C.size_t (read)), False));
+      end;
       -- Loading an ELF file
 
    end;
