@@ -78,10 +78,9 @@ package ISO is
     gap_size  : Unsigned_8;  -- iso9660.h:80
     vol_seq   : endian16;  -- iso9660.h:82
     idf_len   : Unsigned_8;  -- iso9660.h:83
-    idf       : Interfaces.C.char_array (0 .. 0);  -- iso9660.h:84
+    idf       : aliased Interfaces.C.char_array(0 .. 0);  -- iso9660.h:84
   end record with
-   Convention => C,  -- iso9660.h:70
-   Pack       => True, Size => 34 * 8;
+    Size => 34 * 8;
 
   type iso_prim_voldesc is record
     vol_desc_type   : Unsigned_8;
@@ -104,8 +103,7 @@ package ISO is
     be_opath_table_blk : Unsigned_32;  -- iso9660.h:121
     root_dir           : iso_dir;
     unused4            : char_array (0 .. (34 - (iso_dir'Size / 8)));
-  end record with
-   Pack => True;
+  end record;
 
   package ISO_PRIM_DESC_CONVERTER is new System.Address_To_Access_Conversions
    (iso_prim_voldesc);

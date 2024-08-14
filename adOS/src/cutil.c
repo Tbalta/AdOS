@@ -29,13 +29,6 @@ void printcmdline(multiboot_info_t *mbi)
     printf("plouf");
 }
 
-void __gnat_personality_v0()
-{
-}
-
-void _Unwind_Resume()
-{
-}
 
 void print_mmap(multiboot_info_t *mbi)
 {

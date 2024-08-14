@@ -3,13 +3,13 @@
 
 OBJ = obj
 
-qemu_param = -vga std -D ./log.txt -d int,guest_errors -boot d -M q35 -serial mon:stdio -m 1G
+qemu_param = -no-reboot -boot d -D ./log.txt -d int,guest_errors -serial mon:stdio -m 1G
 
-all: main.elf
+all: main.iso
 
-main.img: main.elf
+main.iso: main.elf
 	cp '$<' iso/boot
-	grub-mkrescue -o '$@' iso
+	grub-mkrescue /usr/lib/grub/i386-pc -o '$@' iso
 
 main.elf:
 	cd runtime && gprbuild
@@ -19,12 +19,11 @@ clean:
 	cd runtime && gprclean
 	gprclean
 
-run: main.elf
-	"/mnt/c/program files/qemu/qemu-system-i386.exe" -kernel '$<' $(qemu_param)
+run: main.iso
+	qemu-system-i386 -cdrom '$<' $(qemu_param)
 
-debug: main.elf
-	qemu-system-i386 -kernel '$<' $(qemu_param) -s -S
+debug: main.iso
+	qemu-system-i386 -cdrom '$<' $(qemu_param) -s -S
 
-
-run-img: main.img
-	"/mnt/c/program files/qemu/qemu-system-i386.exe" -hda '$<'
+format:
+	gnatpp $(wildcard adOS/**/*.adb) $(wildcard adOS/**/*.ads) -rnb
