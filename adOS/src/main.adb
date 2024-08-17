@@ -2,6 +2,7 @@ with SERIAL;
 with x86.gdt;
 with x86.idt;
 with x86.pmm;                 use x86.pmm;
+with x86.vmm;
 with pic;
 with System.Machine_Code;
 with Atapi;
@@ -12,6 +13,7 @@ with System.Address_To_Access_Conversions;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
 with MultiBoot;               use MultiBoot;
+with System.Machine_Code;     use System.Machine_Code;
 with ISO;
 --  with Interfaces; use Interfaces;
 procedure Main
@@ -63,7 +65,9 @@ begin
    end;
 
    pic.init;
-   -- PMM initialization
+   ------------------------
+   -- PMM initialization --
+   ------------------------
    declare
       entry_map_size  : constant Unsigned_64 :=
         Unsigned_64 (info.all.mmap_length);
@@ -83,6 +87,22 @@ begin
         ("Next free page: " &
          x86.pmm.Offset_To_Address (x86.pmm.Get_Next_Free_Page)'Image);
    end;
+
+   ------------------------
+   -- VMM initialization --
+   ------------------------
+   --  Asm ("int $0x0");
+   SERIAL.send_line ("VMM initialization");
+   declare
+      use x86.vmm;
+      CR3 : CR3_register := Create_CR3;
+   begin
+      Identity_Map (CR3);
+      Load_CR3 (CR3);
+      Enable_Paging;
+   end;
+   SERIAL.send_line ("Paging enabled");
+   Asm ("int $0x0");
 
    SERIAL.send_line ("Atapi setup");
 
@@ -114,10 +134,12 @@ begin
 
       read := MYISO.read (fd, buffer'Address, 1_024);
       declare
-         str : String (1 .. read) := To_Ada (buffer (1 .. Interfaces.C.size_t (read)), False);
+         str : String (1 .. read) :=
+           To_Ada (buffer (1 .. Interfaces.C.size_t (read)), False);
       begin
-      SERIAL.send_line (str & "h");
-      SERIAL.send_line (To_Ada (buffer (1 .. Interfaces.C.size_t (read)), False));
+         SERIAL.send_line (str & "h");
+         SERIAL.send_line
+           (To_Ada (buffer (1 .. Interfaces.C.size_t (read)), False));
       end;
       -- Loading an ELF file
 

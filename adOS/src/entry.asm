@@ -2,6 +2,7 @@ global loader
 global stack_ptr
 
 extern _ada_main 
+extern adainit
 
 MODULEALIGN equ 1<<0
 MEMINFO equ 1<<1
@@ -24,6 +25,7 @@ loader:
   mov esp, stack+STACKSIZE
   push ebx
   push eax
+  call adainit
   call _ada_main 
 
   cli

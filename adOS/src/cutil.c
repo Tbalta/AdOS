@@ -35,8 +35,8 @@ void print_mmap(multiboot_info_t *mbi)
     LOG("cmdline = %s", (char *)mbi->cmdline);
     multiboot_memory_map_t *mmap = (multiboot_memory_map_t *)mbi->mmap_addr;
     LOG("mmap_addr = 0x%x, mmap_length = 0x%x", (unsigned)mbi->mmap_addr, (unsigned)mbi->mmap_length);
-    extern int kernel_end;
-    LOG("kernel_end = 0x%x, 0x%x", (unsigned)&kernel_end, kernel_end);
+    extern int __kernel_end;
+    LOG("kernel_end = 0x%x, 0x%x", (unsigned)&__kernel_end, __kernel_end);
     unsigned long long mmap_entry_count = mbi->mmap_length / sizeof(multiboot_memory_map_t);
 
     for (unsigned long long i = 0; i < mmap_entry_count; i++)

@@ -3,6 +3,7 @@ with Interfaces;              use Interfaces;
 with Interfaces.C;            use Interfaces.C;
 with System.Storage_Elements; use System.Storage_Elements;
 with Aligned_System_Address;
+with config;                  use config;
 package body x86.pmm is
 
     function check (cond : Boolean; msg : String) return Boolean is
@@ -13,7 +14,27 @@ package body x86.pmm is
         return cond;
     end check;
 
-    function Address_To_Offset_Unchecked (addr : System.Address) return Natural
+    ------------------------------
+    -- Physical_Address Utility --
+    ------------------------------
+    function To_Integer (Value : Physical_Address) return Integer_Address is
+    begin
+        return Integer_Address (Value);
+    end To_Integer;
+
+    function To_Address (Value : Physical_Address) return System.Address is
+    begin
+        return System.Address (Value);
+    end To_Address;
+
+    -----------------------
+    -- Address_To_Offset --
+    -----------------------
+    function Address_To_Offset (addr : Physical_Address) return Natural is
+       (Address_To_Offset_Unchecked (addr));
+
+    function Address_To_Offset_Unchecked
+       (addr : Physical_Address) return Natural
     is
         package Util is new PMM_Utils (PMM_Header_Address);
         use Util;
@@ -21,13 +42,15 @@ package body x86.pmm is
     begin
         for Index in Util.Headers.all'Range loop
             if addr in
-                  Headers (Index).base_addr ..
+                  Physical_Address (Headers (Index).base_addr) ..
+                        Physical_Address
                            (Headers (Index).base_addr +
                             Storage_Offset (Headers (Index).length))
             then
                 return
                    Offset +
-                   Natural (addr - Headers (Index).base_addr) / PMM_PAGE_SIZE;
+                   Natural (To_Address (addr) - Headers (Index).base_addr) /
+                      PMM_PAGE_SIZE;
             end if;
             Offset :=
                Offset + Natural (Headers (Index).length) / PMM_PAGE_SIZE;
@@ -35,8 +58,11 @@ package body x86.pmm is
         return -1;
     end Address_To_Offset_Unchecked;
 
+    -----------------------
+    -- Offset_To_Address --
+    -----------------------
     function Offset_To_Address_Unchecked
-       (paroffset : Natural) return System.Address
+       (paroffset : Natural) return Physical_Address
     is
         package Util is new PMM_Utils (PMM_Header_Address);
         use Util;
@@ -45,15 +71,19 @@ package body x86.pmm is
         for Index in Headers'Range loop
             if Offset < Positive (Headers (Index).length) / PMM_PAGE_SIZE then
                 return
-                   Headers (Index).base_addr +
-                   Storage_Offset (Offset * PMM_PAGE_SIZE);
+                   Physical_Address
+                      (Headers (Index).base_addr +
+                       Storage_Offset (Offset * PMM_PAGE_SIZE));
             else
                 Offset :=
                    Offset - Positive (Headers (Index).length) / PMM_PAGE_SIZE;
             end if;
         end loop;
-        return System.Address (0);
+        return Physical_Address (0);
     end Offset_To_Address_Unchecked;
+
+    function Offset_To_Address (paroffset : Natural) return Physical_Address is
+       (Offset_To_Address_Unchecked (paroffset));
 
     function Get_Next_Free_Page return Natural is
         package Util is new PMM_Utils (PMM_Header_Address);
@@ -67,19 +97,19 @@ package body x86.pmm is
         return -1;
     end Get_Next_Free_Page;
 
-    function Allocate_Page return System.Address is
+    function Allocate_Page return Physical_Address is
         package Util is new PMM_Utils (PMM_Header_Address);
         use Util;
         Offset : Natural := Get_Next_Free_Page;
     begin
         if Offset = -1 then
-            return System.Address (0);
+            return Physical_Address (0);
         end if;
         Util.Bitmap (Offset) := PMM_Bitmap_Entry_Used;
         return Offset_To_Address (Offset);
     end Allocate_Page;
 
-    procedure Free_Page (addr : System.Address) is
+    procedure Free_Page (addr : Physical_Address) is
         package Util is new PMM_Utils (PMM_Header_Address);
         use Util;
         Offset : Natural := Address_To_Offset (addr);
@@ -101,18 +131,15 @@ package body x86.pmm is
         firstValidAddress : Unsigned_32 := 0;
         subtype Positive_Aligned_Address is Aligned_Address with
               Dynamic_Predicate => (To_Integer (Positive_Aligned_Address) > 0);
-        kernel_end : Unsigned_32;
-        pragma Import (C, kernel_end, "kernel_end");
-        kernel_end_address : Positive_Aligned_Address := kernel_end'Address;
         subtype Aligned_Storage_Offset is Storage_Offset with
               Dynamic_Predicate =>
                (Positive (Aligned_Storage_Offset) mod PMM_PAGE_SIZE = 0);
 
         PMM_Bitmap_Address : Positive_Aligned_Address;
         PMM_Headers        : access PMM_Header_Info :=
-           PMM_Header_Conv.To_Pointer (kernel_end_address);
+           PMM_Header_Conv.To_Pointer (To_Address (Kernel_End));
     begin
-        PMM_Header_Address := kernel_end_address;
+        PMM_Header_Address := To_Address (Kernel_End);
         --  Computing pmm map entry count.
         for Index in MB'Range loop
             if MB (Index).entry_type = MULTIBOOT_MEMORY_AVAILABLE then
@@ -129,7 +156,7 @@ package body x86.pmm is
 
         SERIAL.send_line ("Found " & pmmHeaderCount'Image & " Headers.");
         SERIAL.send_line ("Setting pmm header.");
-        SERIAL.send_line ("kernel_end: " & kernel_end'Image);
+        SERIAL.send_line ("kernel_end: " & Kernel_End'Image);
 
         ------------------------------------------------------------------------
         declare -- Setting pmm header.
@@ -183,22 +210,32 @@ package body x86.pmm is
         begin
             SERIAL.send_line
                ("Address_To_Offset" &
-                Address_To_Offset (PMM_Bitmap_End_Address)'Image & " " &
-                Offset_To_Address (Address_To_Offset (To_Address (4_098)))'
-                   Image);
+                Address_To_Offset (Physical_Address (PMM_Bitmap_End_Address))'
+                   Image &
+                " " & Offset_To_Address (Address_To_Offset (To_Address (4_098)))'Image);
             --  Masking the kernel memory.
             SERIAL.send_line
                ("Masking kernel memory. (0 - " &
-                Address_To_Offset (kernel_end_address)'Image & ")");
-            for Index in 0 .. Positive (Address_To_Offset (kernel_end_address))
+                Address_To_Offset (Kernel_End)'
+                   Image &
+                ")");
+            for Index in
+               0 ..
+                  Positive
+                     (Address_To_Offset
+                         (Kernel_End))
             loop
                 Util.Bitmap (Index) := PMM_Bitmap_Entry_Used;
             end loop;
 
             -- Masking the headers and the bitmap.
             for Index in
-               Positive (Address_To_Offset (PMM_Header_Address)) ..
-                  Positive (Address_To_Offset (PMM_Bitmap_End_Address))
+               Positive
+                  (Address_To_Offset
+                      (Physical_Address (PMM_Header_Address))) ..
+                  Positive
+                     (Address_To_Offset
+                         (Physical_Address (PMM_Bitmap_End_Address)))
             loop
                 Util.Bitmap (Index) := PMM_Bitmap_Entry_Used;
             end loop;

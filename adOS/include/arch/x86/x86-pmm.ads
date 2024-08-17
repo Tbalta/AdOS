@@ -14,10 +14,15 @@ package x86.pmm is
   MULTIBOOT_MEMORY_BADRAM           : constant multiboot_uint32_t := 5;
   PMM_PAGE_SIZE                     : constant Positive           := 4_096;
 
+  subtype Physical_Address is System.Address;
+
+
+
   type multiboot_mmap is array (Natural range <>) of multiboot_mmap_entry with
-   Pack, Convention => C;
+   Pack;
   type PMM_Bitmap_Entry is (PMM_Bitmap_Entry_Free, PMM_Bitmap_Entry_Used) with
    Size => 1;
+
 
   -- pmm_map_header_entry store the lenght and base address of a free memory region
   -- This is used for converting pmm_map offsets to physical addresses
@@ -44,18 +49,13 @@ package x86.pmm is
   PMM_Header_Address : System.Address;
   function check (cond : Boolean; msg : String) return Boolean;
 
-  function Offset_To_Address_Unchecked
-   (paroffset : Natural) return System.Address;
-  function Address_To_Offset_Unchecked (addr : System.Address) return Natural;
+  -----------------------
+  -- Address_To_Offset --
+  -----------------------
+  function Address_To_Offset_Unchecked
+   (addr : Physical_Address) return Natural;
 
-  function Offset_To_Address (paroffset : Natural) return System.Address with
-   Post =>
-    check
-     (paroffset = Address_To_Offset_Unchecked (Offset_To_Address'Result),
-      "Offset_To_Address: " & paroffset'Image & " /=" &
-      Address_To_Offset_Unchecked (Offset_To_Address'Result)'Image);
-
-  function Address_To_Offset (addr : System.Address) return Natural with
+  function Address_To_Offset (addr : Physical_Address) return Natural with
    Post =>
     check
      (Integer_Address ((Positive (addr) / PMM_PAGE_SIZE) * PMM_PAGE_SIZE) =
@@ -64,22 +64,28 @@ package x86.pmm is
       To_Integer (Offset_To_Address_Unchecked (Address_To_Offset'Result))'
        Image &
       " offset: " & Address_To_Offset'Result'Image);
-
-  function Offset_To_Address (paroffset : Natural) return System.Address is
-   (Offset_To_Address_Unchecked (paroffset));
-
-  function Address_To_Offset (addr : System.Address) return Natural is
-   (Address_To_Offset_Unchecked (addr));
+  -----------------------
+  -- Offset_To_Address --
+  -----------------------
+  function Offset_To_Address_Unchecked
+   (paroffset : Natural) return Physical_Address;
+  
+  function Offset_To_Address (paroffset : Natural) return Physical_Address with
+   Post =>
+    check
+     (paroffset = Address_To_Offset_Unchecked (Offset_To_Address'Result),
+      "Offset_To_Address: " & paroffset'Image & " /=" &
+      Address_To_Offset_Unchecked (Offset_To_Address'Result)'Image);
 
   function Get_Next_Free_Page return Natural;
 
-  function Allocate_Page return System.Address with
+  function Allocate_Page return Physical_Address with
    Post =>
     check
      (Get_Next_Free_Page > Address_To_Offset (Allocate_Page'Result),
       "Allocate_Page: Free page available but not returned");
 
-  procedure Free_Page (addr : System.Address) with
+  procedure Free_Page (addr : Physical_Address) with
    Post =>
     check
      (Get_Next_Free_Page <= Address_To_Offset (addr),
