@@ -11,33 +11,42 @@ with Interfaces.C; use Interfaces.C;
 with System;
 with System.Address_To_Access_Conversions;
 
-
 generic
-  BLOCK_SIZE : Positive;
-  with function Read_Block (Lba : Integer) return System.Address;
-package ISO is
-  pragma Preelaborate;
-  MAX_FILES : constant Positive := 256;
+  type Block_Range is range <>;
+  type Block_Type is array (Block_Range) of Interfaces.Unsigned_8;
 
-  type off_t is new Integer;
-  type File_Descriptor_With_Error is new Integer range -1 .. MAX_FILES - 1;
-  subtype File_Descriptor is File_Descriptor_With_Error range 0.. File_Descriptor_With_Error (MAX_FILES - 1);
-  type whence is (SEEK_SET, SEEK_CUR, SEEK_END);
+  --  type Block_Type is array (Positive range 1 .. BLOCK_SIZE) of Interfaces.Unsigned_8;
+  with function Read_Block
+   (Lba : Integer; Buffer : out Block_Type) return Integer;
+package VFS.ISO is
+  pragma Preelaborate;
+  BLOCK_SIZE : constant Positive := Block_Type'Length;
+  raw_buffer : aliased  Block_Type;
 
   root_lba     : Natural;
   root_dirsize : Natural;
 
+  -- ISO9660 filesystem functions --
+  type ISO_File_Info is record
+    lba : Natural := 0;
+  end record;
+  type ISO_File_Info_Array is array (File_Descriptor) of ISO_File_Info;
+  ISO_Descriptors : ISO_File_Info_Array := (others => (lba => 0));
+
   function open
    (path : String; flag : Integer) return File_Descriptor_With_Error;
-  function read
-   (fd : File_Descriptor; buffer_param : System.Address; count_param : Natural)
-    return Integer;
+
+  generic
+    type Read_Type (<>) is private;
+  function read (fd : File_Descriptor; Buffer : Read_Type) return Integer;
+
   function seek
    (fd : File_Descriptor; offset : off_t; wh : whence) return off_t;
   function close (fd : File_Descriptor) return Integer;
   procedure init;
   procedure list_file (dir_lba, dir_size_param : in Natural);
 
+  --  ISO9660 filesystem structures --
   type endian32 is record
     le : Unsigned_32;
     be : Unsigned_32;
@@ -56,18 +65,6 @@ package ISO is
   type Iso_Flag_Array is array (Iso_Flag_Value) of Boolean with
    Pack => True;
 
-  type File_Information is record
-    size   : Natural := 0;
-    lba    : Natural := 0;
-    offset : Natural := 0;
-    used   : Boolean := False;
-  end record;
-
-  type File_Information_Array is array (File_Descriptor) of File_Information;
-  type File_Information_Counter is mod MAX_FILES;
-
-  File_Descriptors : File_Information_Array := (others => (others => <>));
-
   type iso_dir is record
     dir_size  : Unsigned_8;  -- iso9660.h:71
     ext_size  : Unsigned_8;  -- iso9660.h:72
@@ -81,19 +78,19 @@ package ISO is
     idf_len   : Unsigned_8;  -- iso9660.h:83
     idf       : Interfaces.C.char_array (0 .. -1);  -- iso9660.h:84
   end record with
-    Size => 34 * 8;
-  
+   Size => 34 * 8;
+
   for iso_dir use record
-    dir_size  at 0  range 0 .. 7;
-    ext_size  at 1  range 0 .. 7;
-    data_blk  at 2  range 0 .. 63;
+    dir_size  at  0 range 0 ..  7;
+    ext_size  at  1 range 0 ..  7;
+    data_blk  at  2 range 0 .. 63;
     file_size at 10 range 0 .. 63;
     date      at 18 range 0 .. 55;
-    flags     at 25 range 0 .. 7;
-    unit_size at 26 range 0 .. 7;
-    gap_size  at 27 range 0 .. 7;
+    flags     at 25 range 0 ..  7;
+    unit_size at 26 range 0 ..  7;
+    gap_size  at 27 range 0 ..  7;
     vol_seq   at 28 range 0 .. 31;
-    idf_len   at 32 range 0 .. 7;
+    idf_len   at 32 range 0 ..  7;
     idf       at 33 range 0 .. -1;
   end record;
 
@@ -121,23 +118,22 @@ package ISO is
   end record;
 
   for iso_prim_voldesc use record
-    vol_desc_type      at 0   range 0 .. 7;
-    vol_id             at 1   range 0 .. 39;
-    vol_version        at 6   range 0 .. 7;
-    system_id          at 8   range 0 .. 255;
-    vol_id2            at 40  range 0 .. 255;
-    vol_blk_count      at 80  range 0 .. 63;
-    vol_set_size       at 120 range 0 .. 31;
-    vol_seq_num        at 124 range 0 .. 31;
-    vol_blk_size       at 128 range 0 .. 31;
-    path_table_size    at 132 range 0 .. 63;
-    le_path_table_blk  at 140 range 0 .. 31;
-    le_opath_table_blk at 144 range 0 .. 31;
-    be_path_table_blk  at 148 range 0 .. 31;
-    be_opath_table_blk at 152 range 0 .. 31;
+    vol_desc_type      at   0 range 0 ..   7;
+    vol_id             at   1 range 0 ..  39;
+    vol_version        at   6 range 0 ..   7;
+    system_id          at   8 range 0 .. 255;
+    vol_id2            at  40 range 0 .. 255;
+    vol_blk_count      at  80 range 0 ..  63;
+    vol_set_size       at 120 range 0 ..  31;
+    vol_seq_num        at 124 range 0 ..  31;
+    vol_blk_size       at 128 range 0 ..  31;
+    path_table_size    at 132 range 0 ..  63;
+    le_path_table_blk  at 140 range 0 ..  31;
+    le_opath_table_blk at 144 range 0 ..  31;
+    be_path_table_blk  at 148 range 0 ..  31;
+    be_opath_table_blk at 152 range 0 ..  31;
     root_dir           at 156 range 0 .. 271;
-    end record;
-
+  end record;
 
   package ISO_PRIM_DESC_CONVERTER is new System.Address_To_Access_Conversions
    (iso_prim_voldesc);
@@ -149,4 +145,4 @@ package ISO is
 
 private
 
-end ISO;
+end VFS.ISO;

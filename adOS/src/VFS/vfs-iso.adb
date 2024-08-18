@@ -1,8 +1,8 @@
 with SERIAL;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
-
-package body ISO is
+with VFS;                   use VFS;
+package body VFS.ISO is
     function To_Upper (str : String) return String is
         result : String := str;
     begin
@@ -33,7 +33,8 @@ package body ISO is
        (path : String; flag : Integer) return File_Descriptor_With_Error
     is
         use ISO_FILE_DESC_CONVERTER;
-        file_buffer : System.Address;
+        file_buffer : System.Address := raw_buffer'Address;
+        count       : Natural;
 
         -- Local Functions --
         function Locate_File
@@ -47,7 +48,9 @@ package body ISO is
             searched_file  : String   :=
                str (str'First .. Min (path_sep_index - 1, str'Last));
         begin
-            file_buffer  := Read_Block (Integer (lba));
+            count        := Read_Block (lba, raw_buffer);
+            file_buffer  := raw_buffer'Address;
+
             current_file := iso_dir_ptr (To_Pointer (file_buffer));
             for I in 1 .. 2 loop
                 current_file :=
@@ -60,17 +63,17 @@ package body ISO is
                 while current_file.dir_size /= 0 and current_file.idf_len >= 0
                 loop
                     declare
-                    subtype current_file_name is
-                       char_array (0 .. size_t (current_file.idf_len));
-                    package To_Ada_Conversions is new System
-                       .Address_To_Access_Conversions
-                       (current_file_name);
-                    file_name_char_array : access current_file_name :=
-                       To_Ada_Conversions.To_Pointer
-                          (current_file.idf'Address);
-                        file_name            : String :=
+                        subtype current_file_name is
+                           char_array (0 .. size_t (current_file.idf_len));
+                        package To_Ada_Conversions is new System
+                           .Address_To_Access_Conversions
+                           (current_file_name);
+                        file_name_char_array : access current_file_name :=
+                           To_Ada_Conversions.To_Pointer
+                              (current_file.idf'Address);
+                        file_name            : String                   :=
                            To_Upper (To_Ada (file_name_char_array.all, False));
-                        stripped_file_name   : String :=
+                        stripped_file_name   : String                   :=
                            file_name
                               (file_name'First ..
                                      Min
@@ -98,9 +101,11 @@ package body ISO is
                                Storage_Offset (current_file.dir_size));
                     end;
                 end loop;
-                dir_size     := dir_size - BLOCK_SIZE;
-                lba          := lba + 1;
-                file_buffer  := Read_Block (lba);
+                dir_size    := dir_size - BLOCK_SIZE;
+                lba         := lba + 1;
+                file_buffer := raw_buffer'Address;
+                count       := Read_Block (lba, raw_buffer);
+
                 current_file := iso_dir_ptr (To_Pointer (file_buffer));
             end loop;
             return null;
@@ -108,46 +113,43 @@ package body ISO is
 
         file : iso_dir_ptr :=
            Locate_File (To_Upper (path), root_lba, root_dirsize);
+
+        FD : File_Descriptor_With_Error;
     begin
         if file = null then
-            return -1;
+            return FD_ERROR;
         end if;
 
-        for FD_Index in File_Descriptors'Range loop
-            SERIAL.send_line ("FD: " & Integer'Image (Integer (FD_Index)));
-            if (not File_Descriptors (FD_Index).used) then
-                File_Descriptors (File_Descriptor (FD_Index)) :=
-                   (size => Natural (file.file_size.le),
-                    lba  => Natural (file.data_blk.le), offset => 0,
-                    used => True);
-                return File_Descriptor (FD_Index);
+        FD :=
+           VFS.Add_File
+              (name => path, size => Integer (file.file_size.le), offset => 0);
 
-            end if;
-        end loop;
+        if FD = FD_ERROR then
+            return FD_ERROR;
+        end if;
 
-        return -1;
+        ISO_Descriptors (FD).lba := Integer (file.data_blk.le);
 
+        SERIAL.send_line ("FD: " & FD'Image);
+        return FD;
     end open;
 
     --------------------
     -- ISO 9660 Read --
     --------------------
-    function read
-       (fd          : File_Descriptor; buffer_param : System.Address;
-        count_param : Natural) return Integer
-    is
-        f_lba    : Natural renames File_Descriptors (fd).lba;
-        f_offset : Natural renames File_Descriptors (fd).offset;
-        f_size   : Natural renames File_Descriptors (fd).size;
-        f_used   : Boolean renames File_Descriptors (fd).used;
+    function read (fd : File_Descriptor; Buffer : Read_Type) return Integer is
+        f_lba    : Natural renames ISO_Descriptors (fd).lba;
+        f_offset : Integer renames Descriptors (fd).offset;
+        f_size   : Natural renames Descriptors (fd).size;
+        f_used   : Boolean renames Descriptors (fd).Valid;
 
-        out_buffer    : System.Address := buffer_param;
+        out_buffer    : System.Address := Buffer'Address;
         read_buffer   : System.Address;
         base_lba      : Natural        := (f_offset / BLOCK_SIZE) + f_lba;
-        cnt           : Natural        := count_param;
+        cnt           : Natural        := Read_Type'Size / Storage_Unit;
         read_size     : Natural        := Min (cnt, f_size - f_offset);
         sectors_count : Natural := ((read_size + BLOCK_SIZE - 1) / BLOCK_SIZE);
-
+        count         : Natural;
         procedure memcpy
            (dest : System.Address; src : System.Address; size : Natural);
         pragma Import (C, memcpy, "memcpy");
@@ -157,7 +159,8 @@ package body ISO is
         end if;
         -- Adjust the offset of the lba
         for lba in base_lba .. (base_lba + sectors_count) loop
-            read_buffer := Read_Block (lba);
+            read_buffer := raw_buffer'Address;
+            count       := Read_Block (lba, raw_buffer);
             memcpy (out_buffer, read_buffer, Min (cnt, BLOCK_SIZE));
             out_buffer := out_buffer + Storage_Offset (Min (cnt, BLOCK_SIZE));
             cnt        := cnt - Min (cnt, BLOCK_SIZE);
@@ -175,9 +178,9 @@ package body ISO is
     function seek
        (fd : File_Descriptor; offset : off_t; wh : whence) return off_t
     is
-        f_offset : Natural renames File_Descriptors (fd).offset;
-        f_size   : Natural renames File_Descriptors (fd).size;
-        f_used   : Boolean renames File_Descriptors (fd).used;
+        f_offset : Natural renames Descriptors (fd).offset;
+        f_size   : Natural renames Descriptors (fd).size;
+        f_used   : Boolean renames Descriptors (fd).Valid;
     begin
         if (not f_used) then
             return -1;
@@ -206,12 +209,12 @@ package body ISO is
     -- ISO 9660 Close --
     --------------------
     function close (fd : File_Descriptor) return Integer is
-        f_used : Boolean renames File_Descriptors (fd).used;
+        f_used : Boolean renames Descriptors (fd).Valid;
     begin
         if (not f_used) then
             return -1;
         end if;
-        File_Descriptors (fd).used := False;
+        Descriptors (fd).Valid := False;
         return 0;
     end close;
 
@@ -220,10 +223,13 @@ package body ISO is
     -------------------
     procedure init is
         use ISO_PRIM_DESC_CONVERTER;
-        init_buffer        : System.Address       := Read_Block (16#10#);
-        primary_descriptor : iso_prim_voldesc_ptr := To_Pointer (init_buffer);
+        init_buffer        : System.Address;
+        primary_descriptor : iso_prim_voldesc_ptr;
         Count              : Natural              := 0;
     begin
+        Count := Read_Block (16, raw_buffer);
+        init_buffer := raw_buffer'Address;
+        primary_descriptor := iso_prim_voldesc_ptr (To_Pointer (init_buffer));
         SERIAL.send_line
            ("[iso.adb:38]Identifier (should be CD001)" &
             To_Ada (primary_descriptor.vol_id, False));
@@ -235,12 +241,16 @@ package body ISO is
     -- ISO 9660 List_File --
     ------------------------
     procedure list_file (dir_lba, dir_size_param : in Natural) is
-        file_buffer : System.Address := Read_Block (dir_lba);
+        file_buffer : System.Address := raw_buffer'Address;
         use ISO_FILE_DESC_CONVERTER;
         current_file : iso_dir_ptr := iso_dir_ptr (To_Pointer (file_buffer));
         lba          : Natural     := dir_lba;
         dir_size     : Natural     := dir_size_param;
+        count        : Natural;
     begin
+        file_buffer := raw_buffer'Address;
+        count := Read_Block (dir_lba, raw_buffer);
+
         for I in 1 .. 2 loop
             current_file :=
                To_Pointer
@@ -266,7 +276,8 @@ package body ISO is
                         list_file
                            (Natural (current_file.data_blk.le),
                             Natural (current_file.file_size.le));
-                        file_buffer := Read_Block (Integer (lba));
+                        file_buffer := raw_buffer'Address;
+                        count       := Read_Block (Integer (lba), raw_buffer);
                     end if;
                     current_file :=
                        To_Pointer
@@ -277,11 +288,12 @@ package body ISO is
             end loop;
             dir_size     := dir_size - BLOCK_SIZE;
             lba          := lba + 1;
-            file_buffer  := Read_Block (Integer (lba));
+            file_buffer  := raw_buffer'Address;
+            count        := Read_Block (lba, raw_buffer);
             current_file := iso_dir_ptr (To_Pointer (file_buffer));
 
         end loop;
 
     end list_file;
 
-end ISO;
+end VFS.ISO;

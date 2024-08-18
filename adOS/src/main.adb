@@ -14,7 +14,8 @@ with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
 with MultiBoot;               use MultiBoot;
 with System.Machine_Code;     use System.Machine_Code;
-with ISO;
+with VFS;                     use VFS;
+with VFS.ISO;
 --  with Interfaces; use Interfaces;
 procedure Main
   (magic : Interfaces.Unsigned_32; info : access MultiBoot.multiboot_info)
@@ -102,47 +103,32 @@ begin
       Enable_Paging;
    end;
    SERIAL.send_line ("Paging enabled");
-   Asm ("int $0x0");
 
    SERIAL.send_line ("Atapi setup");
 
    Atapi.discoverAtapiDevices;
    declare
-      subtype Index is Positive range 1 .. 2_048;
-      use Atapi;
-      function Read_Block (Lba : Integer) return System.Address is
-         read : Integer;
-      begin
-         read :=
-           Atapi.read_block (Unsigned_32 (Lba), Atapi.sector_data'Access);
-         return Atapi.sector_data'Address;
-      end Read_Block;
-      package MYISO is new ISO
-        (Read_Block => Read_Block,
-         BLOCK_SIZE => Positive (Atapi.CD_BLOCK_SIZE));
-      use MYISO;
-      fd     : File_Descriptor_With_Error;
-      buffer : Interfaces.C.char_array (1 .. 1_024);
+      package VFS_ISO is new VFS.ISO
+        (Block_Range  => Atapi.SECTOR_BUFFER_INDEX,
+         Block_Type   => Atapi.SECTOR_BUFFER,
+         Read_Block   => Atapi.read_block);
+      FD     : VFS.File_Descriptor_With_Error;
+      subtype my_arr is Interfaces.C.char_array (1 .. 512);
+      buffer : my_arr := (others => Interfaces.C.char'Val(0));
       read   : Integer;
+      function Read_Char is new VFS_ISO.read (Read_Type => my_arr);
    begin
-      MYISO.init;
-      fd := MYISO.open ("test2.txt", 0);
-      if fd = -1 then
+      VFS_ISO.init;
+      FD := VFS_ISO.open ("test2.txt", 0);
+      if FD = FD_ERROR then
          SERIAL.send_line ("Error opening file");
          goto Init_End;
       end if;
 
-      read := MYISO.read (fd, buffer'Address, 1_024);
-      declare
-         str : String (1 .. read) :=
-           To_Ada (buffer (1 .. Interfaces.C.size_t (read)), False);
-      begin
-         SERIAL.send_line (str & "h");
-         SERIAL.send_line
-           (To_Ada (buffer (1 .. Interfaces.C.size_t (read)), False));
-      end;
-      -- Loading an ELF file
+      read := Read_Char (FD, buffer);
 
+      SERIAL.send_line
+        (To_Ada (buffer (1 .. Interfaces.C.size_t (read)), False));
    end;
 
    <<Init_End>>

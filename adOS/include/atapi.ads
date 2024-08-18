@@ -13,7 +13,11 @@ package Atapi is
   SECONDARY_DCR : constant System.Address         := To_Address (16#376#);
   CD_BLOCK_SIZE : constant Interfaces.Unsigned_16 := 2_048;
 
-  type SECTOR_BUFFER is array (1 .. 2_048) of Interfaces.Unsigned_8 with
+  subtype SECTOR_BUFFER_INDEX is Integer range 1 .. 2_048;
+
+
+
+  type SECTOR_BUFFER is array (SECTOR_BUFFER_INDEX) of Interfaces.Unsigned_8 with
    Convention => C, Size => 2_048 * 8;
   type SECTOR_BUFFER_PTR is access all SECTOR_BUFFER;
 
@@ -66,8 +70,7 @@ package Atapi is
     control              : Interfaces.Unsigned_8;
   end record with
    Convention => C, Size => 12 * 8, Pack => True;
-  function read_block
-   (lba : Interfaces.Unsigned_32; buffer : SECTOR_BUFFER_PTR) return Integer;
+  function read_block (lba : Integer; buffer : out SECTOR_BUFFER) return Integer;
 
 private
 end Atapi;

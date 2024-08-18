@@ -144,22 +144,18 @@ package body Atapi is
    end send_packet;
 
    function read_block
-     (lba : Unsigned_32; buffer : SECTOR_BUFFER_PTR) return Integer
+     (lba : Integer; buffer : out SECTOR_BUFFER) return Integer
    is
-      packet : SCSI_PACKET :=
-        (opcode             => 16#a8#, lba_lo => Unsigned_8 (lba and 16#FF#),
-         lba_milo           => Unsigned_8 (Shift_Right (lba, 8) and 16#FF#),
-         lba_mihi           => Unsigned_8 (Shift_Right (lba, 16) and 16#FF#),
-         lba_hi             => Unsigned_8 (Shift_Right (lba, 24) and 16#FF#),
+      packet    : SCSI_PACKET :=
+        (opcode => 16#a8#, lba_lo => Unsigned_8 (Unsigned_32 (lba) and 16#FF#),
+         lba_milo           =>
+           Unsigned_8 (Shift_Right (Unsigned_32 (lba), 8) and 16#FF#),
+         lba_mihi           =>
+           Unsigned_8 (Shift_Right (Unsigned_32 (lba), 16) and 16#FF#),
+         lba_hi => Unsigned_8 (Shift_Right (Unsigned_32 (lba), 24) and 16#FF#),
          transfer_length_lo => 1, others => 0);
-      type SECTOR_BUFFER_WORD is
-        array (1 .. Integer (CD_BLOCK_SIZE) / 2) of Unsigned_16 with
-        Pack;
-      type SECTOR_BUFFER_WORD_PTR is access all SECTOR_BUFFER_WORD;
-      function toWordPtr is new Ada.Unchecked_Conversion
-        (Source => SECTOR_BUFFER_PTR, Target => SECTOR_BUFFER_WORD_PTR);
-      buffer_word : SECTOR_BUFFER_WORD_PTR := toWordPtr (buffer);
-      size_read   : Integer                := 0;
+      size_read : Integer     := 0;
+      data      : Unsigned_16;
 
    begin
       --  SERIAL.send_line ("Sending packet");
@@ -173,8 +169,12 @@ package body Atapi is
       begin
          size_read := Integer (Shift_Left (size_hi, 8) or size_lo);
       end;
-      for i in 1 .. (size_read / 2) loop
-         buffer_word (i) := Inw (getReg (currentController, ATA_REG_DATA));
+
+      for i in 0 .. (Integer (buffer'Length / 2) - 1) loop
+         data := Inw (getReg (currentController, ATA_REG_DATA));
+         buffer (buffer'First + (i * 2))     := Unsigned_8 (data);
+         buffer (buffer'First + (i * 2) + 1) :=
+           Unsigned_8 (Shift_Right (data, 8));
       end loop;
       --  buffer := fromWordPtr (buffer_word);
       SERIAL.send_line
