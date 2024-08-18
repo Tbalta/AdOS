@@ -327,5 +327,5 @@ private
    end record;
 
    Sec_Stack : aliased SS_Stack (SP.Runtime_Default_Sec_Stack_Size);
-
+   Sec_Stack_Initialized : Boolean := False;
 end System.Secondary_Stack;

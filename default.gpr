@@ -70,8 +70,6 @@ project Default is
   end Linker;
 
   package Binder is
-    -- for Driver("ada") use "gnatbind";
-    -- for Switches("ada") use ("-n");
   end Binder;
   
   for Runtime("ada") use "runtime/build";

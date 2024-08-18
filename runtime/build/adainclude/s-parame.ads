@@ -90,7 +90,7 @@ package System.Parameters is
    --  down (True) in memory as functions are called. It is used for
    --  proper implementation of the stack overflow check.
 
-   Runtime_Default_Sec_Stack_Size : constant Size_Type := 10 * 1_024;
+   Runtime_Default_Sec_Stack_Size : constant Size_Type := 16#1000#;
    --  The run-time chosen default size for secondary stacks that may be
    --  overriden by the user with the use of binder -D switch.
 

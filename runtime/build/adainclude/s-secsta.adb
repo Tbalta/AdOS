@@ -134,6 +134,14 @@ package body System.Secondary_Stack is
    -------------------
    function Get_Sec_Stack return SS_Stack_Ptr is
    begin
+      if not Sec_Stack_Initialized then
+         Sec_Stack.High_Water_Mark               := Memory_Size'First;
+         Sec_Stack.Top                           :=
+           (Chunk => Sec_Stack.Static_Chunk'Access,
+            Byte  => Memory_Index'First);
+         Sec_Stack.Static_Chunk.Size_Up_To_Chunk := 0;
+      end if;
+
       return Sec_Stack'Access;
    end Get_Sec_Stack;
 
