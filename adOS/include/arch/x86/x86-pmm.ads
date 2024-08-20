@@ -12,10 +12,7 @@ package x86.pmm is
   MULTIBOOT_MEMORY_ACPI_RECLAIMABLE : constant multiboot_uint32_t := 3;
   MULTIBOOT_MEMORY_NVS              : constant multiboot_uint32_t := 4;
   MULTIBOOT_MEMORY_BADRAM           : constant multiboot_uint32_t := 5;
-  PMM_PAGE_SIZE                     : constant Positive           := 4_096;
-
-  subtype Physical_Address is System.Address;
-
+  PMM_PAGE_SIZE                     : constant            := 4_096;
 
 
   type multiboot_mmap is array (Natural range <>) of multiboot_mmap_entry with

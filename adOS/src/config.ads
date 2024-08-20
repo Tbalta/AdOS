@@ -1,5 +1,5 @@
 with System;
-with x86.pmm; use x86.pmm;
+with x86; use x86;
 package config is
     pragma Preelaborate;
 

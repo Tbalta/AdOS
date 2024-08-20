@@ -137,13 +137,14 @@ package body VFS.ISO is
     --------------------
     -- ISO 9660 Read --
     --------------------
-    function read (fd : File_Descriptor; Buffer : Read_Type) return Integer is
+    function read (fd : File_Descriptor; Buffer : out Read_Type) return Integer is
         f_lba    : Natural renames ISO_Descriptors (fd).lba;
         f_offset : Integer renames Descriptors (fd).offset;
         f_size   : Natural renames Descriptors (fd).size;
         f_used   : Boolean renames Descriptors (fd).Valid;
 
-        out_buffer    : System.Address := Buffer'Address;
+        Temporary_Object : Read_Type;
+        out_buffer    : System.Address := Temporary_Object'Address;
         read_buffer   : System.Address;
         base_lba      : Natural        := (f_offset / BLOCK_SIZE) + f_lba;
         cnt           : Natural        := Read_Type'Size / Storage_Unit;
@@ -166,6 +167,8 @@ package body VFS.ISO is
             cnt        := cnt - Min (cnt, BLOCK_SIZE);
         end loop;
 
+        Buffer := Temporary_Object;
+
         -- Update the offset
         f_offset := f_offset + read_size;
 
@@ -175,6 +178,11 @@ package body VFS.ISO is
     -------------------
     -- ISO 9660 Seek --
     -------------------
+    procedure seek (fd : File_Descriptor; offset : off_t; wh : whence) is
+    begin
+        Descriptors (fd).offset := Natural (seek (fd, offset, wh));
+    end seek;
+    
     function seek
        (fd : File_Descriptor; offset : off_t; wh : whence) return off_t
     is

@@ -4,30 +4,29 @@ with config;                  use config;
 package body x86.vmm is
     use Standard.ASCII;
 
-    function To_Address (Addr : Page_Address) return System.Address
-    is
+    function To_Address (Addr : Page_Address) return System.Address is
     begin
         return System.Address (Integer_Address (Addr) * 4_096);
     end To_Address;
 
-    function To_Page_Table_Address (Addr : System.Address) return Page_Table_Address
+    function To_Page_Table_Address
+       (Addr : System.Address) return Page_Table_Address
     is
     begin
         return Page_Table_Address (Integer_Address (Addr) / 4_096);
     end To_Page_Table_Address;
 
-    function To_Page_Directory_Address (Addr : System.Address) return Page_Directory_Address
+    function To_Page_Directory_Address
+       (Addr : System.Address) return Page_Directory_Address
     is
     begin
         return Page_Directory_Address (Integer_Address (Addr) / 4_096);
     end To_Page_Directory_Address;
 
-    function To_Page_Address (Addr : System.Address) return Page_Address
-    is
+    function To_Page_Address (Addr : System.Address) return Page_Address is
     begin
         return Page_Address (Integer_Address (Addr) / 4_096);
     end To_Page_Address;
-
 
     procedure Enable_Paging is
     begin
@@ -69,7 +68,8 @@ package body x86.vmm is
     end Load_CR3;
 
     procedure Create_Page_Table
-       (PD : Page_Directory_Access; PD_Index : Page_Directory_Index)
+       (PD :     Page_Directory_Access; PD_Index : Page_Directory_Index;
+        PT : out Page_Table_Access)
     is
     begin
         PD.all (PD_Index).Present         := True;
@@ -82,12 +82,16 @@ package body x86.vmm is
         PD.all (PD_Index).Global          := False;
         PD.all (PD_Index).Address         := To_Page_Address (Allocate_Page);
 
-        declare
-            PT : Page_Table_Access :=
-               To_Page_Table (To_Address (PD.all (PD_Index).Address));
-        begin
-            PT.all := Page_Table'(others => (others => <>));
-        end;
+        PT     := To_Page_Table (To_Address (PD.all (PD_Index).Address));
+        PT.all := Page_Table'(others => (others => <>));
+    end Create_Page_Table;
+
+    procedure Create_Page_Table
+       (PD : Page_Directory_Access; PD_Index : Page_Directory_Index)
+    is
+        PT : Page_Table_Access;
+    begin
+        Create_Page_Table (PD, PD_Index, PT);
     end Create_Page_Table;
 
     procedure Map_Page_Table_Entry
@@ -148,7 +152,8 @@ package body x86.vmm is
     end Map_Range;
 
     procedure Identity_Map (CR3 : CR3_register) is
-        PD : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
+        PD                : Page_Directory_Access :=
+           To_Page_Directory (To_Address (CR3.Address));
         Address_Breakdown : Virtual_Address_Break :=
            To_Virtual_Address_Break (Kernel_Start);
     begin
@@ -158,5 +163,105 @@ package body x86.vmm is
            (PD, Address_Breakdown.Directory, Address_Breakdown.Table,
             Kernel_Start, Kernel_End);
     end Identity_Map;
+
+    function Can_Fit
+       (CR3 : CR3_register; Address : Virtual_Address; Size : Storage_Count)
+        return Boolean
+    is
+        PD                : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
+        PT : Page_Table_Access;
+        Address_Breakdown : Virtual_Address_Break :=
+           To_Virtual_Address_Break (Address);
+        To_Fit            : Storage_Count         := Size;
+    begin
+        for PD_Index in Address_Breakdown.Directory .. Page_Directory'Last loop
+            exit when To_Fit = 0;
+            if not PD (PD_Index).Present then
+                To_Fit :=
+                   To_Fit -
+                   Storage_Count'Min (To_Fit, Storage_Count (Page_Table'Length * PMM_PAGE_SIZE));
+            else
+                PT := To_Page_Table (To_Address (PD (PD_Index).Address));
+                for PT_Index in Address_Breakdown.Table .. Page_Table'Last loop
+                    if not PT (PT_Index).Present then
+                        To_Fit := To_Fit - Storage_Count'Min (To_Fit, PMM_PAGE_SIZE);
+                    else
+                        return To_Fit = 0;
+                    end if;
+                end loop;
+                Address_Breakdown.Table := 0;
+            end if;
+        end loop;
+        return To_Fit = 0;
+    end Can_Fit;
+
+    function Map_Data
+       (CR3  : in out CR3_register; Address : Virtual_Address;
+        Data : in     Data_Type) return Boolean
+    is
+        --  Returns True if the mapping was successful and False otherwise
+
+        PD                : Page_Directory_Access :=
+           To_Page_Directory (To_Address (CR3.Address));
+        PT                : Page_Table_Access;
+        Address_Breakdown : Virtual_Address_Break :=
+           To_Virtual_Address_Break (Address);
+        Data_Size         : Storage_Count         := Data'Size / Storage_Unit;
+
+        procedure memcpy
+           (dest : System.Address; src : System.Address; size : Natural);
+        pragma Import (C, memcpy, "memcpy");
+
+        PD_Entry :
+           Page_Directory_Entry renames PD (Address_Breakdown.Directory);
+        PT_Entry : Page_Table_Entry renames PT (Address_Breakdown.Table);
+
+        Data_Buffer : System.Address := Data'Address;
+
+    begin
+        if not Can_Fit (CR3, Address, Data_Size) then
+            return False;
+        end if;
+
+        while Data_Size > 0 loop
+            if not PD.all (Address_Breakdown.Directory).Present then
+                Create_Page_Table (PD, Address_Breakdown.Directory);
+            end if;
+
+            PT := To_Page_Table (To_Address (PD_Entry.Address));
+
+            PT_Entry.Present         := True;
+            PT_Entry.Read_Write      := True;
+            PT_Entry.User_Supervisor := False;
+            PT_Entry.Write_Through   := False;
+            PT_Entry.Cache_Disable   := False;
+            PT_Entry.Accessed        := False;
+            PT_Entry.Page_Size       := False;
+            PT_Entry.Global          := False;
+            PT_Entry.Address         := To_Page_Address (Allocate_Page);
+
+            --  Map the data
+            declare
+                Data_To_Map_Size : Storage_Count  :=
+                   Storage_Count'Min
+                      (Data_Size,
+                       Virtual_Address_Offset'Last - Address_Breakdown.Offset);
+                Destination      : System.Address :=
+                   To_Address (PT_Entry.Address) +
+                   Storage_Offset (Address_Breakdown.Offset);
+            begin
+                memcpy
+                   (dest => Destination, src => Data_Buffer,
+                    size => Integer (Data_To_Map_Size));
+                Data_Size   := Data_Size - Data_To_Map_Size;
+                Data_Buffer := Data_Buffer + Storage_Offset (Data_To_Map_Size);
+            end;
+            Address_Breakdown.Offset := 0;
+            Next (Address_Breakdown.Directory, Address_Breakdown.Table);
+
+        end loop;
+
+        return True;
+    end Map_Data;
 
 end x86.vmm;

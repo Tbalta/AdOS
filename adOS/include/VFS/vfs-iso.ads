@@ -37,9 +37,10 @@ package VFS.ISO is
    (path : String; flag : Integer) return File_Descriptor_With_Error;
 
   generic
-    type Read_Type (<>) is private;
-  function read (fd : File_Descriptor; Buffer : Read_Type) return Integer;
+    type Read_Type is private;
+  function read (fd : File_Descriptor; Buffer : out Read_Type) return Integer;
 
+  procedure seek (fd : File_Descriptor; offset : off_t; wh : whence);
   function seek
    (fd : File_Descriptor; offset : off_t; wh : whence) return off_t;
   function close (fd : File_Descriptor) return Integer;
