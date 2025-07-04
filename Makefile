@@ -27,3 +27,9 @@ debug: main.iso
 
 format:
 	gnatpp $(wildcard adOS/**/*.adb) $(wildcard adOS/**/*.ads) -rnb
+
+docker-make:
+	docker-compose -f .docker/docker-compose.yml run --rm --remove-orphans ados make
+
+docker-build:
+	docker-compose -f .docker/docker-compose.yml build ados
