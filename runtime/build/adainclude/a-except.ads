@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 1992-2019, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2023, Free Software Foundation, Inc.         --
 --                                                                          --
 -- This specification is derived from the Ada Reference Manual for use with --
 -- GNAT. The copyright notice above, and the license provisions that follow --
@@ -33,24 +33,13 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
---  This version of Ada.Exceptions fully supports Ada 95 and later language
---  versions.  It is used in all situations except for the build of the
---  compiler and other basic tools. For these latter builds, we use an
---  Ada 95-only version.
-
---  The reason for this splitting off of a separate version is to support
---  older bootstrap compilers that do not support Ada 2005 features, and
---  Ada.Exceptions is part of the compiler sources.
-
-pragma Polling (Off);
---  We must turn polling off for this unit, because otherwise we get
---  elaboration circularities with ourself.
+--  This is the default version of this package. We also have cert and zfp
+--  versions.
 
 with System;
 with System.Parameters;
 with Interfaces.C;
---  with System.Standard_Library;
---  with System.Traceback_Entries;
+with System.Standard_Library;
 
 package Ada.Exceptions is
    pragma Preelaborate;
@@ -127,6 +116,7 @@ package Ada.Exceptions is
    --  for Exception_Occurrence'Write use Write_Exception_Occurrence;
 
 private
+   package SSL renames System.Standard_Library;
    package SP renames System.Parameters;
 
    subtype EOA is Exception_Occurrence_Access;
@@ -145,9 +135,11 @@ private
    Null_Loc : constant Code_Loc := System.Null_Address;
    --  Null code location, used to flag outer level frame
 
-   type Exception_Id is new Integer;
+   type Exception_Id is new SSL.Exception_Data_Ptr;
 
-   Null_Id : constant Exception_Id := 0;
+   --  Functions for implementing Exception_Id stream attributes
+
+   Null_Id : constant Exception_Id := null;
 
    -------------------------
    -- Private Subprograms --
@@ -282,7 +274,8 @@ private
    --  Functions for implementing Exception_Occurrence stream attributes
 
    Null_Occurrence : constant Exception_Occurrence :=
-     (Id  => 0, Machine_Occurrence => System.Null_Address, Msg_Length => 0,
-      Msg => (others => ' '), Exception_Raised => False, Pid => 0);
+     (Machine_Occurrence => System.Null_Address,
+      Msg => (others => '*'),
+      others => <>);
 
 end Ada.Exceptions;

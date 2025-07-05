@@ -13,15 +13,32 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
+--  Preconditions in this unit are meant for analysis only, not for run-time
+--  checking, so that the expected exceptions are raised. This is enforced by
+--  setting the corresponding assertion policy to Ignore. Postconditions and
+--  contract cases should not be executed at runtime as well, in order not to
+--  slow down the execution of these functions.
+
+pragma Assertion_Policy (Pre            => Ignore,
+                         Post           => Ignore,
+                         Contract_Cases => Ignore,
+                         Ghost          => Ignore);
+
 with System.Parameters;
 
-package Interfaces.C is
-   pragma Pure;
+package Interfaces.C
+  with SPARK_Mode, Pure
+is
+   pragma Annotate (GNATprove, Always_Return, C);
 
-  --   pragma Suppress (Index_Check);
-  --   pragma Suppress (Overflow_Check);
-  --   pragma Suppress (All_Checks);
-  --   pragma Suppress (Range_Check);
+   --  Each of the types declared in Interfaces.C is C-compatible.
+
+   --  The types int, short, long, unsigned, ptrdiff_t, size_t, double,
+   --  char, wchar_t, char16_t, and char32_t correspond respectively to the
+   --  C types having the same names. The types signed_char, unsigned_short,
+   --  unsigned_long, unsigned_char, C_bool, C_float, and long_double
+   --  correspond respectively to the C types signed char, unsigned
+   --  short, unsigned long, unsigned char, bool, float, and long double.
 
    --  Declaration's based on C's <limits.h>
 
@@ -81,8 +98,16 @@ package Interfaces.C is
 
    nul : constant char := char'First;
 
-   function To_C (Item : Character) return char;
-   function To_Ada (Item : char) return Character;
+   --  The functions To_C and To_Ada map between the Ada type Character and the
+   --  C type char.
+
+   function To_C (Item : Character) return char
+   with
+     Post => To_C'Result = char'Val (Character'Pos (Item));
+
+   function To_Ada (Item : char) return Character
+   with
+     Post => To_Ada'Result = Character'Val (char'Pos (Item));
 
    type char_array is array (size_t range <>) of aliased char;
    for char_array'Component_Size use CHAR_BIT;

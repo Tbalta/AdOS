@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 1992-2019, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2023, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -29,18 +29,17 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-pragma Compiler_Unit_Warning;
-
 with System.Parameters;
-
 with System.Storage_Elements;
+
 package System.Secondary_Stack is
    pragma Preelaborate;
    pragma Suppress (All_Checks);
-   use type System.Parameters.Size_Type;
 
    package SP renames System.Parameters;
    package SSE renames System.Storage_Elements;
+
+   use type SP.Size_Type;
 
    type SS_Stack (Default_Chunk_Size : SP.Size_Type) is private;
    --  An abstraction for a heap structure maintained in a stack-like fashion.
@@ -255,8 +254,7 @@ private
 
    type Chunk_Memory is array (Memory_Size range <>) of SSE.Storage_Element;
    for Chunk_Memory'Alignment use Standard'Maximum_Alignment;
-   --  The memory storage of a single chunk. It utilizes maximum alignment in
-   --  order to guarantee efficient operations.
+   --  The memory storage of a single chunk
 
    --------------
    -- SS_Chunk --

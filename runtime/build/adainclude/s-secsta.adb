@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1992-2019, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2023, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -29,8 +29,6 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 --  with Interfaces;
-pragma Compiler_Unit_Warning;
-with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
 --  with System.Address_To_Access_Conversions;
 with System.Parameters; use System.Parameters;
@@ -55,7 +53,7 @@ package body System.Secondary_Stack is
    --  in order to avoid depending on the binder. Their values are set by the
    --  binder.
 
-   Binder_SS_Count : Natural;
+   Binder_SS_Count : Natural := 0;
    pragma Export (Ada, Binder_SS_Count, "__gnat_binder_ss_count");
    --  The number of secondary stacks in the pool created by the binder
 
@@ -257,16 +255,22 @@ package body System.Secondary_Stack is
    ----------------------------
 
    function Has_Enough_Free_Memory
-     (Chunk : SS_Chunk_Ptr; Byte : Memory_Index; Mem_Size : Memory_Size)
-      return Boolean
+     (Chunk    : SS_Chunk_Ptr;
+      Byte     : Memory_Index;
+      Mem_Size : Memory_Size) return Boolean
    is
    begin
+      --  First check if the chunk is full (Byte is > Memory'Last in that
+      --  case), then check there is enough free memory.
+
       --  Byte - 1 denotes the last occupied byte. Subtracting that byte from
       --  the memory capacity of the chunk yields the size of the free memory
       --  within the chunk. The chunk can fit the request as long as the free
       --  memory is as big as the request.
 
-      return Chunk.Size - (Byte - 1) >= Mem_Size;
+      return Chunk.Memory'Last >= Byte
+        and then Chunk.Size - (Byte - 1) >= Mem_Size;
+
    end Has_Enough_Free_Memory;
 
    ------------------------------
@@ -297,7 +301,7 @@ package body System.Secondary_Stack is
          Size_MS : constant Memory_Size := Memory_Size (Size);
 
       begin
-         --  Detect a case where the Storage_Size is very large and may yield
+         --  Detect a case where the Size is very large and may yield
          --  a rounded result which is outside the range of Chunk_Memory_Size.
          --  Treat this case as secondary-stack depletion.
 

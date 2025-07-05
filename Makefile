@@ -33,3 +33,6 @@ docker-make:
 
 docker-build:
 	docker-compose -f .docker/docker-compose.yml build ados
+
+docker-run:
+	docker-compose -f .docker/docker-compose.yml run --rm --remove-orphans ados
