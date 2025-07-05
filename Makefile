@@ -30,6 +30,7 @@ format:
 
 docker-make:
 	docker-compose -f .docker/docker-compose.yml run --rm --remove-orphans ados make
+	qemu-system-i386 -cdrom main.iso $(qemu_param)
 
 docker-build:
 	docker-compose -f .docker/docker-compose.yml build ados

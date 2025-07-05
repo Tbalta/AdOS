@@ -33,3 +33,5 @@ ENV PATH="$PATH:/opt/cross/i386-elf/bin"
 RUN ln -s /opt/cross/i386-elf/bin/i386-elf-gcc /opt/cross/i386-elf/bin/i386-elf-gnatgcc
 COPY linker.xml /usr/share/gprconfig/linker.xml
 COPY compilers.xml /usr/share/gprconfig/compilers.xml
+
+RUN apt -y install grub-common xorriso grub-pc

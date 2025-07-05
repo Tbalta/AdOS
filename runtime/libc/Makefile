@@ -52,6 +52,6 @@ $(LIB): $(OBJS)
 	$(AR) $(ARFLAGS) $@ $^
 
 clean:
-	$(RM) $(OBJS) $(DEPS) $(LIB)
+	$(RM) $(OBJS)
 
 -include $(DEPS)

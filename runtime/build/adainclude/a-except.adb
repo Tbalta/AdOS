@@ -789,8 +789,18 @@ package body Ada.Exceptions is
      (E : Exception_Id; F : System.Address; L : Integer; C : Integer := 0;
       M : System.Address := System.Null_Address)
    is
+      Big_File_Name : constant access String := To_Ptr (F);
+      File_Name_Length : Natural := 0;
+      pragma Unreferenced (M);
    begin
-      Raise_Exception (E,  " at" & L'Image & ":" & C'Image);
+      for I in Big_File_Name'Range loop
+         if Big_File_Name (I) = ASCII.NUL then
+            File_Name_Length := I - Big_File_Name'First;
+            exit;
+         end if;
+      end loop;
+      Raise_Exception (E,  "at " & Big_File_Name (1 .. File_Name_Length) &
+         L'Image & ":" & C'Image);
    end Raise_With_Location_And_Msg;
 
    --------------------

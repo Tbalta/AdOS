@@ -18,8 +18,7 @@ generic
   --  type Block_Type is array (Positive range 1 .. BLOCK_SIZE) of Interfaces.Unsigned_8;
   with function Read_Block
    (Lba : Integer; Buffer : out Block_Type) return Integer;
-package VFS.ISO is
-  pragma Preelaborate;
+package VFS.ISO with Preelaborate is
   BLOCK_SIZE : constant Positive := Block_Type'Length;
   raw_buffer : aliased  Block_Type;
 

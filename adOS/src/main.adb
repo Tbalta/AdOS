@@ -100,7 +100,7 @@ begin
    begin
       Identity_Map (CR3);
       Load_CR3 (CR3);
-      Enable_Paging;
+      --  Enable_Paging; Paging currently broken
    end;
    SERIAL.send_line ("Paging enabled");
 
