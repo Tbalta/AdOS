@@ -37,3 +37,8 @@ docker-build:
 
 docker-run:
 	docker-compose -f .docker/docker-compose.yml run --rm --remove-orphans ados
+
+docker-debug:
+	docker-compose -f .docker/docker-compose.yml run --rm --remove-orphans ados make
+	qemu-system-i386 -cdrom main.iso $(qemu_param) -s -S
+	

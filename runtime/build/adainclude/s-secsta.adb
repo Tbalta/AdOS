@@ -29,20 +29,12 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
---  with Ada.Unchecked_Conversion;
-
-with System.Parameters; use System.Parameters;
---  with System.Address_To_Access_Conversions;
-
---  with Interfaces;
---  with System.Address_To_Access_Conversions;
---  TODO Implement System.Soft_links;
---  with System.Soft_Links;       use System.Soft_Links;
+with System.Parameters;       use System.Parameters;
+with System.Soft_Links;       use System.Soft_Links;
 with System.Storage_Elements; use System.Storage_Elements;
 
 package body System.Secondary_Stack is
-   --  package SS_Stack_Ptr_Conv is new System.Address_To_Access_Conversions
-   --    (SS_Stack);
+
    ------------------------------------
    -- Binder Allocated Stack Support --
    ------------------------------------
@@ -58,7 +50,6 @@ package body System.Secondary_Stack is
    --  in order to avoid depending on the binder. Their values are set by the
    --  binder.
 
-   --  TODO.
    Binder_SS_Count : Natural := 0;
    pragma Export (Ada, Binder_SS_Count, "__gnat_binder_ss_count");
    --  The number of secondary stacks in the pool created by the binder
@@ -69,7 +60,6 @@ package body System.Secondary_Stack is
    --  is defined here rather than in init.c or System.Init because the ZFP and
    --  Ravenscar-ZFP run-times lack these locations.
 
-   --  TODO
    Binder_Default_SS_Pool : Address;
    pragma Export (Ada, Binder_Default_SS_Pool, "__gnat_default_ss_pool");
    --  The address of the secondary stack pool created by the binder
@@ -80,20 +70,6 @@ package body System.Secondary_Stack is
    -----------------------
    -- Local subprograms --
    -----------------------
-
-   ------------------------
-   -- Get_Sec_Stack      --
-   ------------------------
-   function Get_Sec_Stack return SS_Stack_Ptr is
-      Stack : SS_Stack_Ptr := Sec_Stack'Access;
-   begin
-      --  TODO Because linking is done with .o,
-      --  SS_init Is not called by the binder.
-      if not Stack_Is_Initialized then
-         SS_Init (Stack);
-      end if;
-      return Stack;
-   end Get_Sec_Stack;
 
    procedure Allocate_On_Chunk
      (Stack : SS_Stack_Ptr; Prev_Chunk : SS_Chunk_Ptr; Chunk : SS_Chunk_Ptr;
@@ -425,7 +401,7 @@ package body System.Secondary_Stack is
 
       --  Local variables
 
-      Stack    : constant SS_Stack_Ptr := Get_Sec_Stack;
+      Stack    : constant SS_Stack_Ptr := Get_Sec_Stack.all;
       Mem_Size : Memory_Size;
 
       --  Start of processing for SS_Allocate
@@ -449,7 +425,7 @@ package body System.Secondary_Stack is
    ----------------
 
    function SS_Get_Max return Long_Long_Integer is
-      Stack : constant SS_Stack_Ptr := Get_Sec_Stack;
+      Stack : constant SS_Stack_Ptr := Get_Sec_Stack.all;
 
    begin
       return Long_Long_Integer (Stack.High_Water_Mark);
@@ -516,9 +492,9 @@ package body System.Secondary_Stack is
 
       --  Local variables
 
-      Stack : constant SS_Stack_Ptr := Get_Sec_Stack;
+      Stack : constant SS_Stack_Ptr := Get_Sec_Stack.all;
 
-      --  Start of processing for SS_Info
+   --  Start of processing for SS_Info
 
    begin
       Put_Line ("Secondary Stack information:");
@@ -574,8 +550,6 @@ package body System.Secondary_Stack is
       --  Reset the high water mark to account for brand new allocations
 
       Stack.High_Water_Mark := 0;
-      Stack_Is_Initialized  := True;
-
    end SS_Init;
 
    -------------
@@ -583,7 +557,7 @@ package body System.Secondary_Stack is
    -------------
 
    function SS_Mark return Mark_Id is
-      Stack : constant SS_Stack_Ptr := Get_Sec_Stack;
+      Stack : constant SS_Stack_Ptr := Get_Sec_Stack.all;
 
    begin
       return (Stack => Stack, Top => Stack.Top);

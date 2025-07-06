@@ -106,7 +106,6 @@ package System.Secondary_Stack is
    --  for example.
 
 private
-   function Get_Sec_Stack return SS_Stack_Ptr;
    SS_Pool : Integer;
    --  Unused entity that is just present to ease the sharing of the pool
    --  mechanism for specific allocation/deallocation in the compiler.
@@ -334,7 +333,7 @@ private
         (Size_Up_To_Chunk => 0, Next => null, Memory => (others => 0),
          Size             => 1_024),
       Default_Chunk_Size => 1_024);
-   Stack_Is_Initialized : Boolean := False;
+
    -------------
    -- Mark_Id --
    -------------
