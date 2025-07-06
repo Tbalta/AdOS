@@ -3,6 +3,8 @@ with SERIAL;                  use SERIAL;
 package body x86.gdt is
    pragma Suppress (Index_Check);
    pragma Suppress (Range_Check);
+   pragma Suppress (Overflow_Check);
+   pragma Suppress (All_Checks);
 
    procedure set_gdt_entry
      (index       : Integer; base : System.Address; limit : Unsigned_32;

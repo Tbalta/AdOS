@@ -6,7 +6,7 @@
 --                                                                          --
 --                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 1992-2023, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2019, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -34,7 +34,6 @@ with System.Storage_Elements;
 
 package System.Secondary_Stack is
    pragma Preelaborate;
-   pragma Suppress (All_Checks);
 
    package SP renames System.Parameters;
    package SSE renames System.Storage_Elements;
@@ -53,8 +52,8 @@ package System.Secondary_Stack is
 
    type Mark_Id is private;
    --  An abstraction for tracking the state of the secondary stack
-
-   function Get_Sec_Stack return SS_Stack_Ptr;
+   procedure print_debug (val : System.Address);
+   pragma Import (C, print_debug, "print_debug");
 
    procedure SS_Init
      (Stack : in out SS_Stack_Ptr; Size : SP.Size_Type := SP.Unspecified_Size);
@@ -84,7 +83,7 @@ package System.Secondary_Stack is
    --
    --    * Create a new chunk that fits the requested Storage_Size.
 
-   procedure SS_Free (Stack : in out SS_Stack_Ptr);
+   procedure SS_Free (Stack : in out SS_Stack_Ptr) is null;
    --  Free all dynamic chunks of secondary stack Stack. If possible, free the
    --  stack itself.
 
@@ -98,7 +97,16 @@ package System.Secondary_Stack is
    --  Return the high water mark of the invoking task's secondary stack, in
    --  bytes.
 
+   generic
+      with procedure Put_Line (S : String);
+   procedure SS_Info;
+   --  Debugging procedure for outputting the internals of the invoking task's
+   --  secondary stack. This procedure is generic in order to avoid a direct
+   --  dependence on a particular IO package. Instantiate with Text_IO.Put_Line
+   --  for example.
+
 private
+   function Get_Sec_Stack return SS_Stack_Ptr;
    SS_Pool : Integer;
    --  Unused entity that is just present to ease the sharing of the pool
    --  mechanism for specific allocation/deallocation in the compiler.
@@ -254,7 +262,8 @@ private
 
    type Chunk_Memory is array (Memory_Size range <>) of SSE.Storage_Element;
    for Chunk_Memory'Alignment use Standard'Maximum_Alignment;
-   --  The memory storage of a single chunk
+   --  The memory storage of a single chunk. It utilizes maximum alignment in
+   --  order to guarantee efficient operations.
 
    --------------
    -- SS_Chunk --
@@ -266,8 +275,11 @@ private
 
    type SS_Chunk_Ptr is access all SS_Chunk;
    --  Reference to the static or any dynamic chunk
-
    type SS_Chunk (Size : Memory_Size) is record
+      Next : SS_Chunk_Ptr;
+      --  Pointer to the next chunk. The direction of the pointer is from the
+      --  static chunk to the first dynamic chunk, and so on.
+
       Size_Up_To_Chunk : Memory_Size;
       --  The size of the secondary stack up to, but excluding the current
       --  chunk. This value aids in calculating the total amount of memory
@@ -299,6 +311,9 @@ private
    --------------
 
    type SS_Stack (Default_Chunk_Size : SP.Size_Type) is record
+      Freeable : Boolean;
+      --  Indicates whether the secondary stack can be freed
+
       High_Water_Mark : Memory_Size;
       --  The maximum amount of memory in use throughout the lifetime of the
       --  secondary stack.
@@ -312,6 +327,14 @@ private
       --  secondary stack.
    end record;
 
+   Sec_Stack : aliased SS_Stack (1_024) :=
+     (Freeable           => False, High_Water_Mark => 0,
+      Top                => (Byte => 0, Chunk => null),
+      Static_Chunk       =>
+        (Size_Up_To_Chunk => 0, Next => null, Memory => (others => 0),
+         Size             => 1_024),
+      Default_Chunk_Size => 1_024);
+   Stack_Is_Initialized : Boolean := False;
    -------------
    -- Mark_Id --
    -------------
@@ -324,6 +347,88 @@ private
       --  The value of Stack.Top at the point in time when the mark was taken
    end record;
 
-   Sec_Stack : aliased SS_Stack (SP.Runtime_Default_Sec_Stack_Size);
-   Sec_Stack_Initialized : Boolean := False;
+   ------------------
+   -- Testing Aids --
+   ------------------
+
+   --  The following section provides lightweight versions of all abstractions
+   --  used to implement a secondary stack. The contents of these versions may
+   --  look identical to the original abstractions, however there are several
+   --  important implications:
+   --
+   --    * The versions do not expose pointers.
+   --
+   --    * The types of the versions are all definite. In addition, there are
+   --      no per-object constrained components. As a result, the versions do
+   --      not involve the secondary stack or the heap in any way.
+   --
+   --    * The types of the versions do not contain potentially big components.
+
+   subtype Chunk_Id_With_Invalid is Natural;
+   --  Numeric Id of a chunk with value zero
+
+   Invalid_Chunk_Id : constant Chunk_Id_With_Invalid := 0;
+
+   subtype Chunk_Id is
+     Chunk_Id_With_Invalid range 1 .. Chunk_Id_With_Invalid'Last;
+   --  Numeric Id of a chunk. A positive Id is considered "valid" because a
+   --  secondary stack will have at least one chunk (the static chunk).
+
+   subtype Chunk_Count is Natural;
+   --  Number of chunks in a secondary stack
+
+   --  Lightweight version of SS_Chunk
+
+   type Chunk_Info is record
+      Size : Memory_Size_With_Invalid;
+      --  The memory capacity of the chunk
+
+      Size_Up_To_Chunk : Memory_Size_With_Invalid;
+      --  The size of the secondary stack up to, but excluding the current
+      --  chunk.
+   end record;
+
+   Invalid_Chunk : constant Chunk_Info :=
+     (Size => Invalid_Memory_Size, Size_Up_To_Chunk => Invalid_Memory_Size);
+
+   --  Lightweight version of Stack_Pointer
+
+   type Stack_Pointer_Info is record
+      Byte : Memory_Index;
+      --  The position of the first free byte within the memory storage of
+      --  Chunk. Byte - 1 denotes the last occupied byte within Chunk.
+
+      Chunk : Chunk_Id_With_Invalid;
+      --  The Id of the chunk that accommodated the most recent allocation.
+      --  This could be the static or any dynamic chunk.
+   end record;
+
+   --  Lightweight version of SS_Stack
+
+   type Stack_Info is record
+      Default_Chunk_Size : Memory_Size;
+      --  The default memory capacity of a chunk
+
+      Freeable : Boolean;
+      --  Indicates whether the secondary stack can be freed
+
+      High_Water_Mark : Memory_Size;
+      --  The maximum amount of memory in use throughout the lifetime of the
+      --  secondary stack.
+
+      Number_Of_Chunks : Chunk_Count;
+      --  The total number of static and dynamic chunks in the secondary stack
+
+      Top : Stack_Pointer_Info;
+      --  The stack pointer
+   end record;
+
+   function Get_Chunk_Info
+     (Stack : SS_Stack_Ptr; C_Id : Chunk_Id) return Chunk_Info;
+   --  Obtain the information attributes of a chunk that belongs to secondary
+   --  stack Stack and is identified by Id C_Id.
+
+   function Get_Stack_Info (Stack : SS_Stack_Ptr) return Stack_Info;
+   --  Obtain the information attributes of secondary stack Stack
+
 end System.Secondary_Stack;

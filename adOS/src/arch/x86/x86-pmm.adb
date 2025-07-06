@@ -101,12 +101,14 @@ package body x86.pmm is
         package Util is new PMM_Utils (PMM_Header_Address);
         use Util;
         Offset : Natural := Get_Next_Free_Page;
+        Result : Physical_Address;
     begin
-        if Offset = -1 then
-            return Physical_Address (0);
-        end if;
         Util.Bitmap (Offset) := PMM_Bitmap_Entry_Used;
-        return Offset_To_Address (Offset);
+        Result := Offset_To_Address (Offset);
+        SERIAL.send_line
+           ("PMM: Allocated page at " & To_Address (Result)'Image &
+            " with offset " & Offset'Image);
+         return Result;
     end Allocate_Page;
 
     procedure Free_Page (addr : Physical_Address) is
