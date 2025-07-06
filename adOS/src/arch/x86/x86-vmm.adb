@@ -1,3 +1,4 @@
+with SERIAL;
 with System.Machine_Code;     use System.Machine_Code;
 with System.Storage_Elements; use System.Storage_Elements;
 with config;                  use config;
@@ -55,7 +56,7 @@ package body x86.vmm is
             PD : Page_Directory_Access :=
                To_Page_Directory (To_Address (CR3.Address));
         begin
-            PD.all := Page_Directory'(others => (others => <>));
+            PD.all := Page_Directory'(others => (Present => False, others => <>));
         end;
 
         return CR3;
@@ -137,6 +138,10 @@ package body x86.vmm is
         PT_Index       : Page_Table_Index     := Page_Table_Start;
         Address_To_Map : Physical_Address     := Start_Address;
     begin
+        SERIAL.send_line
+           ("Mapping range" & Start_Address'Image & " -" & End_Address'Image);
+         SERIAL.send_line
+           ("Number of pages to map: " & Natural'Image (PT_Count));
         for i in 1 .. PT_Count loop
             if not Page_Directory.all (PD_Index).Present then
                 Create_Page_Table (Page_Directory, PD_Index);
@@ -159,6 +164,7 @@ package body x86.vmm is
     begin
 
         -- Identity map the kernel
+        SERIAL.send_line ("Identity map kernel" & Kernel_Start'Image & " -"  &Kernel_End'Image);
         Map_Range
            (PD, Address_Breakdown.Directory, Address_Breakdown.Table,
             Kernel_Start, Kernel_End);

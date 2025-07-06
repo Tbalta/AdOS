@@ -1,0 +1,12 @@
+services:
+  ados:
+    container_name: ados
+    image: ados-docker
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - TERM=xterm-256color
+    volumes:
+      - ..:/ados
+    working_dir: /ados

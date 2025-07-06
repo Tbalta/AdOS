@@ -1,12 +1,12 @@
 ------------------------------------------------------------------------------
 --                                                                          --
---                          GNAT RUN-TIME COMPONENTS                        --
+--                         GNAT COMPILER COMPONENTS                         --
 --                                                                          --
---                     S Y S T E M . A S S E R T I O N S                    --
+--          S Y S T E M . S O F T _ L I N K S . I N I T I A L I Z E         --
 --                                                                          --
---                                 B o d y                                  --
+--                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 1992-2023, Free Software Foundation, Inc.         --
+--            Copyright (C) 2017-2023, Free Software Foundation, Inc.       --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -29,20 +29,20 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with Interfaces.C; use Interfaces.C;
+--  This package exists to initialize the TSD record of the main task and in
+--  the process, allocate and initialize the secondary stack for the main task.
+--  The initialization routine is contained within its own package because
+--  System.Soft_Links and System.Secondary_Stack are both Preelaborate packages
+--  that are the parents to other Preelaborate System packages.
 
-package body System.Assertions is
+--  Ideally, the secondary stack would be set up via __gnat_runtime_initialize
+--  to have the secondary stack active as early as possible and to remove the
+--  awkwardness of System.Soft_Links depending on a non-Preelaborate package.
+--  However, as this procedure only exists from 2014, for bootstrapping
+--  purposes the elaboration mechanism is used instead to perform these
+--  functions.
 
-   --------------------------
-   -- Raise_Assert_Failure --
-   --------------------------
-
-   procedure Raise_Assert_Failure (Msg : String) is
-      procedure PANIC (msg : char_array);
-      pragma Import (C, PANIC, "PANIC");
-      pragma No_Return (PANIC);
-   begin
-      PANIC (To_C (Msg));
-   end Raise_Assert_Failure;
-
-end System.Assertions;
+package System.Soft_Links.Initialize is
+   pragma Elaborate_Body;
+   --  Allow this package to have a body
+end System.Soft_Links.Initialize;

@@ -1,12 +1,16 @@
 ------------------------------------------------------------------------------
 --                                                                          --
---                          GNAT RUN-TIME COMPONENTS                        --
+--                         GNAT RUN-TIME COMPONENTS                         --
 --                                                                          --
---                     S Y S T E M . A S S E R T I O N S                    --
+--              S Y S T E M . T R A C E B A C K _ E N T R I E S             --
 --                                                                          --
---                                 B o d y                                  --
+--                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 1992-2023, Free Software Foundation, Inc.         --
+--          Copyright (C) 2003-2023, Free Software Foundation, Inc.         --
+--                                                                          --
+-- This specification is derived from the Ada Reference Manual for use with --
+-- GNAT. The copyright notice above, and the license provisions that follow --
+-- apply solely to the  contents of the part following the private keyword. --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -29,20 +33,29 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with Interfaces.C; use Interfaces.C;
+--  This package offers an abstraction of what is stored in traceback arrays
+--  for call-chain computation purposes. By default, as defined in this
+--  version of the package, an entry is a mere code location representing the
+--  address of a call instruction part of the call-chain.
 
-package body System.Assertions is
+package System.Traceback_Entries is
+   pragma Preelaborate;
 
-   --------------------------
-   -- Raise_Assert_Failure --
-   --------------------------
+   subtype Traceback_Entry is System.Address;
+   --  This subtype defines what each traceback array entry contains
 
-   procedure Raise_Assert_Failure (Msg : String) is
-      procedure PANIC (msg : char_array);
-      pragma Import (C, PANIC, "PANIC");
-      pragma No_Return (PANIC);
-   begin
-      PANIC (To_C (Msg));
-   end Raise_Assert_Failure;
+   Null_TB_Entry : constant Traceback_Entry := System.Null_Address;
+   --  This is the value to be used when initializing an entry
 
-end System.Assertions;
+   type Tracebacks_Array is array (Positive range <>) of Traceback_Entry;
+
+   function PC_For (TB_Entry : Traceback_Entry) return System.Address;
+   pragma Inline (PC_For);
+   --  Returns the address of the call instruction associated with the
+   --  provided entry.
+
+   function TB_Entry_For (PC : System.Address) return Traceback_Entry;
+   pragma Inline (TB_Entry_For);
+   --  Returns an entry representing a frame for a call instruction at PC
+
+end System.Traceback_Entries;

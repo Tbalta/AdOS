@@ -15,9 +15,9 @@ package body VFS.ISO is
     end To_Upper;
 
     function IndexOfString (str : String; c : Character) return Positive is
-        i : Integer := str'First;
+        i : Positive := str'First;
     begin
-        while i in str'Range and str (i) /= c and str (i) /= Character'Val (0)
+        while i in str'Range and then str (i) /= c and then str (i) /= Character'Val (0)
         loop
             i := i + 1;
         end loop;
@@ -238,8 +238,7 @@ package body VFS.ISO is
         Count := Read_Block (16, raw_buffer);
         init_buffer := raw_buffer'Address;
         primary_descriptor := iso_prim_voldesc_ptr (To_Pointer (init_buffer));
-        SERIAL.send_line
-           ("[iso.adb:38]Identifier (should be CD001)" &
+         SERIAL.send_line ("Identifier (should be CD001)" &
             To_Ada (primary_descriptor.vol_id, False));
         root_lba     := Natural (primary_descriptor.root_dir.data_blk.le);
         root_dirsize := Natural (primary_descriptor.root_dir.file_size.le);

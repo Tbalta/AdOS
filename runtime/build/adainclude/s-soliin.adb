@@ -1,12 +1,12 @@
 ------------------------------------------------------------------------------
 --                                                                          --
---                          GNAT RUN-TIME COMPONENTS                        --
+--                         GNAT COMPILER COMPONENTS                         --
 --                                                                          --
---                     S Y S T E M . A S S E R T I O N S                    --
+--          S Y S T E M . S O F T _ L I N K S . I N I T I A L I Z E         --
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1992-2023, Free Software Foundation, Inc.         --
+--            Copyright (C) 2017-2023, Free Software Foundation, Inc.       --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -29,20 +29,19 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with Interfaces.C; use Interfaces.C;
+with System.Secondary_Stack;
 
-package body System.Assertions is
+package body System.Soft_Links.Initialize is
 
-   --------------------------
-   -- Raise_Assert_Failure --
-   --------------------------
+   package SSS renames System.Secondary_Stack;
 
-   procedure Raise_Assert_Failure (Msg : String) is
-      procedure PANIC (msg : char_array);
-      pragma Import (C, PANIC, "PANIC");
-      pragma No_Return (PANIC);
-   begin
-      PANIC (To_C (Msg));
-   end Raise_Assert_Failure;
+begin
+   --  Initialize the TSD of the main task
 
-end System.Assertions;
+   NT_TSD.Jmpbuf_Address := System.Null_Address;
+
+   --  Allocate and initialize the secondary stack for the main task
+
+   NT_TSD.Sec_Stack_Ptr := null;
+   SSS.SS_Init (NT_TSD.Sec_Stack_Ptr);
+end System.Soft_Links.Initialize;

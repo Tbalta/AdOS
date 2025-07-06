@@ -14,7 +14,7 @@ package x86.vmm is
    type Page_Table_Index is mod 2**10;
    subtype Virtual_Address_Offset is Storage_Offset range 0 .. 2**12 - 1;
 
-   type Page_Address is mod 2**20;
+   type Page_Address is range 0 .. 2**20 - 1;
    subtype Page_Table_Address is Page_Address;
    subtype Page_Directory_Address is Page_Address;
 
@@ -27,15 +27,15 @@ package x86.vmm is
    function To_Page_Address (Addr : System.Address) return Page_Address;
 
    type Page_Table_Entry is record
-      Present         : Boolean;
-      Read_Write      : Boolean;
-      User_Supervisor : Boolean;
-      Write_Through   : Boolean;
-      Cache_Disable   : Boolean;
-      Accessed        : Boolean;
-      Dirty           : Boolean;
-      Page_Size       : Boolean;
-      Global          : Boolean;
+      Present         : Boolean := False;
+      Read_Write      : Boolean := False;
+      User_Supervisor : Boolean := False;
+      Write_Through   : Boolean := False;
+      Cache_Disable   : Boolean := False;
+      Accessed        : Boolean := False;
+      Dirty           : Boolean := False;
+      Page_Size       : Boolean := False;
+      Global          : Boolean := False;
       Address         : Page_Address;
    end record;
 
@@ -53,14 +53,14 @@ package x86.vmm is
    end record;
 
    type Page_Directory_Entry is record
-      Present         : Boolean;
-      Read_Write      : Boolean;
-      User_Supervisor : Boolean;
-      Write_Through   : Boolean;
-      Cache_Disable   : Boolean;
-      Accessed        : Boolean;
-      Page_Size       : Boolean;
-      Global          : Boolean;
+      Present         : Boolean := False;
+      Read_Write      : Boolean := False;
+      User_Supervisor : Boolean := False;
+      Write_Through   : Boolean := False;
+      Cache_Disable   : Boolean := False;
+      Accessed        : Boolean := False;
+      Page_Size       : Boolean := False;
+      Global          : Boolean := False;
       Address         : Page_Table_Address;
    end record;
 

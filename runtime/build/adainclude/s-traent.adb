@@ -1,12 +1,12 @@
 ------------------------------------------------------------------------------
 --                                                                          --
---                          GNAT RUN-TIME COMPONENTS                        --
+--                         GNAT RUN-TIME COMPONENTS                         --
 --                                                                          --
---                     S Y S T E M . A S S E R T I O N S                    --
+--              S Y S T E M . T R A C E B A C K _ E N T R I E S             --
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1992-2023, Free Software Foundation, Inc.         --
+--          Copyright (C) 2003-2023, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -29,20 +29,24 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with Interfaces.C; use Interfaces.C;
+package body System.Traceback_Entries is
 
-package body System.Assertions is
+   ------------
+   -- PC_For --
+   ------------
 
-   --------------------------
-   -- Raise_Assert_Failure --
-   --------------------------
-
-   procedure Raise_Assert_Failure (Msg : String) is
-      procedure PANIC (msg : char_array);
-      pragma Import (C, PANIC, "PANIC");
-      pragma No_Return (PANIC);
+   function PC_For (TB_Entry : Traceback_Entry) return System.Address is
    begin
-      PANIC (To_C (Msg));
-   end Raise_Assert_Failure;
+      return TB_Entry;
+   end PC_For;
 
-end System.Assertions;
+   ------------------
+   -- TB_Entry_For --
+   ------------------
+
+   function TB_Entry_For (PC : System.Address) return Traceback_Entry is
+   begin
+      return PC;
+   end TB_Entry_For;
+
+end System.Traceback_Entries;

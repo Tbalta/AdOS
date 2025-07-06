@@ -1,6 +1,5 @@
 with Interfaces;
-package VFS is
-    pragma Preelaborate;
+package VFS with Preelaborate is
     type File_Descriptor_With_Error is new Integer range -1 .. 255;
     subtype File_Descriptor is File_Descriptor_With_Error range 0 .. 255;
 
@@ -15,7 +14,7 @@ private
     --  Device specific descriptors
     type File is record
         Valid  : Boolean           := False;
-        name   : String (1 .. 255) := (others => ' ');
+        name   : String (1 .. 255);
         offset : off_t             := 0;
         size   : Natural           := 0;
     end record;

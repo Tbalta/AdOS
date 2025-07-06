@@ -1,14 +1,14 @@
 ------------------------------------------------------------------------------
 --                                                                          --
---                          GNAT RUN-TIME COMPONENTS                        --
+--                 GNAT RUN-TIME LIBRARY (GNARL) COMPONENTS                 --
 --                                                                          --
---                     S Y S T E M . A S S E R T I O N S                    --
+--                 S Y S T E M . S T A C K _ C H E C K I N G                --
 --                                                                          --
---                                 B o d y                                  --
+--                                  B o d y                                 --
 --                                                                          --
---          Copyright (C) 1992-2023, Free Software Foundation, Inc.         --
+--           Copyright (C) 1999-2023, Free Software Foundation, Inc.        --
 --                                                                          --
--- GNAT is free software;  you can  redistribute it  and/or modify it under --
+-- GNARL is free software; you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
 -- ware  Foundation;  either version 3,  or (at your option) any later ver- --
 -- sion.  GNAT is distributed in the hope that it will be useful, but WITH- --
@@ -24,25 +24,13 @@
 -- see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see    --
 -- <http://www.gnu.org/licenses/>.                                          --
 --                                                                          --
--- GNAT was originally developed  by the GNAT team at  New York University. --
--- Extensive contributions were provided by Ada Core Technologies Inc.      --
+-- GNARL was developed by the GNARL team at Florida State University.       --
+-- Extensive contributions were provided by Ada Core Technologies, Inc.     --
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with Interfaces.C; use Interfaces.C;
+--  As noted in the spec, this dummy body is present because otherwise we
+--  have bootstrapping path problems (there used to be a real body).
 
-package body System.Assertions is
-
-   --------------------------
-   -- Raise_Assert_Failure --
-   --------------------------
-
-   procedure Raise_Assert_Failure (Msg : String) is
-      procedure PANIC (msg : char_array);
-      pragma Import (C, PANIC, "PANIC");
-      pragma No_Return (PANIC);
-   begin
-      PANIC (To_C (Msg));
-   end Raise_Assert_Failure;
-
-end System.Assertions;
+package body System.Stack_Checking is
+end System.Stack_Checking;

@@ -15,7 +15,6 @@ all: ${RUNTIME_BINARY}
  
 clean:
 	gprclean -P${RUNTIME_PROJ}
-	rm -rf ${BUILD_DIR}
  
 # Build the run-time library.
 ${RUNTIME_BINARY}: ${INCLUDE_DIR}/*.ad[sb] ${INCLUDE_DIR}/*.S \

@@ -27,10 +27,6 @@ is
    --    __gnat_rcheck_CE_Overflow_Check
    --
    --  These are Ada Runtime functions (see also GNAT's a-except.adb).
-
-   pragma Suppress (Index_Check);
-   pragma Suppress (Overflow_Check);
-   pragma Suppress (All_Checks);
    procedure discover_atapi_drive;
    pragma Import (C, discover_atapi_drive, "discover_atapi_drive");
    procedure print_mmap (s : System.Address);
@@ -100,6 +96,9 @@ begin
    begin
       Identity_Map (CR3);
       Load_CR3 (CR3);
+      SERIAL.send_line
+        ("CR3: " & To_Address (CR3.Address)'Image);
+      SERIAL.send_line ("CR3 Loaded");
       Enable_Paging;
    end;
    SERIAL.send_line ("Paging enabled");
