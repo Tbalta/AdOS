@@ -1,6 +1,9 @@
 with System.Storage_Elements; use System.Storage_Elements;
 with SERIAL;                  use SERIAL;
+with System.Machine_Code;     use System.Machine_Code;
+with x86.gdt;
 package body x86.gdt is
+   use Standard.ASCII;
    pragma Suppress (Index_Check);
    pragma Suppress (Range_Check);
    pragma Suppress (Overflow_Check);
@@ -21,6 +24,17 @@ package body x86.gdt is
          limit_high  => Unsigned_8 ((Shift_Right (limit, 16)) and 16#F#));
    end set_gdt_entry;
 
+
+   procedure flush_tss is
+   begin 
+      ASM (
+         "xor %%eax, %%eax" & LF &
+         "mov $(5 * 8), %%ax" & LF &
+         "ltr %%ax",
+            Volatile => True,
+            Clobber => "eax");
+   end flush_tss;
+
    function Convert (Input : Global_Descriptor_Pointer_T) return Record_Bytes
    is
       Result : constant Record_Bytes;
@@ -33,6 +47,10 @@ package body x86.gdt is
    procedure initialize_gdt is
       base_address : constant System.Address := To_Address (0);
       limit        : constant Unsigned_32    := 16#F_FFFF#;
+
+      procedure memset
+        (Address : System.Address; Value : Unsigned_8; Size : Unsigned_32);
+      pragma Import (C, memset, "memset");
    begin
       set_gdt_entry (0, base_address, 0, 0, 0); -- Null descriptor
       set_gdt_entry
@@ -44,25 +62,37 @@ package body x86.gdt is
       set_gdt_entry
         (4, base_address, limit, 16#F2#, 16#C#); -- User Data descriptor
 
-      send_string ("gdt is set");
+      set_gdt_entry (5, tss'Address, (tss'Size / 8), 16#89#, 16#0#); -- TSS descriptor
+      memset (tss'Address, 0, tss'Size / 8);
+
+      SERIAL.send_line ("tss'Address: " & tss'Address'Image);
+      SERIAL.send_line ("tss'Size: " & Integer ((tss'Size / 8) - 1)'Image);
+
+      tss.prev_tss := 0;
+      tss.esp0     := stack'Address + To_Address (stack'Length * 8); -- Stack for kernel mode
+      tss.ss0      := 16#10#; -- Kernel Data Segment
+
       gdt_pointer.limit := (Global_Descriptor_Table'Size - 1) / 8;
       gdt_pointer.base  := Global_Descriptor_Table'Address;
-      send_uint (Unsigned_32 (gdt_pointer.limit));
-      send_string (" ");
-      send_uint (Unsigned_32 (To_Integer (gdt_pointer.base)));
-      send_string (" ");
-      send_hex (Unsigned_32 (To_Integer (gdt_pointer.base)));
-      send_string (" ");
-      send_hex (Unsigned_32 (To_Integer (gdt_pointer'Address)));
-      send_string ("dump of gdt");
-      declare
-         test : constant Record_Bytes := Convert (gdt_pointer);
-      begin
-         for item in test'Range loop
-            send_string (" ");
-            send_hex (Unsigned_32 (test (item)));
-         end loop;
-      end;
+
+      send_line ("gdt_pointer'Address: " & gdt_pointer'Address'Image);
+      send_line ("gdt_pointer.base: " & gdt_pointer.base'Image);
+      send_line ("gdt_pointer.limit: " & gdt_pointer.limit'Image);
+     
+      for i in Global_Descriptor_Table'Range loop
+         send_line
+           ("GDT[" & Integer (i)'Image & "] = " &
+            " Base: " & Global_Descriptor_Table (i).base_low'Image &
+            " Mid: " & Global_Descriptor_Table (i).base_mid'Image &
+            " High: " & Global_Descriptor_Table (i).base_high'Image &
+            " Limit: " & Global_Descriptor_Table (i).limit_low'Image &
+            " Flags: " & Global_Descriptor_Table (i).flags'Image &
+            " Access Byte: " & Global_Descriptor_Table (i).access_byte'Image &
+            " Limit High: " & Global_Descriptor_Table (i).limit_high'Image);
+      end loop;
       load_gdt (Unsigned_32 (To_Integer (gdt_pointer'Address)));
+      send_line ("gdt loaded");
+      flush_tss;
+      send_line ("tss flushed");
    end initialize_gdt;
 end x86.gdt;

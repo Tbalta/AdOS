@@ -1,6 +1,7 @@
 with System;
 with x86; use x86;
 package config is
+   
     pragma Preelaborate;
 
     LD_Kernel_Start : constant System.Address;

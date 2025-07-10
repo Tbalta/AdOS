@@ -2,7 +2,7 @@ with SERIAL;
 with x86.gdt;
 with x86.idt;
 with x86.pmm;                 use x86.pmm;
-with x86.vmm;
+with x86.vmm;                 use x86.vmm;
 with pic;
 with System.Machine_Code;
 with Atapi;
@@ -16,7 +16,10 @@ with MultiBoot;               use MultiBoot;
 with System.Machine_Code;     use System.Machine_Code;
 with VFS;                     use VFS;
 with VFS.ISO;
---  with Interfaces; use Interfaces;
+with ELF;
+with ELF.Loader;
+with x86.Userspace;          use x86.Userspace;
+
 procedure Main
   (magic : Interfaces.Unsigned_32; info : access MultiBoot.multiboot_info)
 is
@@ -31,6 +34,8 @@ is
    pragma Import (C, discover_atapi_drive, "discover_atapi_drive");
    procedure print_mmap (s : System.Address);
    pragma Import (C, print_mmap, "print_mmap");
+
+   CR3 : CR3_register;
 begin
 
    --  Clear (BLACK);
@@ -91,9 +96,8 @@ begin
    --  Asm ("int $0x0");
    SERIAL.send_line ("VMM initialization");
    declare
-      use x86.vmm;
-      CR3 : CR3_register := Create_CR3;
    begin
+      CR3 := Create_CR3;
       Identity_Map (CR3);
       Load_CR3 (CR3);
       SERIAL.send_line
@@ -112,10 +116,12 @@ begin
          Block_Type   => Atapi.SECTOR_BUFFER,
          Read_Block   => Atapi.read_block);
       FD     : VFS.File_Descriptor_With_Error;
-      subtype my_arr is Interfaces.C.char_array (1 .. 512);
-      buffer : my_arr := (others => Interfaces.C.char'Val(0));
+
+      subtype Read_Type is String (1 .. 512);
+      buffer : Read_Type;
       read   : Integer;
-      function Read_Char is new VFS_ISO.read (Read_Type => my_arr);
+      function Read_Char is new VFS_ISO.read (Read_Type => Read_Type);
+      package Loader is new ELF.Loader (File_System => VFS_ISO);
    begin
       VFS_ISO.init;
       FD := VFS_ISO.open ("test2.txt", 0);
@@ -125,9 +131,25 @@ begin
       end if;
 
       read := Read_Char (FD, buffer);
+      SERIAL.send_line ("read:" &  buffer (1 .. read));
 
-      SERIAL.send_line
-        (To_Ada (buffer (1 .. Interfaces.C.size_t (read)), False));
+
+      SERIAL.send_line ("File closed");
+
+      FD := VFS_ISO.open ("a.out", 0);
+
+      declare
+         Program_Header : ELF.ELF_Header := Loader.Prepare (FD);
+      begin
+
+         Loader.Kernel_Load (FD, Program_Header, CR3);
+         SERIAL.send_line ("ELF file loaded in memory");
+         SERIAL.send_line ("Entry point: " & To_Integer (Program_Header.e_entry)'Image);
+
+         Jump_To_Userspace (Program_Header.e_entry, CR3);
+
+
+      end;
    end;
 
    <<Init_End>>

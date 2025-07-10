@@ -27,47 +27,47 @@ package x86.vmm is
    function To_Page_Address (Addr : System.Address) return Page_Address;
 
    type Page_Table_Entry is record
-      Present         : Boolean := False;
-      Read_Write      : Boolean := False;
-      User_Supervisor : Boolean := False;
-      Write_Through   : Boolean := False;
-      Cache_Disable   : Boolean := False;
-      Accessed        : Boolean := False;
-      Dirty           : Boolean := False;
-      Page_Size       : Boolean := False;
-      Global          : Boolean := False;
-      Address         : Page_Address;
+      Present       : Boolean := False;
+      Is_Writable   : Boolean := False;
+      Is_Usermode   : Boolean := False;
+      Write_Through : Boolean := False;
+      Cache_Disable : Boolean := False;
+      Accessed      : Boolean := False;
+      Dirty         : Boolean := False;
+      Page_Size     : Boolean := False;
+      Global        : Boolean := False;
+      Address       : Page_Address;
    end record;
 
    for Page_Table_Entry use record
-      Present         at 0 range  0 ..  0;
-      Read_Write      at 0 range  1 ..  1;
-      User_Supervisor at 0 range  2 ..  2;
-      Write_Through   at 0 range  3 ..  3;
-      Cache_Disable   at 0 range  4 ..  4;
-      Accessed        at 0 range  5 ..  5;
-      Dirty           at 0 range  6 ..  6;
-      Page_Size       at 0 range  7 ..  7;
-      Global          at 0 range  8 ..  8;
-      Address         at 0 range 12 .. 31;
+      Present        at 0 range  0 ..  0;
+      Is_Writable    at 0 range  1 ..  1;
+      Is_Usermode    at 0 range  2 ..  2;
+      Write_Through  at 0 range  3 ..  3;
+      Cache_Disable  at 0 range  4 ..  4;
+      Accessed       at 0 range  5 ..  5;
+      Dirty          at 0 range  6 ..  6;
+      Page_Size      at 0 range  7 ..  7;
+      Global         at 0 range  8 ..  8;
+      Address        at 0 range 12 .. 31;
    end record;
 
    type Page_Directory_Entry is record
-      Present         : Boolean := False;
-      Read_Write      : Boolean := False;
-      User_Supervisor : Boolean := False;
-      Write_Through   : Boolean := False;
-      Cache_Disable   : Boolean := False;
-      Accessed        : Boolean := False;
-      Page_Size       : Boolean := False;
-      Global          : Boolean := False;
-      Address         : Page_Table_Address;
+      Present       : Boolean := False;
+      Is_Writable   : Boolean := False;
+      Is_Usermode   : Boolean := False;
+      Write_Through : Boolean := False;
+      Cache_Disable : Boolean := False;
+      Accessed      : Boolean := False;
+      Page_Size     : Boolean := False;
+      Global        : Boolean := False;
+      Address       : Page_Table_Address;
    end record;
 
    for Page_Directory_Entry use record
       Present         at 0 range  0 ..  0;
-      Read_Write      at 0 range  1 ..  1;
-      User_Supervisor at 0 range  2 ..  2;
+      Is_Writable      at 0 range  1 ..  1;
+      Is_Usermode at 0 range  2 ..  2;
       Write_Through   at 0 range  3 ..  3;
       Cache_Disable   at 0 range  4 ..  4;
       Accessed        at 0 range  5 ..  5;
@@ -129,8 +129,15 @@ package x86.vmm is
       Offset    at 0 range  0 .. 11;
    end record;
 
+   Last_Virtual_Address_Break : constant Virtual_Address_Break :=
+     (Directory => Page_Directory_Index'Last,
+      Table     => Page_Table_Index'Last,
+      Offset    => 0);
+
    function To_Virtual_Address_Break is new Ada.Unchecked_Conversion
-     (Source => System.Address, Target => Virtual_Address_Break);
+     (Source => Virtual_Address, Target => Virtual_Address_Break);
+   function From_Virtual_Address_Break is new Ada.Unchecked_Conversion
+     (Source => Virtual_Address_Break, Target => Virtual_Address);
 
    function Create_CR3 return CR3_register;
    procedure Load_CR3 (CR3 : CR3_register);
@@ -138,7 +145,12 @@ package x86.vmm is
    generic
       type Data_Type is private;
    function Map_Data
-     (CR3 : in out CR3_register; Address : Physical_Address; Data : Data_Type)
+     (CR3 : in out CR3_register; Address : Physical_Address; Data : Data_Type; Is_Writable      : Boolean := False;
+      Is_Usermode      : Boolean := False)
       return Boolean;
+
+   function kmalloc
+     (CR3 : CR3_register; Size : Storage_Count; Is_Writable      : Boolean := False;
+      Is_Usermode      : Boolean := False) return Virtual_Address;
 
 end x86.vmm;

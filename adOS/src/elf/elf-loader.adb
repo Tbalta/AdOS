@@ -1,3 +1,4 @@
+with SERIAL;
 package body ELF.Loader is
 
     function Prepare (File : in VFS.File_Descriptor) return ELF_Header is
@@ -24,11 +25,22 @@ package body ELF.Loader is
         File_System.Seek
            (File, Natural (Program_Header.p_offset), VFS.SEEK_SET);
         Read_Count := Read_Segment_Data (File, Data);
-        pragma Assert (Read_Count = Integer (Program_Header.p_filesz / 8));
+        SERIAL.send_line
+          ("Read " & Read_Count'Image & " bytes for segment at " &
+           Program_Header.p_vaddr'Image);
 
-        if Map_Segment_Data (CR3, Program_Header.p_vaddr, Data) then
+      for i of Data loop
+         SERIAL.send_string (Interfaces.Unsigned_8'Image (i) & " ");
+      end loop;
+        pragma Assert (Read_Count = Integer (Program_Header.p_filesz));
+
+        if not Map_Segment_Data (CR3, Program_Header.p_vaddr, Data, Is_Writable => True, Is_Usermode => True) then
             raise Program_Error with "Failed to map segment data";
         end if;
+
+        SERIAL.send_line
+          ("Mapped segment at " & Program_Header.p_vaddr'Image &
+           " with size " & Program_Header.p_filesz'Image);
     end Load_Segment;
 
     procedure Kernel_Load
@@ -37,14 +49,19 @@ package body ELF.Loader is
     is
         Program_Header : ELF_Program_Header;
         Read_Count     : Integer;
+        Seek_Result : VFS.off_t;
     begin
-        File_System.Seek (File, Integer (Header.e_phoff), VFS.SEEK_SET);
-
+        Seek_Result := File_System.Seek (File, Integer (Header.e_phoff), VFS.SEEK_SET);
+        pragma Assert (Seek_Result /= -1);
+   
         for i in 1 .. Header.e_phnum loop
             Read_Count := Read_Elf_Program_Header (File, Program_Header);
             pragma Assert (Read_Count = ELF_Program_Header'Size / 8);
 
             if Program_Header.p_type = PT_LOAD then
+               SERIAL.send_line
+                 ("Loading segment " & i'Image &
+                  " at " & Program_Header.p_vaddr'Image);
                 Load_Segment (File, Program_Header, CR3);
             end if;
         end loop;

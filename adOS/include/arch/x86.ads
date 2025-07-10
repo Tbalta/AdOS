@@ -11,5 +11,4 @@ package x86 is
    subtype Physical_Address is System.Address;
    subtype Virtual_Address is System.Address;
 
-
 end x86;

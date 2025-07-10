@@ -32,7 +32,34 @@ package x86.gdt is
       base_high   at 0 range 56 .. 63;
    end record;
 
-   GDT_ENTRY_COUNT : constant Integer := 6;
+   type TSS_Entry is record
+      prev_tss : System.Address := 0;
+      esp0      : System.Address := 0;
+      ss0       : Unsigned_16 := 0;
+      IOPB      : Unsigned_16 := 0;
+   end record with
+      Size => 16#68# * 8,
+      Alignment => 32;
+
+   for TSS_Entry use record
+      prev_tss at 0 range  0 .. 31;
+      esp0     at 4 range 0 .. 31;
+      ss0      at 8 range 0 .. 15;
+
+   end record;
+
+   tss : TSS_Entry with
+      Export        => True,
+      Convention    => C,
+      External_Name => "tss_entry";
+
+   stack : aliased array (1 .. 512) of Unsigned_8 with
+      Export        => True,
+      Convention    => C,
+      External_Name => "tss_stack";
+
+
+   GDT_ENTRY_COUNT : constant Integer := 6; -- Null, Kernel Code, Kernel Data, User Code, User Data, TSS
    type Global_Descriptor_Table_T is
      array (0 .. (GDT_ENTRY_COUNT - 1)) of segment_descriptor;
    Global_Descriptor_Table : Global_Descriptor_Table_T with

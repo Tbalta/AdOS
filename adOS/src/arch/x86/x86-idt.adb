@@ -1,5 +1,6 @@
 with SERIAL;
 with System.Storage_Elements; use System.Storage_Elements;
+with System.Machine_Code; use System.Machine_Code;
 package body x86.idt is
    pragma Suppress (Index_Check);
    pragma Suppress (Overflow_Check);
@@ -67,6 +68,10 @@ package body x86.idt is
       SERIAL.send_line
         ("error_code = " & error_code'Image & " interrupt_code = " &
          interrupt_code'Image & " eip = " & eip'Image & " cs = " & cs'Image);
+
+      while True loop
+         ASM ("hlt", Volatile => True);
+      end loop;
 
    end handler;
 end x86.idt;

@@ -159,10 +159,10 @@ package body VFS.ISO is
             return -1;
         end if;
         -- Adjust the offset of the lba
-        for lba in base_lba .. (base_lba + sectors_count) loop
+        for lba in base_lba .. (base_lba + sectors_count - 1) loop
             read_buffer := raw_buffer'Address;
             count       := Read_Block (lba, raw_buffer);
-            memcpy (out_buffer, read_buffer, Min (cnt, BLOCK_SIZE));
+            memcpy (out_buffer, read_buffer + Storage_Offset (f_offset), Min (cnt, BLOCK_SIZE));
             out_buffer := out_buffer + Storage_Offset (Min (cnt, BLOCK_SIZE));
             cnt        := cnt - Min (cnt, BLOCK_SIZE);
         end loop;

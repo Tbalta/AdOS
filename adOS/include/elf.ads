@@ -1,6 +1,6 @@
 with x86.vmm;
 with x86.pmm;
-
+with Ada.Unchecked_Conversion;
 with Interfaces; use Interfaces;
 package ELF is
     pragma Preelaborate;
@@ -84,6 +84,9 @@ package ELF is
     for Segment_Flags use
         (PF_X => 1, PF_W => 2, PF_R => 4);
 
+   function Segment_Type_To_Integer is new Ada.Unchecked_Conversion
+      (Segment_Type, Unsigned_32);
+
     type ELF_Program_Header is record
         p_type   : Segment_Type;
         p_offset : Unsigned_32;
@@ -96,6 +99,7 @@ package ELF is
     end record
     with
        Pack => True, Size => 32 * 8;
+
     for ELF_Program_Header use record
         p_type at 0 range 0 .. 31;
         p_offset at 4 range 0 .. 31;

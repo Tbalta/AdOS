@@ -3,7 +3,7 @@
 
 OBJ = obj
 
-qemu_param = -no-reboot -boot d -D ./log.txt -d int,guest_errors -serial mon:stdio -m 1G
+qemu_param = -no-reboot -boot d -D ./log.txt -d int,guest_errors,in_asm -serial mon:stdio -m 1G
 
 all: main.iso
 
@@ -19,18 +19,18 @@ clean:
 	cd runtime && gprclean
 	gprclean
 
-run: main.iso
-	qemu-system-i386 -cdrom '$<' $(qemu_param)
+run:
+	qemu-system-i386.exe -cdrom main.iso $(qemu_param)
 
-debug: main.iso
-	qemu-system-i386 -cdrom '$<' $(qemu_param) -s -S
+debug:
+	qemu-system-i386.exe -cdrom '$<' $(qemu_param) -s -S
 
 format:
 	gnatpp $(wildcard adOS/**/*.adb) $(wildcard adOS/**/*.ads) -rnb
 
 docker-make:
 	docker-compose -f .docker/docker-compose.yml run --rm --remove-orphans ados make
-	qemu-system-i386 -cdrom main.iso $(qemu_param)
+	qemu-system-i386.exe -cdrom main.iso $(qemu_param)
 
 docker-build:
 	docker-compose -f .docker/docker-compose.yml build ados
@@ -40,5 +40,5 @@ docker-run:
 
 docker-debug:
 	docker-compose -f .docker/docker-compose.yml run --rm --remove-orphans ados make
-	qemu-system-i386 -cdrom main.iso $(qemu_param) -s -S
+	qemu-system-i386.exe -cdrom main.iso $(qemu_param) -s -S
 	
