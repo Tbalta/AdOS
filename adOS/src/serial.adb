@@ -11,7 +11,7 @@ package body SERIAL is
       divisor_high : Interfaces.Unsigned_8;
       port         : constant System.Address := To_Address (16#3F8#);
    begin
-      divisor_low  := Unsigned_8 (serial_divisor and 16#FF#);
+      divisor_low := Unsigned_8 (serial_divisor and 16#FF#);
       divisor_high := Unsigned_8 (Shift_Right (serial_divisor, 8) and 16#FF#);
       x86.Port_IO.Outb (port + Storage_Offset (4), 16#80#);
       x86.Port_IO.Outb (port + Storage_Offset (1), divisor_low);
@@ -23,8 +23,7 @@ package body SERIAL is
    function can_send_byte return Standard.Boolean is
       port : constant System.Address := To_Address (16#3F8#);
    begin
-      return
-        ((x86.Port_IO.Inb (port + Storage_Offset (5)) and 16#20#) = 16#20#);
+      return ((x86.Port_IO.Inb (port + Storage_Offset (5)) and 16#20#) = 16#20#);
    end can_send_byte;
 
    procedure send_string (data : String) is
@@ -73,7 +72,7 @@ package body SERIAL is
       set_baud_rate (Divisor (rate / Baudrate'Last));
    end serial_init;
 
-   procedure send_cchar (c : Interfaces.C.char) is 
+   procedure send_cchar (c : Interfaces.C.char) is
    begin
       send_char (To_Ada (c));
    end send_cchar;

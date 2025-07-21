@@ -2,6 +2,7 @@ with Interfaces;  use Interfaces;
 with x86.Port_IO; use x86.Port_IO;
 with SERIAL;      use SERIAL;
 with Ada.Unchecked_Conversion;
+
 package body Atapi is
    pragma Suppress (All_Checks);
 
@@ -52,10 +53,9 @@ package body Atapi is
       Outb (DCR, SRST);
       Outb (DCR, INTERRUPT_DISABLE);
       Outb (getReg (Controller, ATA_REG_DRIVE), ATA_DEVICE'Enum_Rep (Device));
-      send_line
-        ("Selecting device" & Unsigned_8 (ATA_DEVICE'Enum_Rep (Device))'Image);
+      send_line ("Selecting device" & Unsigned_8 (ATA_DEVICE'Enum_Rep (Device))'Image);
       currentController := Controller;
-      currentDevice     := Device;
+      currentDevice := Device;
 
       --     send_line ("Selecting ctrl");
 
@@ -70,11 +70,9 @@ package body Atapi is
 
    end selectDevice;
 
-   function isAtapiDevice
-     (Controller : ATA_CONTROLLER; Device : ATA_DEVICE) return Boolean
-   is
+   function isAtapiDevice (Controller : ATA_CONTROLLER; Device : ATA_DEVICE) return Boolean is
       type Signature_Array is array (0 .. 3) of Unsigned_8;
-      Signature        : Signature_Array     := (0, 0, 0, 0);
+      Signature        : Signature_Array := (0, 0, 0, 0);
       ATAPI_SIG_SC     : constant Unsigned_8 := 16#01#;
       ATAPI_SIG_LBA_LO : constant Unsigned_8 := 16#01#;
       ATAPI_SIG_LBA_MI : constant Unsigned_8 := 16#14#;
@@ -86,11 +84,11 @@ package body Atapi is
       Signature (2) := Inb (getReg (Controller, ATA_REG_LBA_MI));
       Signature (3) := Inb (getReg (Controller, ATA_REG_LBA_HI));
       send_line
-        ("Signature: " & Signature (0)'Image & " " &
-         To_Integer (getReg (Controller, ATA_REG_SECTOR_COUNT))'Image);
-      return
-        Signature =
-        (ATAPI_SIG_SC, ATAPI_SIG_LBA_LO, ATAPI_SIG_LBA_MI, ATAPI_SIG_LBA_HI);
+        ("Signature: "
+         & Signature (0)'Image
+         & " "
+         & To_Integer (getReg (Controller, ATA_REG_SECTOR_COUNT))'Image);
+      return Signature = (ATAPI_SIG_SC, ATAPI_SIG_LBA_LO, ATAPI_SIG_LBA_MI, ATAPI_SIG_LBA_HI);
    end isAtapiDevice;
 
    procedure discoverAtapiDevices is
@@ -98,9 +96,7 @@ package body Atapi is
       for Controller in ATA_CONTROLLER'First .. ATA_CONTROLLER'Last loop
          for Device in ATA_MASTER .. ATA_SLAVE loop
             if isAtapiDevice (Controller, Device) then
-               send_line
-                 ("Found ATAPI device on " & Controller'Image & " " &
-                  Device'Image);
+               send_line ("Found ATAPI device on " & Controller'Image & " " & Device'Image);
                return;
             end if;
          end loop;
@@ -108,23 +104,18 @@ package body Atapi is
    end discoverAtapiDevices;
 
    procedure send_packet (packet : SCSI_PACKET) is
-      type Packet_Array is
-        array
-          (0 .. (SCSI_PACKET'Size / Unsigned_16'Size) - 1) of Unsigned_16 with
-        Pack;
-      function toArray is new Ada.Unchecked_Conversion
-        (Source => SCSI_PACKET, Target => Packet_Array);
-      to_send              : Packet_Array        := toArray (packet);
+      type Packet_Array is array (0 .. (SCSI_PACKET'Size / Unsigned_16'Size) - 1) of Unsigned_16
+      with Pack;
+      function toArray is new
+        Ada.Unchecked_Conversion (Source => SCSI_PACKET, Target => Packet_Array);
+      to_send              : Packet_Array := toArray (packet);
       PACKET_DATA_TRANSMIT : constant Unsigned_8 := 2;
    begin
       Outb (getReg (currentController, ATA_REG_FEATURES), 0);
       Outb (getReg (currentController, ATA_REG_SECTOR_COUNT), 0);
+      Outb (getReg (currentController, ATA_REG_LBA_MI), Unsigned_8 (CD_BLOCK_SIZE and 16#FF#));
       Outb
-        (getReg (currentController, ATA_REG_LBA_MI),
-         Unsigned_8 (CD_BLOCK_SIZE and 16#FF#));
-      Outb
-        (getReg (currentController, ATA_REG_LBA_HI),
-         Unsigned_8 (Shift_Right (CD_BLOCK_SIZE, 8)));
+        (getReg (currentController, ATA_REG_LBA_HI), Unsigned_8 (Shift_Right (CD_BLOCK_SIZE, 8)));
       Outb (getReg (currentController, ATA_REG_COMMAND), Unsigned_8 (16#A0#));
       wait_packet_request (currentController);
       for i in to_send'Range loop
@@ -136,25 +127,21 @@ package body Atapi is
       --  SERIAL.send_line
       --    ("port " &
       --     Unsigned_16 (ATA_CONTROLLER'Enum_Rep (currentController))'Image);
-      while Inb (getReg (currentController, ATA_REG_SECTOR_COUNT)) /=
-        PACKET_DATA_TRANSMIT
-      loop
+      while Inb (getReg (currentController, ATA_REG_SECTOR_COUNT)) /= PACKET_DATA_TRANSMIT loop
          null;
       end loop;
    end send_packet;
 
-   function read_block
-     (lba : Integer; buffer : out SECTOR_BUFFER) return Integer
-   is
+   function read_block (lba : Integer; buffer : out SECTOR_BUFFER) return Integer is
       packet    : SCSI_PACKET :=
-        (opcode => 16#a8#, lba_lo => Unsigned_8 (Unsigned_32 (lba) and 16#FF#),
-         lba_milo           =>
-           Unsigned_8 (Shift_Right (Unsigned_32 (lba), 8) and 16#FF#),
-         lba_mihi           =>
-           Unsigned_8 (Shift_Right (Unsigned_32 (lba), 16) and 16#FF#),
-         lba_hi => Unsigned_8 (Shift_Right (Unsigned_32 (lba), 24) and 16#FF#),
-         transfer_length_lo => 1, others => 0);
-      size_read : Integer     := 0;
+        (opcode             => 16#a8#,
+         lba_lo             => Unsigned_8 (Unsigned_32 (lba) and 16#FF#),
+         lba_milo           => Unsigned_8 (Shift_Right (Unsigned_32 (lba), 8) and 16#FF#),
+         lba_mihi           => Unsigned_8 (Shift_Right (Unsigned_32 (lba), 16) and 16#FF#),
+         lba_hi             => Unsigned_8 (Shift_Right (Unsigned_32 (lba), 24) and 16#FF#),
+         transfer_length_lo => 1,
+         others             => 0);
+      size_read : Integer := 0;
       data      : Unsigned_16;
 
    begin
@@ -162,23 +149,19 @@ package body Atapi is
       send_packet (packet);
       --  SERIAL.send_line ("Reading block");
       declare
-         size_hi : Unsigned_16 :=
-           Unsigned_16 (Inb (getReg (currentController, ATA_REG_LBA_HI)));
-         size_lo : Unsigned_16 :=
-           Unsigned_16 (Inb (getReg (currentController, ATA_REG_LBA_MI)));
+         size_hi : Unsigned_16 := Unsigned_16 (Inb (getReg (currentController, ATA_REG_LBA_HI)));
+         size_lo : Unsigned_16 := Unsigned_16 (Inb (getReg (currentController, ATA_REG_LBA_MI)));
       begin
          size_read := Integer (Shift_Left (size_hi, 8) or size_lo);
       end;
 
       for i in 0 .. (Integer (buffer'Length / 2) - 1) loop
          data := Inw (getReg (currentController, ATA_REG_DATA));
-         buffer (buffer'First + (i * 2))     := Unsigned_8 (data);
-         buffer (buffer'First + (i * 2) + 1) :=
-           Unsigned_8 (Shift_Right (data, 8));
+         buffer (buffer'First + (i * 2)) := Unsigned_8 (data);
+         buffer (buffer'First + (i * 2) + 1) := Unsigned_8 (Shift_Right (data, 8));
       end loop;
       --  buffer := fromWordPtr (buffer_word);
-      SERIAL.send_line
-        ("Read block: " & Unsigned_32 (size_read)'Image & " bytes");
+      SERIAL.send_line ("Read block: " & Unsigned_32 (size_read)'Image & " bytes");
       return size_read;
    end read_block;
 

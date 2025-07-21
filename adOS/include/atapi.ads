@@ -9,16 +9,14 @@ package Atapi is
    type ATA_DEVICE is (ATA_MASTER, ATA_SLAVE);
    for ATA_DEVICE use (ATA_MASTER => 0, ATA_SLAVE => 16#10#);
 
-   PRIMARY_DCR   : constant System.Address         := To_Address (16#3F6#);
-   SECONDARY_DCR : constant System.Address         := To_Address (16#376#);
+   PRIMARY_DCR   : constant System.Address := To_Address (16#3F6#);
+   SECONDARY_DCR : constant System.Address := To_Address (16#376#);
    CD_BLOCK_SIZE : constant Interfaces.Unsigned_16 := 2_048;
 
    subtype SECTOR_BUFFER_INDEX is Integer range 1 .. 2_048;
 
-   type SECTOR_BUFFER is
-     array (SECTOR_BUFFER_INDEX) of Interfaces.Unsigned_8 with
-        Convention => C,
-        Size       => 2_048 * 8;
+   type SECTOR_BUFFER is array (SECTOR_BUFFER_INDEX) of Interfaces.Unsigned_8
+   with Convention => C, Size => 2_048 * 8;
    type SECTOR_BUFFER_PTR is access all SECTOR_BUFFER;
 
    sector_data : aliased SECTOR_BUFFER := (others => 0);
@@ -44,17 +42,11 @@ package Atapi is
    procedure discoverAtapiDevices;
    procedure waitForDrive (Controller : ATA_CONTROLLER);
    procedure selectDevice (Controller : ATA_CONTROLLER; Device : ATA_DEVICE);
-   function getDcr
-     (controller : ATA_CONTROLLER) return System.Address is
-     (if controller = ATA_PRIMARY then PRIMARY_DCR else SECONDARY_DCR);
-   function getReg
-     (controller : ATA_CONTROLLER;
-      reg        : ATA_REG) return System.Address is
-     (To_Address (ATA_CONTROLLER'Enum_Rep (controller)) +
-      Storage_Offset (reg));
-   function isAtapiDevice
-     (Controller : ATA_CONTROLLER;
-      Device     : ATA_DEVICE) return Boolean;
+   function getDcr (controller : ATA_CONTROLLER) return System.Address
+   is (if controller = ATA_PRIMARY then PRIMARY_DCR else SECONDARY_DCR);
+   function getReg (controller : ATA_CONTROLLER; reg : ATA_REG) return System.Address
+   is (To_Address (ATA_CONTROLLER'Enum_Rep (controller)) + Storage_Offset (reg));
+   function isAtapiDevice (Controller : ATA_CONTROLLER; Device : ATA_DEVICE) return Boolean;
 
    currentController : ATA_CONTROLLER;
    currentDevice     : ATA_DEVICE;
@@ -72,13 +64,9 @@ package Atapi is
       transfer_length_lo   : Interfaces.Unsigned_8;
       flag_hi              : Interfaces.Unsigned_8;
       control              : Interfaces.Unsigned_8;
-   end record with
-      Convention => C,
-      Size       => 12 * 8,
-      Pack       => True;
-   function read_block
-     (lba    :     Integer;
-      buffer : out SECTOR_BUFFER) return Integer;
+   end record
+   with Convention => C, Size => 12 * 8, Pack => True;
+   function read_block (lba : Integer; buffer : out SECTOR_BUFFER) return Integer;
 
 private
 end Atapi;

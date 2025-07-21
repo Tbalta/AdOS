@@ -1,4 +1,5 @@
 with System.Machine_Code;
+
 package body x86.Port_IO is
    ----------------------------------------------------------------------------
    --  Inb
@@ -22,8 +23,7 @@ package body x86.Port_IO is
       System.Machine_Code.Asm
         (Template => "outb %0, %w1",
          Inputs   =>
-           (Interfaces.Unsigned_8'Asm_Input ("a", Data),
-            System.Address'Asm_Input ("Nd", Port)),
+           (Interfaces.Unsigned_8'Asm_Input ("a", Data), System.Address'Asm_Input ("Nd", Port)),
          Volatile => True);
    end Outb;
 
@@ -49,8 +49,7 @@ package body x86.Port_IO is
       System.Machine_Code.Asm
         (Template => "outw %0, %w1",
          Inputs   =>
-           (Interfaces.Unsigned_16'Asm_Input ("a", Data),
-            System.Address'Asm_Input ("Nd", Port)),
+           (Interfaces.Unsigned_16'Asm_Input ("a", Data), System.Address'Asm_Input ("Nd", Port)),
          Volatile => True);
    end Outw;
 end x86.Port_IO;

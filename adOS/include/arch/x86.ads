@@ -5,6 +5,7 @@
 --    This package contains support code for the x86 system.
 -------------------------------------------------------------------------------
 with System;
+
 package x86 is
    pragma Preelaborate (x86);
 

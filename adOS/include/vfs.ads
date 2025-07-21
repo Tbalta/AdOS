@@ -1,6 +1,8 @@
 with Interfaces;
-package VFS with
-     Preelaborate is
+
+package VFS
+  with Preelaborate
+is
    type File_Descriptor_With_Error is new Integer range -1 .. 255;
    subtype File_Descriptor is File_Descriptor_With_Error range 0 .. 255;
 
@@ -10,15 +12,12 @@ package VFS with
    subtype off_t is Integer;
 
 private
-   function Add_File
-     (name   : String;
-      offset : off_t;
-      size   : Natural) return File_Descriptor;
+   function Add_File (name : String; offset : off_t; size : Natural) return File_Descriptor;
    --  Device specific descriptors
    type File is record
       Valid  : Boolean := False;
       name   : String (1 .. 255);
-      offset : off_t   := 0;
+      offset : off_t := 0;
       size   : Natural := 0;
    end record;
 

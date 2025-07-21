@@ -11,14 +11,12 @@ package body x86.vmm is
       return System.Address (Integer_Address (Addr) * 4_096);
    end To_Address;
 
-   function To_Page_Table_Address
-     (Addr : System.Address) return Page_Table_Address is
+   function To_Page_Table_Address (Addr : System.Address) return Page_Table_Address is
    begin
       return Page_Table_Address (Integer_Address (Addr) / 4_096);
    end To_Page_Table_Address;
 
-   function To_Page_Directory_Address
-     (Addr : System.Address) return Page_Directory_Address is
+   function To_Page_Directory_Address (Addr : System.Address) return Page_Directory_Address is
    begin
       return Page_Directory_Address (Integer_Address (Addr) / 4_096);
    end To_Page_Directory_Address;
@@ -31,25 +29,14 @@ package body x86.vmm is
    procedure Enable_Paging is
    begin
       Asm
-        ("movl %%cr0, %%eax"
-         & LF
-         & HT
-         & "or $0x80000000, %%eax"
-         & LF
-         & HT
-         & "movl %%eax, %%cr0",
+        ("movl %%cr0, %%eax" & LF & HT & "or $0x80000000, %%eax" & LF & HT & "movl %%eax, %%cr0",
          Volatile => True);
    end Enable_Paging;
 
    procedure Disable_Paging is
    begin
       Asm
-        ("mov %%cr0, %%eax"
-         & LF
-         & "and $0x7FFFFFFF, %%eax"
-         & LF
-         & "mov %%eax, %%cr0"
-         & LF,
+        ("mov %%cr0, %%eax" & LF & "and $0x7FFFFFFF, %%eax" & LF & "mov %%eax, %%cr0" & LF,
          Volatile => True);
    end Disable_Paging;
 
@@ -63,8 +50,7 @@ package body x86.vmm is
 
       --  Init the Page Directory
       declare
-         PD : Page_Directory_Access :=
-           To_Page_Directory (To_Address (CR3.Address));
+         PD : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
       begin
          PD.all := Page_Directory'(others => (Present => False, others => <>));
       end;
@@ -102,8 +88,8 @@ package body x86.vmm is
    end Create_Page_Table;
 
    procedure Create_Page_Table
-     (PD : Page_Directory_Access;
-      PD_Index : Page_Directory_Index;
+     (PD          : Page_Directory_Access;
+      PD_Index    : Page_Directory_Index;
       Is_Writable : Boolean := False;
       Is_Usermode : Boolean := False)
    is
@@ -147,22 +133,21 @@ package body x86.vmm is
       Page_Directory_Start       : Page_Directory_Index;
       Page_Table_Start           : Page_Table_Index;
       Start_Address, End_Address : Physical_Address;
-      Is_Writable      : Boolean := False;
-      Is_Usermode      : Boolean := False)
+      Is_Writable                : Boolean := False;
+      Is_Usermode                : Boolean := False)
    is
-      PT_Count : Natural :=
-        (Natural (To_Integer (End_Address - Start_Address)) + 4_095) / 4_096;
+      PT_Count : Natural := (Natural (To_Integer (End_Address - Start_Address)) + 4_095) / 4_096;
 
       PD_Index       : Page_Directory_Index := Page_Directory_Start;
       PT_Index       : Page_Table_Index := Page_Table_Start;
       Address_To_Map : Physical_Address := Start_Address;
    begin
-      SERIAL.send_line
-        ("Mapping range" & Start_Address'Image & " -" & End_Address'Image);
+      SERIAL.send_line ("Mapping range" & Start_Address'Image & " -" & End_Address'Image);
       SERIAL.send_line ("Number of pages to map: " & Natural'Image (PT_Count));
       for i in 1 .. PT_Count loop
          if not Page_Directory.all (PD_Index).Present then
-            Create_Page_Table (Page_Directory, PD_Index, Is_Writable => Is_Writable, Is_Usermode => Is_Usermode);
+            Create_Page_Table
+              (Page_Directory, PD_Index, Is_Writable => Is_Writable, Is_Usermode => Is_Usermode);
          end if;
 
          Map_Page_Table_Entry
@@ -178,15 +163,12 @@ package body x86.vmm is
    end Map_Range;
 
    procedure Identity_Map (CR3 : CR3_register) is
-      PD                : Page_Directory_Access :=
-        To_Page_Directory (To_Address (CR3.Address));
-      Address_Breakdown : Virtual_Address_Break :=
-        To_Virtual_Address_Break (Null_Address);
+      PD                : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
+      Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Null_Address);
    begin
 
       -- Identity map the kernel
-      SERIAL.send_line
-        ("Identity map kernel" & Kernel_Start'Image & " -" & Kernel_End'Image);
+      SERIAL.send_line ("Identity map kernel" & Kernel_Start'Image & " -" & Kernel_End'Image);
       Map_Range
         (PD,
          Address_Breakdown.Directory,
@@ -198,14 +180,11 @@ package body x86.vmm is
    end Identity_Map;
 
    function Can_Fit
-     (CR3 : CR3_register; Address : Virtual_Address; Size : Storage_Count)
-      return Boolean
+     (CR3 : CR3_register; Address : Virtual_Address; Size : Storage_Count) return Boolean
    is
-      PD                : Page_Directory_Access :=
-        To_Page_Directory (To_Address (CR3.Address));
+      PD                : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
       PT                : Page_Table_Access;
-      Address_Breakdown : Virtual_Address_Break :=
-        To_Virtual_Address_Break (Address);
+      Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
       To_Fit            : Storage_Count := Size;
    begin
       --  SERIAL.send_line ("Can_Fit: Checking if " & To_Fit'Image & " bytes can fit at " & Address'Image);
@@ -217,7 +196,9 @@ package body x86.vmm is
       for PD_Index in Address_Breakdown.Directory .. Page_Directory'Last loop
          exit when To_Fit = 0;
          if not PD (PD_Index).Present then
-            To_Fit := To_Fit - Storage_Count'Min (To_Fit, Storage_Count (Page_Table'Length * PMM_PAGE_SIZE));
+            To_Fit :=
+              To_Fit
+              - Storage_Count'Min (To_Fit, Storage_Count (Page_Table'Length * PMM_PAGE_SIZE));
          else
             PT := To_Page_Table (To_Address (PD (PD_Index).Address));
             for PT_Index in Address_Breakdown.Table .. Page_Table'Last loop
@@ -235,22 +216,19 @@ package body x86.vmm is
    end Can_Fit;
 
    function Alloc
-     (CR3      :  CR3_register;
-      Address  :  Virtual_Address;
-      Data_Size : Storage_count;
-      Is_Writable      : Boolean := False;
-      Is_Usermode      : Boolean := False) return Boolean
+     (CR3         : CR3_register;
+      Address     : Virtual_Address;
+      Data_Size   : Storage_count;
+      Is_Writable : Boolean := False;
+      Is_Usermode : Boolean := False) return Boolean
    is
       --  Returns True if the mapping was successful and False otherwise
 
-      PD                : Page_Directory_Access :=
-        To_Page_Directory (To_Address (CR3.Address));
+      PD                : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
       PT                : Page_Table_Access;
-      Address_Breakdown : Virtual_Address_Break :=
-        To_Virtual_Address_Break (Address);
+      Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
 
       To_Fit : Storage_Count := Data_Size;
-
 
       PD_Entry : Page_Directory_Entry renames PD (Address_Breakdown.Directory);
    begin
@@ -265,10 +243,14 @@ package body x86.vmm is
 
          PT := To_Page_Table (To_Address (PD_Entry.Address));
 
-         Map_Page_Table_Entry (PT, Address_Breakdown.Table, To_Page_Address (Allocate_Page), Is_Writable => Is_Writable, Is_Usermode => Is_Usermode);
+         Map_Page_Table_Entry
+           (PT,
+            Address_Breakdown.Table,
+            To_Page_Address (Allocate_Page),
+            Is_Writable => Is_Writable,
+            Is_Usermode => Is_Usermode);
 
-        To_Fit := To_Fit - Storage_Count'Min
-                      (To_Fit, PMM_PAGE_SIZE);
+         To_Fit := To_Fit - Storage_Count'Min (To_Fit, PMM_PAGE_SIZE);
          --  Map the data
          Address_Breakdown.Offset := 0;
          Next (Address_Breakdown.Directory, Address_Breakdown.Table);
@@ -278,49 +260,41 @@ package body x86.vmm is
    end Alloc;
 
    function Map_Data
-     (CR3     : in out CR3_register;
-      Address : Virtual_Address;
-      Data    : in Data_Type;
-      Is_Writable      : Boolean := False;
-      Is_Usermode      : Boolean := False) return Boolean
+     (CR3         : in out CR3_register;
+      Address     : Virtual_Address;
+      Data        : in Data_Type;
+      Is_Writable : Boolean := False;
+      Is_Usermode : Boolean := False) return Boolean
    is
       --  Returns True if the mapping was successful and False otherwise
-      Data_Size         : Storage_Count := Data'Size / Storage_Unit;
+      Data_Size : Storage_Count := Data'Size / Storage_Unit;
 
-      procedure memcpy
-        (dest : System.Address; src : System.Address; size : Natural);
+      procedure memcpy (dest : System.Address; src : System.Address; size : Natural);
       pragma Import (C, memcpy, "memcpy");
 
       Data_Buffer : System.Address := Data'Address;
 
    begin
-      SERIAL.send_line
-        ("Map_Data: Mapping " & Data_Size'Image & " bytes at " &
-         Address'Image);
+      SERIAL.send_line ("Map_Data: Mapping " & Data_Size'Image & " bytes at " & Address'Image);
 
       Disable_Paging;
-      if not Alloc (CR3, Address, Data_Size, Is_Writable => Is_Writable, Is_Usermode => Is_Usermode) then
+      if not Alloc (CR3, Address, Data_Size, Is_Writable => Is_Writable, Is_Usermode => Is_Usermode)
+      then
          SERIAL.send_line ("Map_Data: Could not allocate memory for data");
          return False;
       end if;
 
       Enable_Paging;
-      memcpy
-        (dest => Address,
-         src  => Data'Address,
-         size => Natural (Data_Size));
+      memcpy (dest => Address, src => Data'Address, size => Natural (Data_Size));
 
       return True;
    end Map_Data;
 
-
    function Find_Next_Space
-     (CR3 : CR3_register; Size : Storage_Count; Start : System.Address)
-      return Virtual_Address_Break
+     (CR3 : CR3_register; Size : Storage_Count; Start : System.Address) return Virtual_Address_Break
    is
-      Breakdown  : Virtual_Address_Break := To_Virtual_Address_Break (Start);
-      PD         : Page_Directory_Access :=
-        To_Page_Directory (To_Address (CR3.Address));
+      Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Start);
+      PD        : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
    begin
       Disable_Paging;
 
@@ -339,26 +313,36 @@ package body x86.vmm is
    end;
 
    function kmalloc
-     (CR3 : CR3_register; Size : Storage_Count;
-      Is_Writable      : Boolean := False;
-      Is_Usermode      : Boolean := False) return Virtual_Address
+     (CR3         : CR3_register;
+      Size        : Storage_Count;
+      Is_Writable : Boolean := False;
+      Is_Usermode : Boolean := False) return Virtual_Address
    is
-        Address_Breakdown : Virtual_Address_Break := Find_Next_Space (CR3, Size, Null_Address);
+      Address_Breakdown : Virtual_Address_Break := Find_Next_Space (CR3, Size, Null_Address);
    begin
       if Address_Breakdown = Last_Virtual_Address_Break then
          SERIAL.send_line ("No more free space in the Page Directory");
          return Null_Address;
       end if;
 
-    SERIAL.send_line ("kmalloc: Allocating " & Size'Image & " bytes at " &
-                      From_Virtual_Address_Break (Address_Breakdown)'Image);
-        
-    if not Alloc (CR3, From_Virtual_Address_Break (Address_Breakdown), Size, Is_Writable => Is_Writable, Is_Usermode => Is_Usermode) then
-        SERIAL.send_line ("kmalloc: Could not allocate memory");
-        return Null_Address;
-    end if;
+      SERIAL.send_line
+        ("kmalloc: Allocating "
+         & Size'Image
+         & " bytes at "
+         & From_Virtual_Address_Break (Address_Breakdown)'Image);
 
-    return From_Virtual_Address_Break (Address_Breakdown);
+      if not Alloc
+               (CR3,
+                From_Virtual_Address_Break (Address_Breakdown),
+                Size,
+                Is_Writable => Is_Writable,
+                Is_Usermode => Is_Usermode)
+      then
+         SERIAL.send_line ("kmalloc: Could not allocate memory");
+         return Null_Address;
+      end if;
+
+      return From_Virtual_Address_Break (Address_Breakdown);
    end kmalloc;
 
 end x86.vmm;

@@ -18,11 +18,9 @@ with VFS;                     use VFS;
 with VFS.ISO;
 with ELF;
 with ELF.Loader;
-with x86.Userspace;          use x86.Userspace;
+with x86.Userspace;           use x86.Userspace;
 
-procedure Main
-  (magic : Interfaces.Unsigned_32; info : access MultiBoot.multiboot_info)
-is
+procedure Main (magic : Interfaces.Unsigned_32; info : access MultiBoot.multiboot_info) is
 
    --  Suppress some checks to prevent undefined references during linking to
    --
@@ -49,16 +47,13 @@ begin
    declare
       function strlen (s : System.Address) return Interfaces.C.size_t;
       pragma Import (C, strlen, "strlen");
-      length : Integer :=
-        Integer (strlen (To_Address (Integer_Address (info.all.cmdline))));
-      subtype cmdLine is
-        Interfaces.C.char_array (1 .. Interfaces.C.size_t (length));
-      str : String (1 .. length);
+      length : Integer := Integer (strlen (To_Address (Integer_Address (info.all.cmdline))));
+      subtype cmdLine is Interfaces.C.char_array (1 .. Interfaces.C.size_t (length));
+      str    : String (1 .. length);
 
       package Conversion is new System.Address_To_Access_Conversions (cmdLine);
       cmdLine_access : access cmdLine :=
-        Conversion.To_Pointer
-          (To_Address (Integer_Address (info.all.cmdline)));
+        Conversion.To_Pointer (To_Address (Integer_Address (info.all.cmdline)));
    begin
       for i in 1 .. length loop
          str (i) := Character (cmdLine_access.all (size_t (i)));
@@ -71,23 +66,17 @@ begin
    -- PMM initialization --
    ------------------------
    declare
-      entry_map_size  : constant Unsigned_64 :=
-        Unsigned_64 (info.all.mmap_length);
-      entry_map_count : constant Unsigned_64 :=
-        entry_map_size / (multiboot_mmap_entry'Size / 8);
-      subtype multiboot_mmap_array is
-        multiboot_mmap (1 .. Integer (entry_map_count));
-      package Conversion is new System.Address_To_Access_Conversions
-        (multiboot_mmap_array);
-      entry_map : access multiboot_mmap_array :=
-        (Conversion.To_Pointer
-           (To_Address (Integer_Address (info.all.mmap_addr))));
+      entry_map_size  : constant Unsigned_64 := Unsigned_64 (info.all.mmap_length);
+      entry_map_count : constant Unsigned_64 := entry_map_size / (multiboot_mmap_entry'Size / 8);
+      subtype multiboot_mmap_array is multiboot_mmap (1 .. Integer (entry_map_count));
+      package Conversion is new System.Address_To_Access_Conversions (multiboot_mmap_array);
+      entry_map       : access multiboot_mmap_array :=
+        (Conversion.To_Pointer (To_Address (Integer_Address (info.all.mmap_addr))));
    begin
       print_mmap (info.all'Address);
       x86.pmm.Init (entry_map.all);
       SERIAL.send_line
-        ("Next free page: " &
-         x86.pmm.Offset_To_Address (x86.pmm.Get_Next_Free_Page)'Image);
+        ("Next free page: " & x86.pmm.Offset_To_Address (x86.pmm.Get_Next_Free_Page)'Image);
    end;
 
    ------------------------
@@ -100,8 +89,7 @@ begin
       CR3 := Create_CR3;
       Identity_Map (CR3);
       Load_CR3 (CR3);
-      SERIAL.send_line
-        ("CR3: " & To_Address (CR3.Address)'Image);
+      SERIAL.send_line ("CR3: " & To_Address (CR3.Address)'Image);
       SERIAL.send_line ("CR3 Loaded");
       Enable_Paging;
    end;
@@ -111,11 +99,12 @@ begin
 
    Atapi.discoverAtapiDevices;
    declare
-      package VFS_ISO is new VFS.ISO
-        (Block_Range  => Atapi.SECTOR_BUFFER_INDEX,
-         Block_Type   => Atapi.SECTOR_BUFFER,
-         Read_Block   => Atapi.read_block);
-      FD     : VFS.File_Descriptor_With_Error;
+      package VFS_ISO is new
+        VFS.ISO
+          (Block_Range => Atapi.SECTOR_BUFFER_INDEX,
+           Block_Type  => Atapi.SECTOR_BUFFER,
+           Read_Block  => Atapi.read_block);
+      FD : VFS.File_Descriptor_With_Error;
 
       subtype Read_Type is String (1 .. 512);
       buffer : Read_Type;
@@ -131,8 +120,7 @@ begin
       end if;
 
       read := Read_Char (FD, buffer);
-      SERIAL.send_line ("read:" &  buffer (1 .. read));
-
+      SERIAL.send_line ("read:" & buffer (1 .. read));
 
       SERIAL.send_line ("File closed");
 
