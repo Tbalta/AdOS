@@ -26,7 +26,7 @@ debug:
 	qemu-system-i386.exe -cdrom '$<' $(qemu_param) -s -S
 
 format:
-	gnatpp $(wildcard adOS/**/*.adb) $(wildcard adOS/**/*.ads) -rnb
+	gnatformat  -P default.gpr -w 100 $(shell find adOS/ -name '*.adb' -or -name '*.ads')
 
 docker-make:
 	docker-compose -f .docker/docker-compose.yml run --rm --remove-orphans ados make
