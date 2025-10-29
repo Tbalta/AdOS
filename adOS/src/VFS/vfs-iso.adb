@@ -55,7 +55,7 @@ package body VFS.ISO is
          while dir_size > 0 loop
             while current_file.dir_size /= 0 and current_file.idf_len >= 0 loop
                declare
-                  subtype current_file_name is char_array (0 .. size_t (current_file.idf_len));
+                  subtype current_file_name is char_array (0 .. size_t (current_file.idf_len) - 1);
                   package To_Ada_Conversions is new
                     System.Address_To_Access_Conversions (current_file_name);
                   file_name_char_array : access current_file_name :=
@@ -68,8 +68,8 @@ package body VFS.ISO is
                begin
                   SERIAL.send_line ("File: " & stripped_file_name & " Searched: " & searched_file);
                   if searched_file = stripped_file_name then
-                     SERIAL.send_line ("Directory found: " & stripped_file_name);
                      if current_file.flags (Directory) then
+                        SERIAL.send_line ("Directory found: " & stripped_file_name);
                         return
                           Locate_File
                             (str (path_sep_index + 1 .. str'Last),

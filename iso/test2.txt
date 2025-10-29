@@ -1,1 +1,1 @@
-Hello World!
+execute euh 18*46 mod 3

@@ -3,20 +3,6 @@
 #include "log.h"
 __attribute__((__visibility__("default"))) int _end = 0;
 
-// static inline void outb(uint16_t port, uint8_t val)
-// {
-//     asm volatile("outb %0, %1"
-//                  :
-//                  : "a"(val), "Nd"(port));
-// }
-
-// void setup_PIC()
-// {
-//     static const char *data = "\x20\x11\xa0\x11\x21\x20\xa1\x28\x21\x4\xa1\x2\x21\x1\xa1\x1\x21\x0\xa1\x0";
-//     for(uint32_t i = 0; i < 10 * 2; i+=2)
-//         outb((uint16_t)data[i], data[i+1]);
-// }
-
 void __gnat_last_chance_handler()
 {
     while (1)
@@ -28,6 +14,15 @@ void printcmdline(multiboot_info_t *mbi)
 {
     printf("plouf");
 }
+
+struct stackframe_t {
+    unsigned int eax, ebx, ecx, edx, esi, edi;
+    unsigned int int_no;
+    unsigned int err_code;
+    unsigned int eip;
+    unsigned int cs;
+    unsigned int eflags;
+} __attribute__((packed));
 
 
 void print_mmap(multiboot_info_t *mbi)
@@ -58,7 +53,10 @@ void PANIC(const char *text)
         asm volatile("hlt");
 }
 
-int plouf()
+
+void  handler(volatile struct stackframe_t frame)
 {
-    return 3;
+    extern void ada_interrupt_handler(volatile struct stackframe_t *frame);
+    LOG("Interrupt %d occurred at EIP: 0x%x", frame.int_no, frame.eip);
+    ada_interrupt_handler(&frame);
 }

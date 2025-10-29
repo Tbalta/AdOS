@@ -6,6 +6,55 @@ package x86.idt is
    pragma Suppress (Overflow_Check);
    pragma Suppress (All_Checks);
 
+
+   type stack_frame (Privilege_Level_Change : Boolean := False) is record
+      eax        : Unsigned_32;
+      ebx        : Unsigned_32;
+      ecx        : Unsigned_32;
+      edx        : Unsigned_32;
+      esi        : Unsigned_32;
+      edi        : Unsigned_32;
+      interrupt_code  : Unsigned_32;
+      error_code : Unsigned_32;      
+
+      eip        : Unsigned_32;
+      cs         : Unsigned_32;
+      eflags     : Unsigned_32;
+
+      Case Privilege_Level_Change is
+         when True  => 
+            old_esp : Unsigned_32;
+            old_ss  : Unsigned_32;
+         when False =>
+            null;
+         end case;
+   end record
+      with 
+         Pack => True,
+         Volatile;
+
+
+   for stack_frame use
+     record
+         eax             at 0 range 0 .. 31;
+         ebx             at 4 range 0 .. 31;
+         ecx             at 8 range 0 .. 31;
+         edx             at 12 range 0 .. 31;
+         esi             at 16 range 0 .. 31;
+         edi             at 20 range 0 .. 31;
+         interrupt_code  at 24 range 0 .. 31;
+         error_code      at 28 range 0 .. 31;
+         eip             at 32 range 0 .. 31;
+         cs              at 36 range 0 .. 31;
+         eflags          at 40 range 0 .. 31;
+         old_esp         at 44 range 0 .. 31;
+         old_ss          at 48 range 0 .. 31;
+     end record;
+
+
+     type Handler_Proc is
+     access procedure (stf : stack_frame);
+
    type gate_type is
      (task_gate, interrupt_16_bits, trap_gate_16_bits, interrupt_32_bits, trap_gate_32_bits)
    with Size => 4;
@@ -63,9 +112,8 @@ package x86.idt is
    error_vector : error_vector_t;
    pragma Import (C, error_vector, "x86_handler_vector");
    procedure init_idt;
-   procedure handler
-     (interrupt_code : Unsigned_32; error_code : Unsigned_32; eip : Unsigned_32; cs : Unsigned_32);
-   pragma Export (C, handler, "handler");
+   procedure Handler (stf : access stack_frame);
+   pragma Export (C, handler, "ada_interrupt_handler");
 
    subtype Byte is Interfaces.Unsigned_8;
    type Byte_Array is array (Positive range <>) of Byte;

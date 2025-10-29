@@ -12,12 +12,6 @@ package body x86.idt is
       offset    : Unsigned_32;
       selector  : Unsigned_16;
       DPL       : Unsigned_8;
-      type_attr : gate_type);
-   procedure add_entry
-     (index     : Natural;
-      offset    : Unsigned_32;
-      selector  : Unsigned_16;
-      DPL       : Unsigned_8;
       type_attr : gate_type) is
    begin
       interrupt_vector (index) :=
@@ -41,8 +35,10 @@ package body x86.idt is
    procedure init_idt is
       procedure load_idt (idt_ptr : Unsigned_32);
       procedure timer_callback;
+      procedure syscall;
       pragma Import (C, load_idt, "load_idt");
       pragma Import (C, timer_callback, "isr_stub_32");
+      pragma Import (C, syscall, "isr_stub_128");
       idt_ptr : idt_ptr_t;
    begin
       for i in error_vector_t'Range loop
@@ -50,6 +46,7 @@ package body x86.idt is
          SERIAL.send_line (error_vector (i)'Image);
       end loop;
       add_entry (32, Unsigned_32 (To_Integer (timer_callback'Address)), 8, 0, interrupt_32_bits);
+      add_entry (128, Unsigned_32 (To_Integer (syscall'Address)), 8, 3, interrupt_32_bits);
       idt_ptr.base := Unsigned_32 (To_Integer (interrupt_vector'Address));
       idt_ptr.limit := Unsigned_16 (interrupt_vector'Size / 8 - 1);
 
@@ -65,9 +62,12 @@ package body x86.idt is
       end;
    end init_idt;
 
-   procedure handler
-     (interrupt_code : Unsigned_32; error_code : Unsigned_32; eip : Unsigned_32; cs : Unsigned_32)
+   procedure handler (stf : access stack_frame)
    is
+      interrupt_code : Unsigned_32 := stf.interrupt_code;
+      error_code     : Unsigned_32 := stf.error_code;
+      eip            : Unsigned_32 := stf.eip;
+      cs             : Unsigned_32 := stf.cs;
    begin
       SERIAL.send_line
         ("error_code = "

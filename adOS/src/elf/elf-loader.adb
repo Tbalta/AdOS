@@ -60,6 +60,10 @@ package body ELF.Loader is
          Read_Count := Read_Elf_Program_Header (File, Program_Header);
          pragma Assert (Read_Count = ELF_Program_Header'Size / 8);
 
+         SERIAL.send_line ("Program Header " & i'Image & ": Type=" & Program_Header.p_type'Image &
+           " Vaddr=" & Program_Header.p_vaddr'Image & " Memsz=" & Program_Header.p_memsz'Image &
+           " Filesz=" & Program_Header.p_filesz'Image);
+
          if Program_Header.p_type = PT_LOAD then
             SERIAL.send_line ("Loading segment " & i'Image & " at " & Program_Header.p_vaddr'Image);
             Load_Segment (File, Program_Header, CR3);

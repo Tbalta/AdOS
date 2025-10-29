@@ -28,16 +28,22 @@ package body x86.vmm is
 
    procedure Enable_Paging is
    begin
-      Asm
-        ("movl %%cr0, %%eax" & LF & HT & "or $0x80000000, %%eax" & LF & HT & "movl %%eax, %%cr0",
+      --!format off
+      Asm  ("movl %%cr0, %%eax"      & LF & HT & 
+            "or $0x80000000, %%eax"  & LF & HT &
+            "movl %%eax, %%cr0",
          Volatile => True);
+      --!format off
    end Enable_Paging;
 
    procedure Disable_Paging is
    begin
-      Asm
-        ("mov %%cr0, %%eax" & LF & "and $0x7FFFFFFF, %%eax" & LF & "mov %%eax, %%cr0" & LF,
-         Volatile => True);
+      --!format off
+      Asm ("mov %%cr0, %%eax"        & LF &
+            "and $0x7FFFFFFF, %%eax" & LF &
+            "mov %%eax, %%cr0"       & LF,
+            Volatile => True);
+      --!format on
    end Disable_Paging;
 
    function Create_CR3 return CR3_register is
@@ -60,10 +66,12 @@ package body x86.vmm is
 
    procedure Load_CR3 (CR3 : CR3_register) is
    begin
-      Asm
-        ("movl %0, %%eax" & LF & "movl %%eax, %%cr3" & LF,
+      --!format off
+      Asm ( "movl %0, %%eax"     & LF &
+            "movl %%eax, %%cr3"  & LF,
          Inputs   => CR3_register'Asm_Input ("a", CR3),
          Volatile => True);
+      --!format on
    end Load_CR3;
 
    procedure Create_Page_Table
@@ -196,9 +204,7 @@ package body x86.vmm is
       for PD_Index in Address_Breakdown.Directory .. Page_Directory'Last loop
          exit when To_Fit = 0;
          if not PD (PD_Index).Present then
-            To_Fit :=
-              To_Fit
-              - Storage_Count'Min (To_Fit, Storage_Count (Page_Table'Length * PMM_PAGE_SIZE));
+            To_Fit := To_Fit - Storage_Count'Min (To_Fit, Page_Table'Length * PMM_PAGE_SIZE);
          else
             PT := To_Page_Table (To_Address (PD (PD_Index).Address));
             for PT_Index in Address_Breakdown.Table .. Page_Table'Last loop
@@ -238,7 +244,7 @@ package body x86.vmm is
 
       while To_Fit > 0 loop
          if not PD.all (Address_Breakdown.Directory).Present then
-            Create_Page_Table (PD, Address_Breakdown.Directory);
+            Create_Page_Table (PD, Address_Breakdown.Directory, Is_Writable => Is_Writable, Is_Usermode => Is_Usermode);
          end if;
 
          PT := To_Page_Table (To_Address (PD_Entry.Address));

@@ -38,19 +38,21 @@ package x86.vmm is
       Address       : Page_Address;
    end record;
 
+   --!format off
    for Page_Table_Entry use
      record
-       Present at 0 range 0 .. 0;
-       Is_Writable at 0 range 1 .. 1;
-       Is_Usermode at 0 range 2 .. 2;
+       Present       at 0 range 0 .. 0;
+       Is_Writable   at 0 range 1 .. 1;
+       Is_Usermode   at 0 range 2 .. 2;
        Write_Through at 0 range 3 .. 3;
        Cache_Disable at 0 range 4 .. 4;
-       Accessed at 0 range 5 .. 5;
-       Dirty at 0 range 6 .. 6;
-       Page_Size at 0 range 7 .. 7;
-       Global at 0 range 8 .. 8;
-       Address at 0 range 12 .. 31;
+       Accessed      at 0 range 5 .. 5;
+       Dirty         at 0 range 6 .. 6;
+       Page_Size     at 0 range 7 .. 7;
+       Global        at 0 range 8 .. 8;
+       Address       at 0 range 12 .. 31;
      end record;
+   --!format on
 
    type Page_Directory_Entry is record
       Present       : Boolean := False;
@@ -64,18 +66,20 @@ package x86.vmm is
       Address       : Page_Table_Address;
    end record;
 
+   --!format off
    for Page_Directory_Entry use
      record
-       Present at 0 range 0 .. 0;
-       Is_Writable at 0 range 1 .. 1;
-       Is_Usermode at 0 range 2 .. 2;
+       Present       at 0 range 0 .. 0;
+       Is_Writable   at 0 range 1 .. 1;
+       Is_Usermode   at 0 range 2 .. 2;
        Write_Through at 0 range 3 .. 3;
        Cache_Disable at 0 range 4 .. 4;
-       Accessed at 0 range 5 .. 5;
-       Page_Size at 0 range 7 .. 7;
-       Global at 0 range 8 .. 8;
-       Address at 0 range 12 .. 31;
+       Accessed      at 0 range 5 .. 5;
+       Page_Size     at 0 range 7 .. 7;
+       Global        at 0 range 8 .. 8;
+       Address       at 0 range 12 .. 31;
      end record;
+   --!format on
 
    type Page_Table is array (Page_Table_Index range 0 .. 1_023) of aliased Page_Table_Entry
    with Pack => True, Size => 4_096 * 8;

@@ -124,7 +124,11 @@ begin
 
       SERIAL.send_line ("File closed");
 
-      FD := VFS_ISO.open ("a.out", 0);
+      FD := VFS_ISO.open ("bin/test.elf", 0);
+      if FD = FD_ERROR then
+         SERIAL.send_line ("Error opening file");
+         goto Init_End;
+      end if;
 
       declare
          Program_Header : ELF.ELF_Header := Loader.Prepare (FD);
@@ -133,7 +137,6 @@ begin
          Loader.Kernel_Load (FD, Program_Header, CR3);
          SERIAL.send_line ("ELF file loaded in memory");
          SERIAL.send_line ("Entry point: " & To_Integer (Program_Header.e_entry)'Image);
-
          Jump_To_Userspace (Program_Header.e_entry, CR3);
 
 

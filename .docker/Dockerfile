@@ -34,4 +34,8 @@ RUN ln -s /opt/cross/i386-elf/bin/i386-elf-gcc /opt/cross/i386-elf/bin/i386-elf-
 COPY linker.xml /usr/share/gprconfig/linker.xml
 COPY compilers.xml /usr/share/gprconfig/compilers.xml
 
-RUN apt -y install grub-common xorriso grub-pc
+RUN apt -y install grub-common xorriso grub-pc wget unzip git curl
+
+RUN wget https://github.com/alire-project/alire/releases/download/v2.1.0/alr-2.1.0-bin-x86_64-linux.zip
+RUN unzip alr-2.1.0-bin-x86_64-linux.zip
+RUN cp bin/alr /usr/local/bin
