@@ -244,7 +244,11 @@ package body x86.vmm is
 
       while To_Fit > 0 loop
          if not PD.all (Address_Breakdown.Directory).Present then
-            Create_Page_Table (PD, Address_Breakdown.Directory, Is_Writable => Is_Writable, Is_Usermode => Is_Usermode);
+            Create_Page_Table
+              (PD,
+               Address_Breakdown.Directory,
+               Is_Writable => Is_Writable,
+               Is_Usermode => Is_Usermode);
          end if;
 
          PT := To_Page_Table (To_Address (PD_Entry.Address));

@@ -1,7 +1,7 @@
 
 BIN_DIR = bin
 
-PROJECTS = test truc
+PROJECTS = test
 
 PROJECTS_CLEAN = $(PROJECTS:%=%.clean)
 

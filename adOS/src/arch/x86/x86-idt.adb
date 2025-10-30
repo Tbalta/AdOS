@@ -62,8 +62,7 @@ package body x86.idt is
       end;
    end init_idt;
 
-   procedure handler (stf : access stack_frame)
-   is
+   procedure handler (stf : access stack_frame) is
       interrupt_code : Unsigned_32 := stf.interrupt_code;
       error_code     : Unsigned_32 := stf.error_code;
       eip            : Unsigned_32 := stf.eip;
