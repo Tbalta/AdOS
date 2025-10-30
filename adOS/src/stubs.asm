@@ -1,27 +1,48 @@
 extern handler
 
 section .text
-common_handler:
-    cli
-    call handler
-    add esp, 8
-    sti
-    iret
 
+%macro push_register 0
+    push edi
+    push esi
+    push edx
+    push ecx
+    push ebx
+    push eax
+%endmacro
+
+%macro pop_register 0
+    pop eax
+    pop ebx
+    pop ecx
+    pop edx
+    pop esi
+    pop edi
+%endmacro
 
 %macro isr_no_err 1
 global isr_stub_%+%1
 isr_stub_%+%1:
+    cli
     push DWORD 0
     push DWORD %1
-    jmp common_handler
+    push_register
+    call handler
+    pop_register
+    add esp, 8
+    iret
 %endmacro
 
 %macro isr_err 1
 global isr_stub_%+%1
 isr_stub_%+%1:
+    cli
     push DWORD %1
-    jmp common_handler
+    push_register
+    call handler
+    pop_register
+    add esp, 8
+    iret
 %endmacro
 
 
@@ -58,6 +79,8 @@ isr_no_err 29
 isr_err    30
 isr_no_err 31
 isr_no_err 32
+isr_no_err 128
+
 
 section .rodata
 global x86_handler_vector
