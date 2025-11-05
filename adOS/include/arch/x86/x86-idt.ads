@@ -1,4 +1,5 @@
 with Interfaces; use Interfaces;
+with Ada.Interrupts; use Ada.Interrupts;
 
 package x86.idt is
    pragma Preelaborate;
@@ -83,7 +84,7 @@ package x86.idt is
        offset_high at 0 range 48 .. 63;
      end record;
 
-   type interrupt_vector_t is array (0 .. 255) of idt_entry;
+   type interrupt_vector_t is array (Interrupt_Id'Range) of idt_entry;
    interrupt_vector : interrupt_vector_t
    with
      Export,
@@ -92,12 +93,13 @@ package x86.idt is
      External_Name => "interrupt_descriptor_table",
      Volatile;
 
-   type error_vector_t is array (0 .. 31) of Unsigned_32;
+   type error_vector_t is array (Interrupt_Id range 0 .. 31) of System.Address;
+   for error_vector_t'Component_Size use 32;
    type error_vector_ptr_t is access error_vector_t;
 
    type idt_ptr_t is record
       limit : Unsigned_16;
-      base  : Unsigned_32;
+      base  : System.Address;
    end record
    with Size => 48;
    for idt_ptr_t use
@@ -111,11 +113,6 @@ package x86.idt is
    procedure init_idt;
    procedure Handler (stf : access stack_frame);
    pragma Export (C, handler, "ada_interrupt_handler");
-
-   subtype Byte is Interfaces.Unsigned_8;
-   type Byte_Array is array (Positive range <>) of Byte;
-   subtype Record_Bytes is Byte_Array (1 .. idt_entry'Size / Byte'Size);
-   function Convert (Input : idt_entry) return Record_Bytes;
 
 private
 end x86.idt;

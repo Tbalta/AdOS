@@ -38,14 +38,6 @@ package body x86.gdt is
          Clobber  => "eax");
    end flush_tss;
 
-   function Convert (Input : Global_Descriptor_Pointer_T) return Record_Bytes is
-      Result : constant Record_Bytes;
-      for Result'Address use Input'Address;
-      pragma Import (Convention => Ada, Entity => Result);
-   begin
-      return Result;
-   end Convert;
-
    procedure initialize_gdt is
       base_address : constant System.Address := To_Address (0);
       limit        : constant Unsigned_32 := 16#F_FFFF#;

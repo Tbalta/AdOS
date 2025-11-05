@@ -80,9 +80,4 @@ private
    procedure load_gdt (gdtptr_loc : Interfaces.Unsigned_32)
    with Import => True, Convention => C, External_Name => "load_gdt";
 
-   subtype Byte is Interfaces.Unsigned_8;
-   type Byte_Array is array (Positive range <>) of Byte;
-   subtype Record_Bytes is Byte_Array (1 .. Global_Descriptor_Pointer_T'Size / Byte'Size);
-   function Convert (Input : Global_Descriptor_Pointer_T) return Record_Bytes;
-
 end x86.gdt;

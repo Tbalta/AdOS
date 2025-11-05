@@ -6,6 +6,7 @@
 --  Licence         : See LICENCE in the root directory.
 pragma Discard_Names;
 pragma Normalize_Scalars;
+pragma Profile (Ravenscar);
 --  pragma Restrictions (No_Exception_Propagation);
 pragma Restrictions (No_Finalization);
 pragma Restrictions (No_Tasking);

@@ -20,17 +20,9 @@ with ELF;
 with ELF.Loader;
 with x86.Userspace;           use x86.Userspace;
 with Log;
+with Ada.Assertions;
 
 procedure Main (magic : Interfaces.Unsigned_32; info : access MultiBoot.multiboot_info) is
-
-   --  Suppress some checks to prevent undefined references during linking to
-   --
-   --    __gnat_rcheck_CE_Range_Check
-   --    __gnat_rcheck_CE_Overflow_Check
-   --
-   --  These are Ada Runtime functions (see also GNAT's a-except.adb).
-   procedure discover_atapi_drive;
-   pragma Import (C, discover_atapi_drive, "discover_atapi_drive");
    procedure print_mmap (s : System.Address);
    pragma Import (C, print_mmap, "print_mmap");
    package Logger renames Log.Serial_Logger;
