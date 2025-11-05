@@ -101,12 +101,12 @@ package VFS.ISO with Preelaborate is
       vol_desc_type   : Unsigned_8;
       vol_id          : char_array (0 .. 4);
       vol_version     : Unsigned_8;
-      --  unused1         : Unsigned_8;
+
       system_id       : char_array (0 .. 31);
       vol_id2         : char_array (0 .. 31);
       unused2         : char_array (0 .. 7);
       vol_blk_count   : endian32;
-      --  unused3         : char_array (0 .. 31);
+
       vol_set_size    : endian16;
       vol_seq_num     : endian16;
       vol_blk_size    : endian16;
@@ -117,7 +117,7 @@ package VFS.ISO with Preelaborate is
       be_path_table_blk  : Unsigned_32;  -- iso9660.h:120
       be_opath_table_blk : Unsigned_32;  -- iso9660.h:121
       root_dir           : iso_dir;
-      --  unused4            : char_array (0 .. (34 - (iso_dir'Size / 8)));
+
    end record;
 
    for iso_prim_voldesc use

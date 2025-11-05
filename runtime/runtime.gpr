@@ -39,7 +39,7 @@ library project Runtime is
         --    https://gcc.gnu.org/onlinedocs/gnat_ugn/Compilation-options.html
         "-ffunction-sections", 
         "-fdata-sections",
-        "-gnat2012",
+        "-gnat2020",
         --  This switch enables GNAT's Internal implementation mode. This 
         --  allows us to modify internal packages such as 'Ada' or 'System'
         --  which are needed to build a run-time library. This switch is only

@@ -35,6 +35,10 @@ package body VFS.ISO is
       file_buffer : System.Address := raw_buffer'Address;
       count       : Natural;
 
+      function Next_File (current_file : iso_dir_ptr) return iso_dir_ptr is
+      begin
+         return To_Pointer (To_Address (current_file) + Storage_Offset (current_file.dir_size));
+      end Next_File;
       -- Local Functions --
       function Locate_File (str : String; lba_param, dir_size_param : Natural) return iso_dir_ptr is
          current_file   : iso_dir_ptr;
@@ -45,11 +49,11 @@ package body VFS.ISO is
       begin
          count := Read_Block (lba, raw_buffer);
          file_buffer := raw_buffer'Address;
-
          current_file := iso_dir_ptr (To_Pointer (file_buffer));
+
+         -- Skip . and .. entries
          for I in 1 .. 2 loop
-            current_file :=
-              To_Pointer (To_Address (current_file) + Storage_Offset (current_file.dir_size));
+            current_file := Next_File (current_file);
          end loop;
 
          while dir_size > 0 loop
@@ -66,7 +70,7 @@ package body VFS.ISO is
                     file_name
                       (file_name'First .. Min (IndexOfString (file_name, ';') - 1, file_name'Last));
                begin
-                  SERIAL.send_line ("File: " & stripped_file_name & " Searched: " & searched_file);
+                  -- SERIAL.send_line ("File: " & stripped_file_name & " Searched: " & searched_file);
                   if searched_file = stripped_file_name then
                      if current_file.flags (Directory) then
                         SERIAL.send_line ("Directory found: " & stripped_file_name);
@@ -78,8 +82,7 @@ package body VFS.ISO is
                      end if;
                      return current_file;
                   end if;
-                  current_file :=
-                    To_Pointer (To_Address (current_file) + Storage_Offset (current_file.dir_size));
+                  current_file := Next_File (current_file);
                end;
             end loop;
             dir_size := dir_size - BLOCK_SIZE;

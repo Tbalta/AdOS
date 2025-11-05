@@ -2,13 +2,14 @@ with System.Storage_Elements; use System.Storage_Elements;
 with SERIAL;                  use SERIAL;
 with System.Machine_Code;     use System.Machine_Code;
 with x86.gdt;
-
+with Log;
 package body x86.gdt is
    use Standard.ASCII;
    pragma Suppress (Index_Check);
    pragma Suppress (Range_Check);
    pragma Suppress (Overflow_Check);
    pragma Suppress (All_Checks);
+   package Logger renames Log.Serial_Logger;
 
    procedure set_gdt_entry
      (index       : Integer;
@@ -61,8 +62,9 @@ package body x86.gdt is
       set_gdt_entry (5, tss'Address, (tss'Size / 8), 16#89#, 16#0#); -- TSS descriptor
       memset (tss'Address, 0, tss'Size / 8);
 
-      SERIAL.send_line ("tss'Address: " & tss'Address'Image);
-      SERIAL.send_line ("tss'Size: " & Integer ((tss'Size / 8) - 1)'Image);
+      Logger.Log_Info ("TSS =" 
+         & " Address: " & tss'Address'Image
+         & " Size: " & Integer ((tss'Size / 8) - 1)'Image);
 
       tss.prev_tss := 0;
       tss.esp0 := stack'Address + To_Address (stack'Length * 8); -- Stack for kernel mode
@@ -71,14 +73,15 @@ package body x86.gdt is
       gdt_pointer.limit := (Global_Descriptor_Table'Size - 1) / 8;
       gdt_pointer.base := Global_Descriptor_Table'Address;
 
-      send_line ("gdt_pointer'Address: " & gdt_pointer'Address'Image);
-      send_line ("gdt_pointer.base: " & gdt_pointer.base'Image);
-      send_line ("gdt_pointer.limit: " & gdt_pointer.limit'Image);
+      Logger.Log_Info ("gdt_pointer =" 
+         & " Address: " & gdt_pointer'Address'Image
+         & " Base: " & gdt_pointer.base'Image
+         & " Limit: " & gdt_pointer.limit'Image);
 
       for i in Global_Descriptor_Table'Range loop
-         send_line
-           ("GDT["
-            & Integer (i)'Image
+      -- !format off
+         Logger.Log_Info 
+            ("GDT["& Integer (i)'Image
             & "] = "
             & " Base: "
             & Global_Descriptor_Table (i).base_low'Image
@@ -94,10 +97,11 @@ package body x86.gdt is
             & Global_Descriptor_Table (i).access_byte'Image
             & " Limit High: "
             & Global_Descriptor_Table (i).limit_high'Image);
+      -- !format on
       end loop;
       load_gdt (Unsigned_32 (To_Integer (gdt_pointer'Address)));
-      send_line ("gdt loaded");
+      Logger.Log_Ok ("gdt loaded");
       flush_tss;
-      send_line ("tss flushed");
+      Logger.Log_Ok ("tss flushed");
    end initialize_gdt;
 end x86.gdt;

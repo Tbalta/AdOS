@@ -14,7 +14,7 @@ package SERIAL is
    procedure send_string (data : String);
    procedure send_uint (data : Interfaces.Unsigned_32);
    procedure send_hex (data : Interfaces.Unsigned_32);
-   procedure send_line (data : String);
+   procedure send_line (data : in String);
 
 private
    procedure set_baud_rate (serial_divisor : Divisor);

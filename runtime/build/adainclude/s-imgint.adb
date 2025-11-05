@@ -51,13 +51,7 @@ package body System.Img_Int is
       pragma Assert (S'First = 1);
 
    begin
-      if V >= 0 then
-         S (1) := ' ';
-         P := 1;
-      else
-         P := 0;
-      end if;
-
+      P := 0;
       Set_Image_Integer (V, S, P);
    end Image_Integer;
 

@@ -1,10 +1,11 @@
 with Interfaces;  use Interfaces;
 with x86.Port_IO; use x86.Port_IO;
-with SERIAL;      use SERIAL;
+with Log;
 with Ada.Unchecked_Conversion;
 
 package body Atapi is
    pragma Suppress (All_Checks);
+   package Logger renames Log.Serial_Logger;
 
    procedure busy_wait (Controller : ATA_CONTROLLER) is
       status : Unsigned_8;
@@ -53,7 +54,7 @@ package body Atapi is
       Outb (DCR, SRST);
       Outb (DCR, INTERRUPT_DISABLE);
       Outb (getReg (Controller, ATA_REG_DRIVE), ATA_DEVICE'Enum_Rep (Device));
-      send_line ("Selecting device" & Unsigned_8 (ATA_DEVICE'Enum_Rep (Device))'Image);
+      Logger.Log_Info ("Selecting device" & Unsigned_8 (ATA_DEVICE'Enum_Rep (Device))'Image);
       currentController := Controller;
       currentDevice := Device;
 
@@ -83,7 +84,7 @@ package body Atapi is
       Signature (1) := Inb (getReg (Controller, ATA_REG_LBA_LO));
       Signature (2) := Inb (getReg (Controller, ATA_REG_LBA_MI));
       Signature (3) := Inb (getReg (Controller, ATA_REG_LBA_HI));
-      send_line
+      Logger.Log_Info
         ("Signature: "
          & Signature (0)'Image
          & " "
@@ -96,7 +97,7 @@ package body Atapi is
       for Controller in ATA_CONTROLLER'First .. ATA_CONTROLLER'Last loop
          for Device in ATA_MASTER .. ATA_SLAVE loop
             if isAtapiDevice (Controller, Device) then
-               send_line ("Found ATAPI device on " & Controller'Image & " " & Device'Image);
+               Logger.Log_Ok ("Found ATAPI device on " & Controller'Image & " " & Device'Image);
                return;
             end if;
          end loop;
@@ -161,7 +162,7 @@ package body Atapi is
          buffer (buffer'First + (i * 2) + 1) := Unsigned_8 (Shift_Right (data, 8));
       end loop;
       --  buffer := fromWordPtr (buffer_word);
-      SERIAL.send_line ("Read block: " & Unsigned_32 (size_read)'Image & " bytes");
+      -- SERIAL.send_line ("Read block: " & Unsigned_32 (size_read)'Image & " bytes");
       return size_read;
    end read_block;
 

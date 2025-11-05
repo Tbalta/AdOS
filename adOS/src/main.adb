@@ -19,6 +19,7 @@ with VFS.ISO;
 with ELF;
 with ELF.Loader;
 with x86.Userspace;           use x86.Userspace;
+with Log;
 
 procedure Main (magic : Interfaces.Unsigned_32; info : access MultiBoot.multiboot_info) is
 
@@ -32,16 +33,15 @@ procedure Main (magic : Interfaces.Unsigned_32; info : access MultiBoot.multiboo
    pragma Import (C, discover_atapi_drive, "discover_atapi_drive");
    procedure print_mmap (s : System.Address);
    pragma Import (C, print_mmap, "print_mmap");
-
+   package Logger renames Log.Serial_Logger;
    CR3 : CR3_register;
 begin
-
-   --  Clear (BLACK);
-   --  Put_String (0, 0, BRIGHT, BLACK, "Ada says: Hello world!");
    SERIAL.serial_init (SERIAL.Baudrate'Last);
+
+   Logger.Log_Info ("Starting adOS...");
    x86.gdt.initialize_gdt;
    x86.idt.init_idt;
-   SERIAL.send_line ("test");
+
    SERIAL.send_line ("magic: " & magic'Image);
    SERIAL.send_line ("flags: " & info.all.flags'Image);
    declare
@@ -82,20 +82,20 @@ begin
    ------------------------
    -- VMM initialization --
    ------------------------
-   --  Asm ("int $0x0");
-   SERIAL.send_line ("VMM initialization");
+
+   Logger.Log_Info ("Initializing VMM");
    declare
    begin
       CR3 := Create_CR3;
       Identity_Map (CR3);
       Load_CR3 (CR3);
-      SERIAL.send_line ("CR3: " & To_Address (CR3.Address)'Image);
-      SERIAL.send_line ("CR3 Loaded");
+      Logger.Log_Info ("CR3 address: " & To_Address (CR3.Address)'Image);
+      Logger.Log_Ok ("CR3 Loaded");
       Enable_Paging;
    end;
-   SERIAL.send_line ("Paging enabled");
+   Logger.Log_Ok ("Paging enabled");
 
-   SERIAL.send_line ("Atapi setup");
+   Logger.Log_Info ("Atapi setup");
 
    Atapi.discoverAtapiDevices;
    declare
@@ -115,7 +115,7 @@ begin
       VFS_ISO.init;
       FD := VFS_ISO.open ("test2.txt", 0);
       if FD = FD_ERROR then
-         SERIAL.send_line ("Error opening file");
+         Logger.Log_Error ("Error opening file");
          goto Init_End;
       end if;
 
@@ -126,7 +126,7 @@ begin
 
       FD := VFS_ISO.open ("bin/test.elf", 0);
       if FD = FD_ERROR then
-         SERIAL.send_line ("Error opening file");
+         Logger.Log_Error ("Error opening file");
          goto Init_End;
       end if;
 
@@ -138,8 +138,6 @@ begin
          SERIAL.send_line ("ELF file loaded in memory");
          SERIAL.send_line ("Entry point: " & To_Integer (Program_Header.e_entry)'Image);
          Jump_To_Userspace (Program_Header.e_entry, CR3);
-
-
       end;
    end;
 
