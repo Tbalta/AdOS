@@ -51,6 +51,22 @@ package x86.idt is
      end record;
    --!format on
 
+   type Page_Fault_Error_Code is record
+      Present        : Boolean := False;
+      Write          : Boolean := False;
+      User_Mode      : Boolean := False;
+      Instruction_Fetch : Boolean := False;
+   end record
+   with Size => 32;
+
+   for Page_Fault_Error_Code use
+     record
+       Present         at 0 range 0 .. 0;
+       Write           at 0 range 1 .. 1;
+       User_Mode       at 0 range 2 .. 2;
+       Instruction_Fetch at 0 range 4 .. 4;
+     end record;
+
    type Handler_Proc is access procedure (stf : stack_frame);
 
    type gate_type is

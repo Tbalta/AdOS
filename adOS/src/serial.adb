@@ -1,6 +1,7 @@
 with x86.Port_IO;
 with System.Storage_Elements; use System.Storage_Elements;
-
+with System;
+with System.Address_To_Access_Conversions;
 package body SERIAL is
    pragma Suppress (Index_Check);
    pragma Suppress (Overflow_Check);
@@ -72,6 +73,12 @@ package body SERIAL is
       set_baud_rate (Divisor (rate / Baudrate'Last));
    end serial_init;
 
+   procedure send_raw_byte (b : Interfaces.Unsigned_8) is
+      port : constant System.Address := To_Address (16#3F8#);
+   begin
+      x86.Port_IO.Outb (port + Storage_Offset (0), b);
+   end send_raw_byte;
+
    procedure send_cchar (c : Interfaces.C.char) is
    begin
       send_char (To_Ada (c));
@@ -82,5 +89,16 @@ package body SERIAL is
       send_string (data);
       send_char (Character'Val (10));
    end send_line;
+
+   procedure send_raw_buffer (buffer : System.Address; size : Storage_Count) is
+      type Byte_Array is array (Storage_Offset range 1 .. size) of Interfaces.Unsigned_8;
+      package Conversion is new System.Address_To_Access_Conversions (Byte_Array);
+      byte_array_access : access Byte_Array := Conversion.To_Pointer (buffer);
+
+   begin
+      for Byte of byte_array_access.all loop
+         send_raw_byte (Byte);
+      end loop;
+   end send_raw_buffer;
 
 end SERIAL;

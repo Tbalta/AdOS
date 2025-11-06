@@ -81,6 +81,7 @@ begin
       CR3 := Create_CR3;
       Identity_Map (CR3);
       Load_CR3 (CR3);
+      Set_Kernel_CR3 (CR3);
       Logger.Log_Info ("CR3 address: " & To_Address (CR3.Address)'Image);
       Logger.Log_Ok ("CR3 Loaded");
       Enable_Paging;

@@ -38,7 +38,6 @@ package x86.pmm is
    with Convention => C;
    package PMM_Header_Conv is new System.Address_To_Access_Conversions (PMM_Header_Info);
 
-   PMM_Header_Address : System.Address;
    function check (cond : Boolean; msg : String) return Boolean;
 
    -----------------------
@@ -74,6 +73,9 @@ package x86.pmm is
 
    function Get_Next_Free_Page return Natural;
 
+   function Get_Pmm_Start_Address return Physical_Address;
+   function Get_Pmm_End_Address return Physical_Address;
+
    function Allocate_Page return Physical_Address
    with
      Post =>
@@ -98,4 +100,8 @@ package x86.pmm is
       Headers : access PMM_Headers := PMM_Header_Conv.To_Pointer (PMM_Info.Headers);
       Bitmap  : access PMM_Bitmap := PMM_Bitmap_Conv.To_Pointer (PMM_Info.Bitmap);
    end PMM_Utils;
+
+   private
+   PMM_Header_Address     : System.Address;
+   PMM_Bitmap_End_Address : System.Address;
 end x86.pmm;

@@ -95,6 +95,8 @@ package x86.vmm is
    is (Address_to_Page_Table.To_Pointer (Addr));
    function To_Page_Table (PDE : Page_Directory_Entry) return Page_Table_Access
    is (To_Page_Table (To_Address (PDE.Address)));
+   function To_Page_Table_Access (Page_Table_Addr : Page_Table_Address) return Page_Table_Access
+   is (Address_to_Page_Table.To_Pointer (To_Address (Page_Table_Addr)));
 
    package Address_to_Page_Directory is new System.Address_To_Access_Conversions (Page_Directory);
    subtype Page_Directory_Access is Address_to_Page_Directory.Object_Pointer;
@@ -138,6 +140,7 @@ package x86.vmm is
 
    function Create_CR3 return CR3_register;
    procedure Load_CR3 (CR3 : CR3_register);
+   function Get_Current_CR3 return CR3_register;
    procedure Identity_Map (CR3 : CR3_register);
    generic
       type Data_Type is private;
@@ -153,5 +156,23 @@ package x86.vmm is
       Size        : Storage_Count;
       Is_Writable : Boolean := False;
       Is_Usermode : Boolean := False) return Virtual_Address;
+
+   procedure Unmap
+     (CR3     : CR3_register;
+      Address : System.Address;
+      Size    : Storage_Count);
+
+   function Process_To_Process_Map
+     (Source_CR3     : CR3_register;
+      Source_Address : System.Address;
+      Dest_CR3       : CR3_register;
+      Size           : Storage_Count) return System.Address;
+
+   function Get_Kernel_CR3 return CR3_register;
+   procedure Set_Kernel_CR3 (CR3 : CR3_register);
+   procedure Load_Kernel_Mapping;
+private
+
+   Kernel_CR3 : CR3_register;
 
 end x86.vmm;
