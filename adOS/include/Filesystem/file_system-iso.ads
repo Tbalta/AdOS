@@ -34,6 +34,7 @@ package file_system.ISO with Preelaborate is
 private
    Atapi_Buffer : Atapi.SECTOR_BUFFER;
    BLOCK_SIZE   : constant := Atapi.SECTOR_BUFFER'Length;
+
    --  ISO9660 filesystem structures --
    type endian32 is record
       le : Unsigned_32;
@@ -70,7 +71,7 @@ private
       vol_seq   : endian16;  -- iso9660.h:82
       idf_len   : Unsigned_8;  -- iso9660.h:83
    end record
-   with Size => 34 * 8;
+   with Size => 33 * 8;
 
    for iso_dir use
      record
@@ -106,7 +107,6 @@ private
       be_path_table_blk  : Unsigned_32;  -- iso9660.h:120
       be_opath_table_blk : Unsigned_32;  -- iso9660.h:121
       root_dir           : iso_dir;
-
    end record;
 
    for iso_prim_voldesc use

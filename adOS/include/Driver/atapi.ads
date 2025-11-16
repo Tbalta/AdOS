@@ -14,6 +14,8 @@ package Atapi is
    function read_block (Device_id : Atapi_Device_id; lba : Natural; buffer : out SECTOR_BUFFER) return Integer;
    procedure discoverAtapiDevices;
 
+   function Is_Present (Device_id : Atapi_Device_id) return Boolean;
+
 private
    type ATA_CONTROLLER is (ATA_SECONDARY, ATA_PRIMARY);
    for ATA_CONTROLLER use (ATA_SECONDARY => 16#170#, ATA_PRIMARY => 16#1F0#);
