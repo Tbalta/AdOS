@@ -10,39 +10,30 @@ with Interfaces;   use Interfaces;
 with Interfaces.C; use Interfaces.C;
 with System;
 with System.Address_To_Access_Conversions;
+with Ados;
+with Atapi;
 
-generic
-   type Block_Range is range <>;
-   type Block_Type is array (Block_Range) of Interfaces.Unsigned_8;
+with File_System;
 
-   --  type Block_Type is array (Positive range 1 .. BLOCK_SIZE) of Interfaces.Unsigned_8;
-   with function Read_Block (Lba : Integer; Buffer : out Block_Type) return Integer;
-package VFS.ISO with Preelaborate is
-   BLOCK_SIZE : constant Positive := Block_Type'Length;
-   raw_buffer : aliased Block_Type;
 
-   root_lba     : Natural;
-   root_dirsize : Natural;
+package file_system.ISO with Preelaborate is
 
-   -- ISO9660 filesystem functions --
-   type ISO_File_Info is record
-      lba : Natural := 0;
-   end record;
-   type ISO_File_Info_Array is array (File_Descriptor) of ISO_File_Info;
-   ISO_Descriptors : ISO_File_Info_Array := (others => (lba => 0));
-
-   function open (path : String; flag : Integer) return File_Descriptor_With_Error;
+   subtype Supported_Drivers is Ados.Ados_Driver range Ados.ATAPI_DRIVER .. Ados.ATAPI_DRIVER;
+   function open (path : String; flag : Integer) return Driver_File_Descriptor_With_Error;
 
    generic
       type Read_Type is private;
-   function read (fd : File_Descriptor; Buffer : out Read_Type) return Integer;
 
-   procedure seek (fd : File_Descriptor; offset : off_t; wh : whence);
-   function seek (fd : File_Descriptor; offset : off_t; wh : whence) return off_t;
-   function close (fd : File_Descriptor) return Integer;
+   function read (fd : Driver_File_Descriptor; Buffer : out Read_Type) return Integer;
+   function seek (fd : Driver_File_Descriptor; offset : off_t; wh : whence) return off_t;
+   function close (fd : Driver_File_Descriptor) return Integer;
    procedure init;
-   procedure list_file (dir_lba, dir_size_param : in Natural);
+   procedure list_file (Atapi_Device : Atapi.Atapi_Device_id; dir_lba, dir_size_param : in Natural);
 
+
+private
+   Atapi_Buffer : Atapi.SECTOR_BUFFER;
+   BLOCK_SIZE   : constant := Atapi.SECTOR_BUFFER'Length;
    --  ISO9660 filesystem structures --
    type endian32 is record
       le : Unsigned_32;
@@ -78,7 +69,6 @@ package VFS.ISO with Preelaborate is
       gap_size  : Unsigned_8;  -- iso9660.h:80
       vol_seq   : endian16;  -- iso9660.h:82
       idf_len   : Unsigned_8;  -- iso9660.h:83
-      idf       : Interfaces.C.char_array (0 .. -1);  -- iso9660.h:84
    end record
    with Size => 34 * 8;
 
@@ -94,7 +84,6 @@ package VFS.ISO with Preelaborate is
        gap_size at 27 range 0 .. 7;
        vol_seq at 28 range 0 .. 31;
        idf_len at 32 range 0 .. 7;
-       idf at 33 range 0 .. -1;
      end record;
 
    type iso_prim_voldesc is record
@@ -136,8 +125,45 @@ package VFS.ISO with Preelaborate is
        le_opath_table_blk at 144 range 0 .. 31;
        be_path_table_blk at 148 range 0 .. 31;
        be_opath_table_blk at 152 range 0 .. 31;
-       root_dir at 156 range 0 .. 271;
+       root_dir at 156 range 0 .. 280;
      end record;
+
+   -- ISO Driver types --
+
+   package Device_Driver
+   is
+      type Driver_Id_With_Error is new Natural range 0 .. 256;
+      subtype Driver_id is Driver_Id_With_Error range 1 .. 256;
+
+      ID_Error : constant := Driver_Id_With_Error'First;
+   
+      type Driver (Driver_Type : Supported_Drivers := Ados.ATAPI_DRIVER) is record
+         Present : Boolean := False;
+         case Driver_Type is
+            when Ados.ATAPI_DRIVER =>
+               root_lba     : Natural;
+               root_dirsize : Unsigned_32;
+               Atapi_Device : Atapi.Atapi_Device_id;
+            when
+               others => null;
+            end case;
+      end record;
+
+      type Driver_Info_Array is array (Driver_id) of Driver;
+   end Device_Driver;
+
+   Drivers : Device_Driver.Driver_Info_Array;
+
+   type File_Information is record
+      lba    : Natural := 0;
+      driver : Device_Driver.Driver_Id_With_Error := Device_Driver.ID_Error;
+      offset : Integer := 0;
+      size   : Natural := 0;
+      used   : Boolean := False;
+   end record;
+
+
+
 
    package ISO_PRIM_DESC_CONVERTER is new System.Address_To_Access_Conversions (iso_prim_voldesc);
    subtype iso_prim_voldesc_ptr is ISO_PRIM_DESC_CONVERTER.Object_Pointer;
@@ -145,6 +171,9 @@ package VFS.ISO with Preelaborate is
    package ISO_FILE_DESC_CONVERTER is new System.Address_To_Access_Conversions (iso_dir);
    subtype iso_dir_ptr is ISO_FILE_DESC_CONVERTER.Object_Pointer;
 
-private
 
-end VFS.ISO;
+   type ISO_File_Info_Array is array (Driver_File_Descriptor) of File_Information;
+   Descriptors : ISO_File_Info_Array := (others => <>);
+
+
+end file_system.ISO;

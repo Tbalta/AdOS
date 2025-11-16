@@ -14,8 +14,8 @@ with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
 with MultiBoot;               use MultiBoot;
 with System.Machine_Code;     use System.Machine_Code;
-with VFS;                     use VFS;
-with VFS.ISO;
+with File_System;
+with File_System.ISO;
 with ELF;
 with ELF.Loader;
 with x86.Userspace;           use x86.Userspace;
@@ -91,23 +91,20 @@ begin
    Logger.Log_Info ("Atapi setup");
 
    Atapi.discoverAtapiDevices;
+
+   File_System.ISO.init;   
    declare
-      package VFS_ISO is new
-        VFS.ISO
-          (Block_Range => Atapi.SECTOR_BUFFER_INDEX,
-           Block_Type  => Atapi.SECTOR_BUFFER,
-           Read_Block  => Atapi.read_block);
-      FD : VFS.File_Descriptor_With_Error;
+      FD : File_System.File_Descriptor_With_Error;
 
       subtype Read_Type is String (1 .. 512);
       buffer : Read_Type;
       read   : Integer;
-      function Read_Char is new VFS_ISO.read (Read_Type => Read_Type);
-      package Loader is new ELF.Loader (File_System => VFS_ISO);
+      function Read_Char is new File_System.read (Read_Type => Read_Type);
+      use File_System;
    begin
-      VFS_ISO.init;
-      FD := VFS_ISO.open ("test2.txt", 0);
-      if FD = FD_ERROR then
+      Logger.Log_Info ("ISO filesystem initialized");
+      FD := File_System.open ("test2.txt", 0);
+      if FD = File_System.FD_ERROR then
          Logger.Log_Error ("Error opening file");
          goto Init_End;
       end if;
@@ -117,17 +114,17 @@ begin
 
       SERIAL.send_line ("File closed");
 
-      FD := VFS_ISO.open ("bin/test.elf", 0);
-      if FD = FD_ERROR then
+      FD := File_System.open ("bin/test.elf", 0);
+      if FD = File_System.FD_ERROR then
          Logger.Log_Error ("Error opening file");
          goto Init_End;
       end if;
 
       declare
-         Program_Header : ELF.ELF_Header := Loader.Prepare (FD);
+         Program_Header : ELF.ELF_Header := ELF.Loader.Prepare (FD);
       begin
 
-         Loader.Kernel_Load (FD, Program_Header, CR3);
+         ELF.Loader.Kernel_Load (FD, Program_Header, CR3);
          SERIAL.send_line ("ELF file loaded in memory");
          SERIAL.send_line ("Entry point: " & To_Integer (Program_Header.e_entry)'Image);
          Jump_To_Userspace (Program_Header.e_entry, CR3);

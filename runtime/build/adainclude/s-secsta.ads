@@ -326,13 +326,13 @@ private
       --  secondary stack.
    end record;
 
-   Sec_Stack : aliased SS_Stack (1_024) :=
+   Sec_Stack : aliased SS_Stack (4_096) :=
      (Freeable           => False, High_Water_Mark => 0,
       Top                => (Byte => 0, Chunk => null),
       Static_Chunk       =>
         (Size_Up_To_Chunk => 0, Next => null, Memory => (others => 0),
-         Size             => 1_024),
-      Default_Chunk_Size => 1_024);
+         Size             => 4_096),
+      Default_Chunk_Size => 4_096);
 
    -------------
    -- Mark_Id --

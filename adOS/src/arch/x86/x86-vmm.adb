@@ -241,6 +241,9 @@ package body x86.vmm is
             To_Page_Address (Address_To_Map),
             Is_Writable => Is_Writable,
             Is_Usermode => Is_Usermode);
+         SERIAL.send_line (From_Virtual_Address_Break (
+           (Directory => PD_Index, Table => PT_Index, Offset => 0))'Image
+           & " - " & Address_To_Map'Image);
          Next (PD_Index, PT_Index);
          Address_To_Map := Address_To_Map + Storage_Offset (4_096);
       end loop;
@@ -255,7 +258,7 @@ package body x86.vmm is
    begin
 
       -- Identity map the kernel
-      SERIAL.send_line ("Identity map kernel" & Kernel_Start'Image & " -" & Kernel_End'Image);
+      SERIAL.send_line ("Identity map kernel " & Kernel_Start'Image & "-" & Kernel_End'Image);
       Map_Range
         (PD,
          Address_Breakdown.Directory,

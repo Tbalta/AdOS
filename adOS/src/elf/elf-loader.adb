@@ -1,8 +1,7 @@
 with SERIAL;
-
 package body ELF.Loader is
 
-   function Prepare (File : in VFS.File_Descriptor) return ELF_Header is
+   function Prepare (File : in File_System.File_Descriptor) return ELF_Header is
       Header     : ELF_Header;
       Read_Count : Integer;
    begin
@@ -12,7 +11,7 @@ package body ELF.Loader is
    end Prepare;
 
    procedure Load_Segment
-     (File           : in VFS.File_Descriptor;
+     (File           : in File_System.File_Descriptor;
       Program_Header : in ELF_Program_Header;
       CR3            : in out x86.vmm.CR3_register)
    is
@@ -23,7 +22,7 @@ package body ELF.Loader is
 
       function Map_Segment_Data is new x86.vmm.Map_Data (Segment_Data);
    begin
-      File_System.Seek (File, Natural (Program_Header.p_offset), VFS.SEEK_SET);
+      File_System.Seek (File, Natural (Program_Header.p_offset), File_System.SEEK_SET);
       Read_Count := Read_Segment_Data (File, Data);
       SERIAL.send_line
         ("Read " & Read_Count'Image & " bytes for segment at " & Program_Header.p_vaddr'Image);
@@ -47,13 +46,13 @@ package body ELF.Loader is
    end Load_Segment;
 
    procedure Kernel_Load
-     (File : in VFS.File_Descriptor; Header : in ELF_Header; CR3 : in out x86.vmm.CR3_register)
+     (File : in File_System.File_Descriptor; Header : in ELF_Header; CR3 : in out x86.vmm.CR3_register)
    is
       Program_Header : ELF_Program_Header;
       Read_Count     : Integer;
-      Seek_Result    : VFS.off_t;
+      Seek_Result    : File_System.off_t;
    begin
-      Seek_Result := File_System.Seek (File, Integer (Header.e_phoff), VFS.SEEK_SET);
+      Seek_Result := File_System.Seek (File, Integer (Header.e_phoff), File_System.SEEK_SET);
       pragma Assert (Seek_Result /= -1);
 
       for i in 1 .. Header.e_phnum loop

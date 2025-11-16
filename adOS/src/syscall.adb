@@ -1,4 +1,4 @@
-with VFS;
+with File_System;
 with Log;
 with SERIAL;
 package body Syscall is
