@@ -1,15 +1,19 @@
 with System.Machine_Code; use System.Machine_Code;
 with SERIAL;
+with System.Secondary_Stack;
 package body x86.Userspace is
    use Standard.ASCII;
 
    procedure Jump_To_Userspace (Entry_Point : Virtual_Address; CR3 : x86.vmm.CR3_register) is
       use System;
       New_Stack : constant Virtual_Address := x86.vmm.kmalloc (CR3, 4096, True, True) + 4096;
+      procedure Sec_Sta_Print is new System.Secondary_Stack.SS_Info (SERIAL.send_line);
    begin
       SERIAL.send_line
         ("Jumping to userspace at " & Entry_Point'Image & " with stack at " & New_Stack'Image);
       x86.vmm.Enable_Paging;
+      Sec_Sta_Print;
+
 
       --!format off
       Asm (

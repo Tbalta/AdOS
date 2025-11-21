@@ -16,25 +16,25 @@ package body File_System is
       return FD_ERROR;
    end Add_File;
 
-   function open (FS : File_System_Type; path : String; flag : Integer) return Driver_File_Descriptor_With_Error is
+   function open (FS : File_System_Type; File_Path : Path; flag : Integer) return Driver_File_Descriptor_With_Error is
    begin
       case FS is
          when SERIAL_FS =>
             return -1; -- File_System.SERIAL.open (path, flag);
          when ISO_FS =>
-            return File_System.ISO.open (path, flag);
+            return File_System.ISO.open (File_Path, flag);
          when others =>
             return DRIVER_FD_ERROR;
       end case;
    end open;
 
-   function open (path : String; flag : Integer) return File_Descriptor_With_Error is
+   function open (file_path : Path; flag : Integer) return File_Descriptor_With_Error is
       Driver_FD : Driver_File_Descriptor_With_Error := DRIVER_FD_ERROR;
       FD             : File_Descriptor_With_Error := FD_ERROR;
    begin
 
       for File_System in SERIAL_FS .. ISO_FS loop
-         Driver_FD := Open (File_System, Path, Flag);
+         Driver_FD := Open (File_System, File_Path, Flag);
 
          if (Driver_FD /= DRIVER_FD_ERROR) then
             FD := Add_File (File_System, Driver_FD);

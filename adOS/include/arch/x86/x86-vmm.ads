@@ -174,5 +174,6 @@ package x86.vmm is
 private
 
    Kernel_CR3 : CR3_register;
+   Is_Paging_Enabled : Boolean := False;
 
 end x86.vmm;

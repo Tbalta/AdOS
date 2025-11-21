@@ -50,6 +50,9 @@ package System.Soft_Links is
    subtype EOA is Ada.Exceptions.Exception_Occurrence_Access;
    subtype EO is Ada.Exceptions.Exception_Occurrence;
 
+   procedure print_debug (val : System.Address);
+   pragma Import (C, print_debug, "print_debug");
+
    function Current_Target_Exception return EO;
    pragma Import
      (Ada, Current_Target_Exception, "__gnat_current_target_exception");
@@ -241,7 +244,7 @@ package System.Soft_Links is
    procedure Set_Sec_Stack_NT (Stack : SST.SS_Stack_Ptr);
 
    Get_Sec_Stack : Get_Stack_Call := Get_Sec_Stack_NT'Access;
-   Set_Sec_Stack : Set_Stack_Call := Set_Sec_Stack_NT'Access;
+   Set_Sec_Stack : Set_Stack_Call := null;
 
    function Get_Current_Excep_NT return EOA;
 

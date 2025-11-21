@@ -19,7 +19,7 @@ with File_System;
 package file_system.ISO with Preelaborate is
 
    subtype Supported_Drivers is Ados.Ados_Driver range Ados.ATAPI_DRIVER .. Ados.ATAPI_DRIVER;
-   function open (path : String; flag : Integer) return Driver_File_Descriptor_With_Error;
+   function open (File_Path : Path; flag : Integer) return Driver_File_Descriptor_With_Error;
 
    generic
       type Read_Type is private;

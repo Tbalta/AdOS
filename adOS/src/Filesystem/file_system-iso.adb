@@ -41,7 +41,7 @@ package body File_System.ISO is
       return DRIVER_FD_ERROR;
    end Find_Free_FD;
 
-   function Atapi_Open (Driver_id : Device_Driver.Driver_id; path : String; flag : Integer) return Driver_File_Descriptor_With_Error is
+   function Atapi_Open (Driver_id : Device_Driver.Driver_id; File_Path : Path; flag : Integer) return Driver_File_Descriptor_With_Error is
       use ISO_FILE_DESC_CONVERTER;
       file_buffer : System.Address := Atapi_Buffer'Address;
       count       : Natural;
@@ -116,7 +116,7 @@ package body File_System.ISO is
          return null;
       end Locate_File;
 
-      file : iso_dir_ptr := Locate_File (To_Upper (path), root_lba, root_dirsize);
+      file : iso_dir_ptr := Locate_File (To_Upper (String (File_Path)), root_lba, root_dirsize);
 
       FD : Driver_File_Descriptor_With_Error;
    begin
@@ -140,14 +140,14 @@ package body File_System.ISO is
       return FD;
    end Atapi_Open;
 
-   function open (path : String; flag : Integer) return Driver_File_Descriptor_With_Error is
+   function open (File_Path : Path; flag : Integer) return Driver_File_Descriptor_With_Error is
       FD : Driver_File_Descriptor_With_Error := DRIVER_FD_ERROR;
    begin
       for i in Drivers'Range loop
          if Drivers (i).Present then
             case Drivers (i).Driver_Type is
                when Ados.ATAPI_DRIVER =>
-                  FD := Atapi_Open (i, Path, Flag);
+                  FD := Atapi_Open (i, File_Path, Flag);
                when others => raise Program_Error with "Unexpected Driver_Type";
             end case;
          end if;

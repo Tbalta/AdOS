@@ -15,4 +15,4 @@ pragma Restrictions (No_Delay);
 pragma Restrictions (No_Allocators);
 pragma Restrictions (No_Dispatch);
 pragma Restrictions (No_Implicit_Dynamic_Code);
-pragma Suppress (All_Checks);
+--  pragma Suppress (All_Checks);

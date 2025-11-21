@@ -30,7 +30,6 @@
 ------------------------------------------------------------------------------
 
 with Interfaces.C; use Interfaces.C;
-
 package body System.Assertions is
 
    --------------------------
@@ -38,11 +37,15 @@ package body System.Assertions is
    --------------------------
 
    procedure Raise_Assert_Failure (Msg : String) is
-      procedure PANIC (msg : char_array);
+      procedure PANIC (msg : System.Address);
       pragma Import (C, PANIC, "PANIC");
       pragma No_Return (PANIC);
+      char_msg : char_array (1 .. size_t (Msg'Length + 1));
    begin
-      PANIC (To_C (Msg));
+      for i in Msg'Range loop
+         char_msg (size_t (i)) := char (Msg (i));
+      end loop;
+      PANIC (char_msg'Address);
    end Raise_Assert_Failure;
 
 end System.Assertions;

@@ -34,7 +34,7 @@ with System.Storage_Elements;
 
 package System.Secondary_Stack is
    pragma Preelaborate;
-
+   pragma Assertion_Policy (Assert => Check);
    package SP renames System.Parameters;
    package SSE renames System.Storage_Elements;
 
@@ -69,11 +69,14 @@ package System.Secondary_Stack is
    --  are freed because they may be reused again.
 
    procedure SS_Allocate
-     (Addr : out Address; Storage_Size : SSE.Storage_Count);
+     (Addr         : out Address;
+      Storage_Size : SSE.Storage_Count;
+      Alignment    : SSE.Storage_Count := Standard'Maximum_Alignment);
    --  Allocate enough space on the secondary stack of the invoking task to
-   --  accommodate an alloction of size Storage_Size. Return the address of the
-   --  first byte of the allocation in Addr. The routine may carry out one or
-   --  more of the following actions:
+   --  accommodate an allocation of size Storage_Size. Return the address of
+   --  the first byte of the allocation in Addr, which is a multiple of
+   --  Alignment. The routine may carry out one or more of the following
+   --  actions:
    --
    --    * Reuse an existing chunk that is big enough to accommodate the
    --      requested Storage_Size.
@@ -83,7 +86,7 @@ package System.Secondary_Stack is
    --
    --    * Create a new chunk that fits the requested Storage_Size.
 
-   procedure SS_Free (Stack : in out SS_Stack_Ptr) is null;
+   procedure SS_Free (Stack : in out SS_Stack_Ptr);
    --  Free all dynamic chunks of secondary stack Stack. If possible, free the
    --  stack itself.
 
@@ -261,8 +264,7 @@ private
 
    type Chunk_Memory is array (Memory_Size range <>) of SSE.Storage_Element;
    for Chunk_Memory'Alignment use Standard'Maximum_Alignment;
-   --  The memory storage of a single chunk. It utilizes maximum alignment in
-   --  order to guarantee efficient operations.
+   --  The memory storage of a single chunk
 
    --------------
    -- SS_Chunk --
@@ -274,6 +276,7 @@ private
 
    type SS_Chunk_Ptr is access all SS_Chunk;
    --  Reference to the static or any dynamic chunk
+
    type SS_Chunk (Size : Memory_Size) is record
       Next : SS_Chunk_Ptr;
       --  Pointer to the next chunk. The direction of the pointer is from the
@@ -326,13 +329,13 @@ private
       --  secondary stack.
    end record;
 
-   Sec_Stack : aliased SS_Stack (4_096) :=
+   Sec_Stack : aliased SS_Stack (SP.Runtime_Default_Sec_Stack_Size) :=
      (Freeable           => False, High_Water_Mark => 0,
       Top                => (Byte => 0, Chunk => null),
       Static_Chunk       =>
         (Size_Up_To_Chunk => 0, Next => null, Memory => (others => 0),
-         Size             => 4_096),
-      Default_Chunk_Size => 4_096);
+         Size             => SP.Runtime_Default_Sec_Stack_Size),
+      Default_Chunk_Size => SP.Runtime_Default_Sec_Stack_Size);
 
    -------------
    -- Mark_Id --

@@ -21,12 +21,14 @@ with ELF.Loader;
 with x86.Userspace;           use x86.Userspace;
 with Log;
 with Ada.Assertions;
+with System.Secondary_Stack;
 
 procedure Main (magic : Interfaces.Unsigned_32; info : access MultiBoot.multiboot_info) is
    procedure print_mmap (s : System.Address);
    pragma Import (C, print_mmap, "print_mmap");
    package Logger renames Log.Serial_Logger;
    CR3 : CR3_register;
+   procedure Sec_Sta_Print is new System.Secondary_Stack.SS_Info (Logger.Log_Info);
 begin
    SERIAL.serial_init (SERIAL.Baudrate'Last);
 
@@ -123,7 +125,6 @@ begin
       declare
          Program_Header : ELF.ELF_Header := ELF.Loader.Prepare (FD);
       begin
-
          ELF.Loader.Kernel_Load (FD, Program_Header, CR3);
          SERIAL.send_line ("ELF file loaded in memory");
          SERIAL.send_line ("Entry point: " & To_Integer (Program_Header.e_entry)'Image);

@@ -32,6 +32,13 @@ package Syscall is
    procedure Read_Syscall
       (fd       : in Unsigned_32;
        buffer   : in System.Address;
-       count    : in Unsigned_32;
+       count    : in Storage_Count;
+       process  : in x86.vmm.CR3_register;
        result   : out Unsigned_32);
+
+   procedure Open_Syscall
+      (File_Path : in System.Address;
+       flag      : in Unsigned_32;
+       process   : in x86.vmm.CR3_register;
+       result    : out Unsigned_32);
 end Syscall;

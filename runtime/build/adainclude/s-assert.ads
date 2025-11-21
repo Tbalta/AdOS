@@ -39,6 +39,7 @@
 with Ada.Assertions;
 
 package System.Assertions is
+   pragma Pure;
 
    --  Exception raised when assertion fails
 

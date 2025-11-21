@@ -15,11 +15,13 @@ package File_System
    type whence is (SEEK_SET, SEEK_CUR, SEEK_END);
    subtype off_t is Integer;
 
+   type Path is new String;
+
 
    generic
       type Read_Type is private;
    function read (fd : File_Descriptor; Buffer : out Read_Type) return Integer;
-   function open (path : String; flag : Integer) return File_Descriptor_With_Error;
+   function open (file_path : Path; flag : Integer) return File_Descriptor_With_Error;
    function seek (fd : File_Descriptor; offset : off_t; wh : whence) return off_t;
    procedure seek (fd : File_Descriptor; offset : off_t; wh : whence);
 

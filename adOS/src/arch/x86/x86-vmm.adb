@@ -3,6 +3,7 @@ with System.Machine_Code;     use System.Machine_Code;
 with System.Storage_Elements; use System.Storage_Elements;
 with config;                  use config;
 with Ada.Assertions;
+with System.Secondary_Stack;
 package body x86.vmm is
    use Standard.ASCII;
 
@@ -28,22 +29,26 @@ package body x86.vmm is
 
    procedure Enable_Paging is
    begin
+      Serial.send_line ("Enabling paging");
       --!format off
       Asm  ("movl %%cr0, %%eax"      & LF & HT & 
-            "or $0x80000000, %%eax"  & LF & HT &
+            "or $0x80000001, %%eax"  & LF & HT &
             "movl %%eax, %%cr0",
          Volatile => True);
       --!format off
+      Is_Paging_Enabled := True;
    end Enable_Paging;
 
    procedure Disable_Paging is
    begin
+      Serial.send_line ("Disabling paging");
       --!format off
       Asm ("mov %%cr0, %%eax"        & LF &
             "and $0x7FFFFFFF, %%eax" & LF &
             "mov %%eax, %%cr0"       & LF,
             Volatile => True);
       --!format on
+      Is_Paging_Enabled := False;
    end Disable_Paging;
 
    function Create_CR3 return CR3_register is
@@ -451,17 +456,24 @@ package body x86.vmm is
       Dest_CR3       : CR3_register;
       Size           : Storage_Count) return System.Address
    is
+      Paging_Enabled : Boolean := Is_Paging_Enabled;
+      Offset_In_Page : Virtual_Address_Offset := To_Virtual_Address_Break (Source_Address).Offset;
+
       User_Physical_Address : Physical_Address;
-      PT_Count : Natural := Natural ((Size + 4_095) / 4_096);
+      PT_Count : Natural := Natural ((Size + 4_095 + Offset_In_Page) / 4_096);
       Return_Address : System.Address;
-      Dest_Address : Virtual_Address_Break := Find_Next_Space (Dest_CR3, Size, Null_Address);
+      Dest_Address : Virtual_Address_Break := Find_Next_Space (Dest_CR3, Size + Offset_In_Page, Null_Address);
    begin
+      Serial.send_line ("Paging is " & Boolean'Image (Paging_Enabled));
+      Disable_Paging;
+
       --  !! TODO: Ensure [for page in Source_Address to Source_Address + Size that page is mapped in Source_CR3]
       Serial.send_line
         ("Map_Process_Memory: Mapping " & Size'Image & " bytes from process "
          & To_Address (Source_CR3.Address)'Image & " to process "
          & To_Address (Dest_CR3.Address)'Image);
-      Return_Address := From_Virtual_Address_Break (Dest_Address) + To_Virtual_Address_Break (Source_Address).Offset;
+
+      Return_Address := From_Virtual_Address_Break (Dest_Address) + Offset_In_Page;
       Ada.Assertions.Assert
         (Return_Address /= Null_Address,
          "Map_Process_Memory: Could not find space in destination process");
@@ -477,6 +489,10 @@ package body x86.vmm is
             Is_Usermode => True);
          Next (Dest_Address.Directory, Dest_Address.Table);
       end loop;
+
+      if Paging_Enabled then
+         Enable_Paging;
+      end if;
       return Return_Address;
    end Process_To_Process_Map;
 
@@ -504,8 +520,11 @@ package body x86.vmm is
    end Unmap;
 
    procedure Load_Kernel_Mapping is
+            procedure test is new System.Secondary_Stack.SS_Info (SERIAL.send_line);
    begin
       Disable_Paging;
+      SERIAL.send_line ("Loading kernel mapping");
+      SERIAL.send_line ("Kernel CR3 address: " & To_Address (Kernel_CR3.Address)'Image);
       Load_CR3 (Kernel_CR3);
       Enable_Paging;
    end Load_Kernel_Mapping;
