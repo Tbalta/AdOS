@@ -1,7 +1,13 @@
 with File_System.ISO;
---  with File_System.SERIAL;
+with File_System.SERIAL;
 
 package body File_System is
+
+   function Is_File_Descriptor (fd : Integer) return Boolean
+   is
+   begin
+      return fd in Integer (File_Descriptor'First) .. Integer (File_Descriptor'Last);
+   end Is_File_Descriptor;
 
    function Add_File (File_System : File_System_Type; File_System_Decriptor : Driver_File_Descriptor_With_Error) return File_Descriptor is
    begin
@@ -20,7 +26,7 @@ package body File_System is
    begin
       case FS is
          when SERIAL_FS =>
-            return -1; -- File_System.SERIAL.open (path, flag);
+            return File_System.SERIAL.open (File_Path, flag);
          when ISO_FS =>
             return File_System.ISO.open (File_Path, flag);
          when others =>
@@ -30,7 +36,7 @@ package body File_System is
 
    function open (file_path : Path; flag : Integer) return File_Descriptor_With_Error is
       Driver_FD : Driver_File_Descriptor_With_Error := DRIVER_FD_ERROR;
-      FD             : File_Descriptor_With_Error := FD_ERROR;
+      FD        : File_Descriptor_With_Error        := FD_ERROR;
    begin
 
       for File_System in SERIAL_FS .. ISO_FS loop
@@ -55,10 +61,6 @@ package body File_System is
 
       function Iso_Read is new File_System.ISO.read (Read_Type);
    begin
-      if fd = FD_ERROR then
-         return -1;
-      end if;
-
       File := Descriptors (fd);
       if not File.Valid then
          return -1;
@@ -76,16 +78,32 @@ package body File_System is
       return Result;
    end read;
 
-   function seek (fd : File_Descriptor; offset : off_t; wh : whence) return off_t
+   function write (fd : File_Descriptor; Buffer : access Write_Type) return Integer
    is
-      Result          : off_t := -1;
-      File            : VFS_File;
+      function Serial_Write is new File_System.SERIAL.write (Write_Type);
+
+      File : VFS_File := Descriptors (fd);
    begin
-      if fd = FD_ERROR then
+      if not File.Valid then
          return -1;
       end if;
 
-      File := Descriptors (fd);
+      case File.File_System is
+         when SERIAL_FS =>
+            return Serial_Write (File.File_System_Decriptor, Buffer);
+         when ISO_FS =>
+            return -1;
+         when others =>
+            return -1;
+      end case;
+   end write;
+
+
+   function seek (fd : File_Descriptor; offset : off_t; wh : whence) return off_t
+   is
+      Result          : off_t := -1;
+      File            : constant VFS_File := Descriptors (fd);
+   begin
       if not File.Valid then
          return -1;
       end if;
@@ -112,13 +130,8 @@ package body File_System is
    function close (fd : File_Descriptor) return Integer
    is
       Result          : Integer := -1;
-      File            : VFS_File;
+      File            : constant VFS_File := Descriptors (fd);
    begin
-      if fd = FD_ERROR then
-         return -1;
-      end if;
-
-      File := Descriptors (fd);
       if not File.Valid then
          return -1;
       end if;

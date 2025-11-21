@@ -29,7 +29,7 @@ package body x86.vmm is
 
    procedure Enable_Paging is
    begin
-      Serial.send_line ("Enabling paging");
+      --  Serial.send_line ("Enabling paging");
       --!format off
       Asm  ("movl %%cr0, %%eax"      & LF & HT & 
             "or $0x80000001, %%eax"  & LF & HT &
@@ -41,7 +41,7 @@ package body x86.vmm is
 
    procedure Disable_Paging is
    begin
-      Serial.send_line ("Disabling paging");
+      --  Serial.send_line ("Disabling paging");
       --!format off
       Asm ("mov %%cr0, %%eax"        & LF &
             "and $0x7FFFFFFF, %%eax" & LF &
@@ -464,14 +464,12 @@ package body x86.vmm is
       Return_Address : System.Address;
       Dest_Address : Virtual_Address_Break := Find_Next_Space (Dest_CR3, Size + Offset_In_Page, Null_Address);
    begin
-      Serial.send_line ("Paging is " & Boolean'Image (Paging_Enabled));
       Disable_Paging;
-
       --  !! TODO: Ensure [for page in Source_Address to Source_Address + Size that page is mapped in Source_CR3]
-      Serial.send_line
-        ("Map_Process_Memory: Mapping " & Size'Image & " bytes from process "
-         & To_Address (Source_CR3.Address)'Image & " to process "
-         & To_Address (Dest_CR3.Address)'Image);
+      --  Serial.send_line
+      --    ("Map_Process_Memory: Mapping " & Size'Image & " bytes from process "
+      --     & To_Address (Source_CR3.Address)'Image & " to process "
+      --     & To_Address (Dest_CR3.Address)'Image);
 
       Return_Address := From_Virtual_Address_Break (Dest_Address) + Offset_In_Page;
       Ada.Assertions.Assert
@@ -523,8 +521,8 @@ package body x86.vmm is
             procedure test is new System.Secondary_Stack.SS_Info (SERIAL.send_line);
    begin
       Disable_Paging;
-      SERIAL.send_line ("Loading kernel mapping");
-      SERIAL.send_line ("Kernel CR3 address: " & To_Address (Kernel_CR3.Address)'Image);
+      --  SERIAL.send_line ("Loading kernel mapping");
+      --  SERIAL.send_line ("Kernel CR3 address: " & To_Address (Kernel_CR3.Address)'Image);
       Load_CR3 (Kernel_CR3);
       Enable_Paging;
    end Load_Kernel_Mapping;

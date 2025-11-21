@@ -43,6 +43,7 @@ int open (const char *pathname, int flags)
 int _start() {
     const char path[] = "test2.txt";
     int fd = open(path, 0);
+    int tty = open("tty0", 0);
 
     char buffer[100];
     buffer[0] = 'R';
@@ -52,10 +53,25 @@ int _start() {
     buffer[4] = ':';
     buffer[5] = ' ';
 
-    read(fd, buffer + 5, sizeof(buffer) - 6);
-    buffer[99] = '\0';
+    int c = read(fd, buffer + 6, sizeof(buffer) - 6);
+    if (c < 0)
+    {
+        buffer[6] = 'E';
+        buffer[7] = 'R';
+        buffer[8] = 'R';
+        buffer[9] = 'O';
+        buffer[10] = 'R';
+        c = 5;
+    }
+    else
+    {
+        c += 5;
+    }
 
-    write(1, buffer, 100);
+    buffer[c + 6] = '\n';
+    buffer[c + 7] = '\0';
+
+    write(tty, buffer, c + 7);
     while (1)
     {
     }

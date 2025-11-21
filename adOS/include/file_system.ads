@@ -21,11 +21,16 @@ package File_System
    generic
       type Read_Type is private;
    function read (fd : File_Descriptor; Buffer : out Read_Type) return Integer;
+   generic
+      type Write_Type is private;
+   function write (fd : File_Descriptor; Buffer : access Write_Type) return Integer;
    function open (file_path : Path; flag : Integer) return File_Descriptor_With_Error;
    function seek (fd : File_Descriptor; offset : off_t; wh : whence) return off_t;
    procedure seek (fd : File_Descriptor; offset : off_t; wh : whence);
 
    function close (fd : File_Descriptor) return Integer;
+
+   function Is_File_Descriptor (fd : Integer) return Boolean;
 
 
 private

@@ -11,6 +11,15 @@ package Syscall is
    SYSCALL_WRITE : constant Unsigned_32 := 4;
    SYSCALL_OPEN  : constant Unsigned_32 := 5;
 
+   type Syscall_Result (signed : Boolean) is 
+      record
+         case signed is
+            when True => Signed_Value      : Integer_32;
+            when False => Unsigned_Value   : Unsigned_32;
+         end case;
+      end record;
+   pragma Unchecked_Union (Syscall_Result);
+
    procedure Handle_Syscall
      (number   : in Unsigned_32;
       arg1     : in Unsigned_32;
@@ -19,26 +28,27 @@ package Syscall is
       arg4     : in Unsigned_32;
       arg5     : in Unsigned_32;
       process  : in x86.vmm.CR3_register;
-      result   : out Unsigned_32);
+      result   : out Syscall_Result);
 
 
+private
    procedure Write_Syscall
-     (fd       : in Unsigned_32;
+     (arg1       : in Unsigned_32;
       buffer   : in System.Address;
       count    : in Storage_Count;
       process  : in x86.vmm.CR3_register;
-      result   : out Unsigned_32);
+      result   : out Syscall_Result);
 
    procedure Read_Syscall
-      (fd       : in Unsigned_32;
+      (arg1     : in Unsigned_32;
        buffer   : in System.Address;
        count    : in Storage_Count;
        process  : in x86.vmm.CR3_register;
-       result   : out Unsigned_32);
+       result   : out Syscall_Result);
 
    procedure Open_Syscall
       (File_Path : in System.Address;
        flag      : in Unsigned_32;
        process   : in x86.vmm.CR3_register;
-       result    : out Unsigned_32);
+       result    : out Syscall_Result);
 end Syscall;

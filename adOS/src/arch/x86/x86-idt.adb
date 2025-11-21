@@ -119,6 +119,7 @@ package body x86.idt is
       esi            : Unsigned_32 renames stf.esi;
       edi            : Unsigned_32 renames stf.edi;
       process_CR3    : x86.vmm.CR3_register := x86.vmm.Get_Current_CR3;
+      syscall_result : Syscall.Syscall_Result (signed => False);
    begin
       SERIAL.send_line
         ("error_code = "
@@ -135,8 +136,10 @@ package body x86.idt is
       end if;
 
       if interrupt_code = 128 then
-         Syscall.Handle_Syscall (eax, ebx, ecx, edx, esi, edi, process_CR3, eax);
+         Syscall.Handle_Syscall (eax, ebx, ecx, edx, esi, edi, process_CR3, syscall_result);
       end if;
+
+      eax := syscall_result.Unsigned_Value;
 
       --  while True loop
       --     ASM ("hlt", Volatile => True);

@@ -1,2 +1,2 @@
 pragma Normalize_Scalars;
-pragma Profile (Ravenscar);
+--  pragma Profile (Ravenscar);
