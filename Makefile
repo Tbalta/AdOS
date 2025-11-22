@@ -32,7 +32,7 @@ clean:
 	$(RM) -r iso/bin
 	gprclean
 
-run:
+run: main.iso
 	qemu-system-i386.exe -cdrom main.iso $(qemu_param)
 
 debug:
