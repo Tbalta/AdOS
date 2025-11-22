@@ -36,7 +36,6 @@ begin
    --  Multiboot information display --
    ------------------------------------
    SERIAL.send_line ("magic: " & magic'Image);
-   --  SERIAL.send_line ("flags: " & info.all.flags'Image);
    declare
       str    : String := Util.Read_String_From_Address (info.cmdline);
    begin
