@@ -22,8 +22,11 @@ with x86.Userspace;           use x86.Userspace;
 with Log;
 with Ada.Assertions;
 with System.Secondary_Stack;
+with Util;
+procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Address) is
+   package MultiBoot_Conversion is new System.Address_To_Access_Conversions (multiboot_info);
+   info : access multiboot_info := MultiBoot_Conversion.To_Pointer (multiboot_address);
 
-procedure Main (magic : Interfaces.Unsigned_32; info : access MultiBoot.multiboot_info) is
    procedure print_mmap (s : System.Address);
    pragma Import (C, print_mmap, "print_mmap");
    package Logger renames Log.Serial_Logger;
@@ -39,19 +42,8 @@ begin
    SERIAL.send_line ("magic: " & magic'Image);
    SERIAL.send_line ("flags: " & info.all.flags'Image);
    declare
-      function strlen (s : System.Address) return Interfaces.C.size_t;
-      pragma Import (C, strlen, "strlen");
-      length : Integer := Integer (strlen (To_Address (Integer_Address (info.all.cmdline))));
-      subtype cmdLine is Interfaces.C.char_array (1 .. Interfaces.C.size_t (length));
-      str    : String (1 .. length);
-
-      package Conversion is new System.Address_To_Access_Conversions (cmdLine);
-      cmdLine_access : access cmdLine :=
-        Conversion.To_Pointer (To_Address (Integer_Address (info.all.cmdline)));
+      str    : String := Util.Read_String_From_Address (To_Address (Integer_Address (info.all.cmdline)));
    begin
-      for i in 1 .. length loop
-         str (i) := Character (cmdLine_access.all (size_t (i)));
-      end loop;
       SERIAL.send_line ("cmdline: " & str);
    end;
 

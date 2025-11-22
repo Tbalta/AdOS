@@ -91,7 +91,7 @@ package body File_System.ISO is
                     file_name
                       (file_name'First .. Min (IndexOfString (file_name, ';') - 1, file_name'Last));
                begin
-                  SERIAL.send_line ("File: " & stripped_file_name & " Searched: " & searched_file);
+                  --  SERIAL.send_line ("File: " & stripped_file_name & " Searched: " & searched_file);
                   if searched_file = stripped_file_name then
                      if current_file.flags (Directory) then
                         SERIAL.send_line ("Directory found: " & stripped_file_name);

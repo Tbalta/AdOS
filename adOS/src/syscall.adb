@@ -3,22 +3,9 @@ with Log;
 with SERIAL;
 with System.Address_To_Access_Conversions;
 with Interfaces.C;
+with Util;
 package body Syscall is
    package Logger renames Log.Serial_Logger;
-
-   function Retrieve_Path (addr : System.Address) return String is
-      function strlen (s : System.Address) return Integer;
-      pragma Import (C, strlen, "strlen");
-
-      length : Integer := strlen (addr);
-
-      subtype path_array is String (1 .. length);
-      package Conversion is new System.Address_To_Access_Conversions (path_array);
-      path_access : access path_array := Conversion.To_Pointer (addr);
-   begin
-         return path_access.all;
-   end Retrieve_Path;
-
 
    --------------------
    -- Handle Syscall --
@@ -173,7 +160,7 @@ package body Syscall is
       end if;
 
       declare
-         Path_String : constant String := Retrieve_Path (Kernel_Path);
+         Path_String : constant String := Util.Read_String_From_Address (Kernel_Path);
       begin
          result.Signed_Value := Integer_32 (open (File_System.Path (Path_String), Integer (flag)));
          Logger.Log_Info ("Open_Syscall: Opening file: " & Path_String & " FD: " & result.Signed_Value'Image);
