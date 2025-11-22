@@ -1,11 +1,12 @@
-with SERIAL;
 with System.Machine_Code;     use System.Machine_Code;
 with System.Storage_Elements; use System.Storage_Elements;
 with config;                  use config;
 with Ada.Assertions;
 with System.Secondary_Stack;
+with Log;
 package body x86.vmm is
    use Standard.ASCII;
+   package Logger renames Log.Serial_Logger;
 
    function To_Address (Addr : Page_Address) return System.Address is
    begin
@@ -29,7 +30,7 @@ package body x86.vmm is
 
    procedure Enable_Paging is
    begin
-      --  Serial.send_line ("Enabling paging");
+      --  Logger.Log_Info ("Enabling paging");
       --!format off
       Asm  ("movl %%cr0, %%eax"      & LF & HT & 
             "or $0x80000001, %%eax"  & LF & HT &
@@ -41,7 +42,7 @@ package body x86.vmm is
 
    procedure Disable_Paging is
    begin
-      --  Serial.send_line ("Disabling paging");
+      --  Logger.Log_Info ("Disabling paging");
       --!format off
       Asm ("mov %%cr0, %%eax"        & LF &
             "and $0x7FFFFFFF, %%eax" & LF &
@@ -170,7 +171,7 @@ package body x86.vmm is
             Create_Page_Table
               (Page_Directory, PD_Index, Is_Writable => Is_Writable, Is_Usermode => Is_Usermode);
          end if;
-         Serial.send_line
+         Logger.Log_Info
            ("Mapping physical page " & Address_To_Map'Image & " at PD index "
             & PD_Index'Image & " PT index " & PT_Index'Image);
          Map_Page_Table_Entry
@@ -232,8 +233,8 @@ package body x86.vmm is
       PT_Index       : Page_Table_Index := Page_Table_Start;
       Address_To_Map : Physical_Address := Start_Address;
    begin
-      SERIAL.send_line ("Mapping range" & Start_Address'Image & " -" & End_Address'Image);
-      SERIAL.send_line ("Number of pages to map: " & Natural'Image (PT_Count));
+      Logger.Log_Info ("Mapping range " & Start_Address'Image & " - " & End_Address'Image);
+      Logger.Log_Info ("Number of pages to map: " & Natural'Image (PT_Count));
       for i in 1 .. PT_Count loop
          if not Page_Directory.all (PD_Index).Present then
             Create_Page_Table
@@ -246,9 +247,6 @@ package body x86.vmm is
             To_Page_Address (Address_To_Map),
             Is_Writable => Is_Writable,
             Is_Usermode => Is_Usermode);
-         SERIAL.send_line (From_Virtual_Address_Break (
-           (Directory => PD_Index, Table => PT_Index, Offset => 0))'Image
-           & " - " & Address_To_Map'Image);
          Next (PD_Index, PT_Index);
          Address_To_Map := Address_To_Map + Storage_Offset (4_096);
       end loop;
@@ -263,7 +261,7 @@ package body x86.vmm is
    begin
 
       -- Identity map the kernel
-      SERIAL.send_line ("Identity map kernel " & Kernel_Start'Image & "-" & Kernel_End'Image);
+      Logger.Log_Info ("Identity map kernel " & Kernel_Start'Image & "-" & Kernel_End'Image);
       Map_Range
         (PD,
          Address_Breakdown.Directory,
@@ -290,8 +288,8 @@ package body x86.vmm is
       Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
       To_Fit            : Storage_Count := Size;
    begin
-      --  SERIAL.send_line ("Can_Fit: Checking if " & To_Fit'Image & " bytes can fit at " & Address'Image);
-      --  SERIAL.send_line
+      --  Logger.Log_Info ("Can_Fit: Checking if " & To_Fit'Image & " bytes can fit at " & Address'Image);
+      --  Logger.Log_Info
       --    ("Can_Fit: Address breakdown: " &
       --     Address_Breakdown.Directory'Image & " " &
       --     Address_Breakdown.Table'Image & " " &
@@ -380,12 +378,12 @@ package body x86.vmm is
       Data_Buffer : System.Address := Data'Address;
 
    begin
-      SERIAL.send_line ("Map_Data: Mapping " & Data_Size'Image & " bytes at " & Address'Image);
+      Logger.Log_Info ("Map_Data: Mapping " & Data_Size'Image & " bytes at " & Address'Image);
 
       Disable_Paging;
       if not Alloc (CR3, Address, Data_Size, Is_Writable => Is_Writable, Is_Usermode => Is_Usermode)
       then
-         SERIAL.send_line ("Map_Data: Could not allocate memory for data");
+         Logger.Log_Error ("Map_Data: Could not allocate memory for data");
          return False;
       end if;
 
@@ -426,11 +424,11 @@ package body x86.vmm is
       Address_Breakdown : Virtual_Address_Break := Find_Next_Space (CR3, Size, Null_Address);
    begin
       if Address_Breakdown = Last_Virtual_Address_Break then
-         SERIAL.send_line ("No more free space in the Page Directory");
+         Logger.Log_Error ("No more free space in the Page Directory");
          return Null_Address;
       end if;
 
-      SERIAL.send_line
+      Logger.Log_Info
         ("kmalloc: Allocating "
          & Size'Image
          & " bytes at "
@@ -443,7 +441,7 @@ package body x86.vmm is
                 Is_Writable => Is_Writable,
                 Is_Usermode => Is_Usermode)
       then
-         SERIAL.send_line ("kmalloc: Could not allocate memory");
+         Logger.Log_Error ("kmalloc: Could not allocate memory");
          return Null_Address;
       end if;
 
@@ -466,11 +464,6 @@ package body x86.vmm is
    begin
       Disable_Paging;
       --  !! TODO: Ensure [for page in Source_Address to Source_Address + Size that page is mapped in Source_CR3]
-      --  Serial.send_line
-      --    ("Map_Process_Memory: Mapping " & Size'Image & " bytes from process "
-      --     & To_Address (Source_CR3.Address)'Image & " to process "
-      --     & To_Address (Dest_CR3.Address)'Image);
-
       Return_Address := From_Virtual_Address_Break (Dest_Address) + Offset_In_Page;
       Ada.Assertions.Assert
         (Return_Address /= Null_Address,
@@ -504,7 +497,7 @@ package body x86.vmm is
       PT_Count : Natural := Natural ((size + 4_095) / 4_096);
    begin
       Disable_Paging;
-      SERIAL.send_line
+      Logger.Log_Info
         ("Unmapping " & Size'Image & " bytes at " & Address'Image &
          " spanning " & PT_Count'Image & " pages.");
       for i in 0 .. PT_Count - 1 loop
@@ -518,11 +511,9 @@ package body x86.vmm is
    end Unmap;
 
    procedure Load_Kernel_Mapping is
-            procedure test is new System.Secondary_Stack.SS_Info (SERIAL.send_line);
+            procedure test is new System.Secondary_Stack.SS_Info (Logger.Log_Info);
    begin
       Disable_Paging;
-      --  SERIAL.send_line ("Loading kernel mapping");
-      --  SERIAL.send_line ("Kernel CR3 address: " & To_Address (Kernel_CR3.Address)'Image);
       Load_CR3 (Kernel_CR3);
       Enable_Paging;
    end Load_Kernel_Mapping;
