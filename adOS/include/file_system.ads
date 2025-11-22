@@ -1,5 +1,6 @@
 package File_System
-  with Preelaborate is
+  with Preelaborate
+is
 
    type File_System_Type is (SERIAL_FS, ISO_FS, INVALID_FS);
 
@@ -16,7 +17,6 @@ package File_System
    subtype off_t is Integer;
 
    type Path is new String;
-
 
    generic
       type Read_Type is private;

@@ -34,8 +34,7 @@ package body x86.idt is
          zero        => 0);
    end add_entry;
 
-   procedure load_idt (idt_ptr : idt_ptr_t)
-   is
+   procedure load_idt (idt_ptr : idt_ptr_t) is
    begin
       ASM
         ("lidt (%0)",
@@ -43,25 +42,22 @@ package body x86.idt is
          Volatile => True);
    end load_idt;
 
-
    procedure handle_page_fault (stf : access stack_frame) is
-      function To_Error_Code is
-        new Ada.Unchecked_Conversion (Unsigned_32, Page_Fault_Error_Code);
+      function To_Error_Code is new Ada.Unchecked_Conversion (Unsigned_32, Page_Fault_Error_Code);
       function Get_CR2 return Unsigned_32 is
          CR2_Value : Unsigned_32;
       begin
          ASM
-         ("mov %%cr2, %0",
+           ("mov %%cr2, %0",
             Outputs  => Interfaces.Unsigned_32'Asm_Output ("=r", CR2_Value),
             Volatile => True);
          return CR2_Value;
       end Get_CR2;
 
-      error_code  : Page_Fault_Error_Code := To_Error_Code (stf.error_code);
+      error_code       : Page_Fault_Error_Code := To_Error_Code (stf.error_code);
       faulting_address : constant Unsigned_32 := Get_CR2;
    begin
-      SERIAL.send_line
-        ("Page Fault at address: " & faulting_address'Image);
+      SERIAL.send_line ("Page Fault at address: " & faulting_address'Image);
 
       if error_code.Present then
          SERIAL.send_line (" - caused by a protection violation.");
@@ -86,7 +82,6 @@ package body x86.idt is
       end loop;
 
    end handle_page_fault;
-
 
    procedure init_idt is
       procedure timer_callback;

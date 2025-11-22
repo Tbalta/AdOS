@@ -1,4 +1,5 @@
 with SERIAL;
+
 package body ELF.Loader is
 
    function Prepare (File : in File_System.File_Descriptor) return ELF_Header is
@@ -46,7 +47,9 @@ package body ELF.Loader is
    end Load_Segment;
 
    procedure Kernel_Load
-     (File : in File_System.File_Descriptor; Header : in ELF_Header; CR3 : in out x86.vmm.CR3_register)
+     (File   : in File_System.File_Descriptor;
+      Header : in ELF_Header;
+      CR3    : in out x86.vmm.CR3_register)
    is
       Program_Header : ELF_Program_Header;
       Read_Count     : Integer;

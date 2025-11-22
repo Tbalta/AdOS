@@ -16,7 +16,9 @@ with Atapi;
 with File_System;
 
 
-package file_system.SERIAL with Preelaborate is
+package file_system.SERIAL
+  with Preelaborate
+is
 
    function open (File_Path : Path; flag : Integer) return Driver_File_Descriptor_With_Error;
 
@@ -35,10 +37,9 @@ package file_system.SERIAL with Preelaborate is
 private
 
    type File_Information is record
-      used   : Boolean := False;
-      tty    : Positive;
+      used : Boolean := False;
+      tty  : Positive;
    end record;
-
 
    type SERIAL_File_Info_Array is array (Driver_File_Descriptor) of File_Information;
    Descriptors : SERIAL_File_Info_Array := (others => <>);

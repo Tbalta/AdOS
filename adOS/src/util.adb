@@ -2,8 +2,7 @@ with System;
 with System.Address_To_Access_Conversions;
 
 package body Util is
-   function Read_String_From_Address (addr : System.Address) return String
-   is
+   function Read_String_From_Address (addr : System.Address) return String is
       function strlen (s : System.Address) return Integer;
       pragma Import (C, strlen, "strlen");
 

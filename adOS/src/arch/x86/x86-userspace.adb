@@ -1,6 +1,7 @@
 with System.Machine_Code; use System.Machine_Code;
 with SERIAL;
 with System.Secondary_Stack;
+
 package body x86.Userspace is
    use Standard.ASCII;
 

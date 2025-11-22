@@ -22,6 +22,7 @@ with x86.Userspace;           use x86.Userspace;
 with Log;
 with Ada.Assertions;
 with Util;
+
 procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Address) is
    package MultiBoot_Conversion is new System.Address_To_Access_Conversions (multiboot_info);
    info : access multiboot_info := MultiBoot_Conversion.To_Pointer (multiboot_address);
@@ -37,7 +38,7 @@ begin
    ------------------------------------
    SERIAL.send_line ("magic: " & magic'Image);
    declare
-      str    : String := Util.Read_String_From_Address (info.cmdline);
+      str : String := Util.Read_String_From_Address (info.cmdline);
    begin
       SERIAL.send_line ("cmdline: " & str);
    end;
@@ -57,12 +58,13 @@ begin
    -- PMM initialization --
    ------------------------
    declare
-      entry_map_size  : constant Storage_Count := Storage_Count (info.all.mmap_length);
-      entry_map_count : constant Integer := Integer (entry_map_size / (multiboot_mmap_entry'Size / Storage_Unit));
+      entry_map_size  : constant Storage_Count := Storage_Count (info.mmap_length);
+      entry_map_count : constant Integer :=
+        Integer (entry_map_size / (multiboot_mmap_entry'Size / Storage_Unit));
       subtype multiboot_mmap_array is multiboot_mmap (1 .. Integer (entry_map_count));
 
       package Conversion is new System.Address_To_Access_Conversions (multiboot_mmap_array);
-      entry_map       : access multiboot_mmap_array := (Conversion.To_Pointer (info.mmap_addr));
+      entry_map : access multiboot_mmap_array := (Conversion.To_Pointer (info.mmap_addr));
 
       procedure print_mmap (s : System.Address);
       pragma Import (C, print_mmap, "print_mmap");
@@ -92,7 +94,7 @@ begin
    ---------------------
    Logger.Log_Info ("Atapi setup");
    Atapi.discoverAtapiDevices;
-   File_System.ISO.init;   
+   File_System.ISO.init;
    declare
       use File_System;
       FD : File_Descriptor_With_Error := FD_ERROR;
@@ -123,8 +125,8 @@ begin
    -----------------
    declare
       use File_System;
-      FD : File_Descriptor_With_Error := FD_ERROR;
-      Program_Header : ELF.ELF_Header; 
+      FD             : File_Descriptor_With_Error := FD_ERROR;
+      Program_Header : ELF.ELF_Header;
    begin
       FD := open ("bin/test.elf", 0);
       if FD = FD_ERROR then
@@ -140,7 +142,7 @@ begin
       else
          Logger.Log_Ok ("ELF file closed successfully");
       end if;
-      
+
       SERIAL.send_line ("Entry point: " & To_Integer (Program_Header.e_entry)'Image);
       Jump_To_Userspace (Program_Header.e_entry, CR3);
    end;

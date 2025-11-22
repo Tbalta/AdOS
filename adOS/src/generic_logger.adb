@@ -16,6 +16,6 @@ package body Generic_Logger is
 
    procedure Log_Ok (Ok_Message : in String) is
    begin
-      Print_Function ( OK & " " & Ok_Message);
+      Print_Function (OK & " " & Ok_Message);
    end Log_Ok;
 end Generic_Logger;

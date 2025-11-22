@@ -155,45 +155,48 @@ package body x86.vmm is
       end if;
    end Next;
 
-
    procedure Map_Physical_Page
-       (Page_Directory           : Page_Directory_Access;
-       Page_Directory_Start      : Page_Directory_Index;
-       Page_Table_Start           : Page_Table_Index;
-       Address_To_Map             : Physical_Address;
-       Is_Writable                : Boolean := False;
-       Is_Usermode                : Boolean := False)
-      is
-         PD_Index       : Page_Directory_Index := Page_Directory_Start;
-         PT_Index       : Page_Table_Index := Page_Table_Start;
-      begin
-         if not Page_Directory.all (PD_Index).Present then
-            Create_Page_Table
-              (Page_Directory, PD_Index, Is_Writable => Is_Writable, Is_Usermode => Is_Usermode);
-         end if;
-         Logger.Log_Info
-           ("Mapping physical page " & Address_To_Map'Image & " at PD index "
-            & PD_Index'Image & " PT index " & PT_Index'Image);
-         Map_Page_Table_Entry
-           (To_Page_Table (Page_Directory.all (PD_Index)),
-            PT_Index,
-            To_Page_Address (Address_To_Map),
-            Is_Writable => Is_Writable,
-            Is_Usermode => Is_Usermode);
+     (Page_Directory       : Page_Directory_Access;
+      Page_Directory_Start : Page_Directory_Index;
+      Page_Table_Start     : Page_Table_Index;
+      Address_To_Map       : Physical_Address;
+      Is_Writable          : Boolean := False;
+      Is_Usermode          : Boolean := False)
+   is
+      PD_Index : Page_Directory_Index := Page_Directory_Start;
+      PT_Index : Page_Table_Index := Page_Table_Start;
+   begin
+      if not Page_Directory.all (PD_Index).Present then
+         Create_Page_Table
+           (Page_Directory, PD_Index, Is_Writable => Is_Writable, Is_Usermode => Is_Usermode);
+      end if;
+      Logger.Log_Info
+        ("Mapping physical page "
+         & Address_To_Map'Image
+         & " at PD index "
+         & PD_Index'Image
+         & " PT index "
+         & PT_Index'Image);
+      Map_Page_Table_Entry
+        (To_Page_Table (Page_Directory.all (PD_Index)),
+         PT_Index,
+         To_Page_Address (Address_To_Map),
+         Is_Writable => Is_Writable,
+         Is_Usermode => Is_Usermode);
 
    end Map_Physical_Page;
 
    procedure Unmap_Page
-       (Page_Directory           : Page_Directory_Access;
-       Page_Directory_Start      : Page_Directory_Index;
-       Page_Table_Start          : Page_Table_Index)
-      is
-         PD_Index       : Page_Directory_Index := Page_Directory_Start;
-         PT_Index       : Page_Table_Index := Page_Table_Start;
-      begin
-         if not Page_Directory (PD_Index).Present then
-            return;
-         end if;
+     (Page_Directory       : Page_Directory_Access;
+      Page_Directory_Start : Page_Directory_Index;
+      Page_Table_Start     : Page_Table_Index)
+   is
+      PD_Index : Page_Directory_Index := Page_Directory_Start;
+      PT_Index : Page_Table_Index := Page_Table_Start;
+   begin
+      if not Page_Directory (PD_Index).Present then
+         return;
+      end if;
       PMM.Free_Page (To_Address (To_Page_Table (Page_Directory (PD_Index)) (PT_Index).Address));
       To_Page_Table (Page_Directory (PD_Index)) (PT_Index).Present := False;
    end Unmap_Page;
@@ -201,8 +204,8 @@ package body x86.vmm is
    function Virtual_To_Physical_Address
      (CR3 : CR3_register; Address : Virtual_Address) return Physical_Address
    is
-      PD : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
-      PT : Page_Table_Access;
+      PD                : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
+      PT                : Page_Table_Access;
       Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
    begin
       if not PD (Address_Breakdown.Directory).Present then
@@ -217,7 +220,6 @@ package body x86.vmm is
 
       return To_Address (PT (Address_Breakdown.Table).Address) + Address_Breakdown.Offset;
    end Virtual_To_Physical_Address;
-
 
    procedure Map_Range
      (Page_Directory             : Page_Directory_Access;
@@ -254,8 +256,8 @@ package body x86.vmm is
    end Map_Range;
 
    procedure Identity_Map (CR3 : CR3_register) is
-      PD                : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
-      Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Null_Address);
+      PD                  : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
+      Address_Breakdown   : Virtual_Address_Break := To_Virtual_Address_Break (Null_Address);
       PMM_Start_Breakdown : Virtual_Address_Break :=
         To_Virtual_Address_Break (PMM.Get_Pmm_Start_Address);
    begin
@@ -458,9 +460,10 @@ package body x86.vmm is
       Offset_In_Page : Virtual_Address_Offset := To_Virtual_Address_Break (Source_Address).Offset;
 
       User_Physical_Address : Physical_Address;
-      PT_Count : Natural := Natural ((Size + 4_095 + Offset_In_Page) / 4_096);
-      Return_Address : System.Address;
-      Dest_Address : Virtual_Address_Break := Find_Next_Space (Dest_CR3, Size + Offset_In_Page, Null_Address);
+      PT_Count              : Natural := Natural ((Size + 4_095 + Offset_In_Page) / 4_096);
+      Return_Address        : System.Address;
+      Dest_Address          : Virtual_Address_Break :=
+        Find_Next_Space (Dest_CR3, Size + Offset_In_Page, Null_Address);
    begin
       Disable_Paging;
       --  !! TODO: Ensure [for page in Source_Address to Source_Address + Size that page is mapped in Source_CR3]
@@ -470,7 +473,9 @@ package body x86.vmm is
          "Map_Process_Memory: Could not find space in destination process");
 
       for i in 0 .. PT_Count - 1 loop
-         User_Physical_Address := Virtual_To_Physical_Address (Source_CR3, Source_Address + System.Address (i * PMM_PAGE_SIZE));
+         User_Physical_Address :=
+           Virtual_To_Physical_Address
+             (Source_CR3, Source_Address + System.Address (i * PMM_PAGE_SIZE));
          Map_Physical_Page
            (To_Page_Directory (To_Address (Dest_CR3.Address)),
             Dest_Address.Directory,
@@ -487,43 +492,39 @@ package body x86.vmm is
       return Return_Address;
    end Process_To_Process_Map;
 
-   procedure Unmap
-     (CR3     : CR3_register;
-      Address : System.Address;
-      Size    : Storage_Count)
-   is
+   procedure Unmap (CR3 : CR3_register; Address : System.Address; Size : Storage_Count) is
       PD                : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
       Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
-      PT_Count : Natural := Natural ((size + 4_095) / 4_096);
+      PT_Count          : Natural := Natural ((size + 4_095) / 4_096);
    begin
       Disable_Paging;
       Logger.Log_Info
-        ("Unmapping " & Size'Image & " bytes at " & Address'Image &
-         " spanning " & PT_Count'Image & " pages.");
+        ("Unmapping "
+         & Size'Image
+         & " bytes at "
+         & Address'Image
+         & " spanning "
+         & PT_Count'Image
+         & " pages.");
       for i in 0 .. PT_Count - 1 loop
-         Unmap_Page
-           (PD,
-            Address_Breakdown.Directory,
-            Address_Breakdown.Table);
+         Unmap_Page (PD, Address_Breakdown.Directory, Address_Breakdown.Table);
          Next (Address_Breakdown.Directory, Address_Breakdown.Table);
       end loop;
       Enable_Paging;
    end Unmap;
 
    procedure Load_Kernel_Mapping is
-            procedure test is new System.Secondary_Stack.SS_Info (Logger.Log_Info);
+      procedure test is new System.Secondary_Stack.SS_Info (Logger.Log_Info);
    begin
       Disable_Paging;
       Load_CR3 (Kernel_CR3);
       Enable_Paging;
    end Load_Kernel_Mapping;
 
-   function Get_Kernel_CR3 return CR3_register
-   is
+   function Get_Kernel_CR3 return CR3_register is
    begin
       return Kernel_CR3;
    end Get_Kernel_CR3;
-
 
    procedure Set_Kernel_CR3 (CR3 : CR3_register) is
    begin

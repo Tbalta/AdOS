@@ -2,7 +2,7 @@ with SERIAL;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
 with File_System.SERIAL;
- 
+
 package body File_System.SERIAL is
    function To_Upper (str : String) return String is
       result : String := str;
@@ -40,7 +40,6 @@ package body File_System.SERIAL is
       return DRIVER_FD_ERROR;
    end Find_Free_FD;
 
-
    function open (File_Path : Path; flag : Integer) return Driver_File_Descriptor_With_Error is
       FD : Driver_File_Descriptor_With_Error := DRIVER_FD_ERROR;
    begin
@@ -66,7 +65,8 @@ package body File_System.SERIAL is
       count : constant Storage_Count := Write_Type'Size / Storage_Unit;
       package Conversion is new System.Address_To_Access_Conversions (Write_Type);
    begin
-      Standard.SERIAL.send_raw_buffer (Conversion.To_Address (Conversion.Object_Pointer (Buffer)), count);
+      Standard.SERIAL.send_raw_buffer
+        (Conversion.To_Address (Conversion.Object_Pointer (Buffer)), count);
       return Integer (count);
    end write;
 
@@ -100,7 +100,7 @@ package body File_System.SERIAL is
    -- SERIAL List_File --
    ----------------------
    procedure list_file (Atapi_Device : Atapi.Atapi_Device_id; dir_lba, dir_size_param : in Natural)
-      is
+   is
    begin
       null;
    end list_file;

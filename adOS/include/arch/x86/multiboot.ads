@@ -1,10 +1,11 @@
 with Interfaces.C; use Interfaces.C;
 with Interfaces;   use Interfaces;
 with System;
+
 package MultiBoot is
    pragma Pure;
 
-   subtype multiboot_uint8_t is  Unsigned_8;
+   subtype multiboot_uint8_t is Unsigned_8;
    subtype multiboot_uint16_t is Unsigned_16;
    subtype multiboot_uint32_t is Unsigned_32;
    subtype multiboot_uint64_t is Unsigned_64;
@@ -54,7 +55,7 @@ package MultiBoot is
    for multiboot_info_flag'Component_Size use 1;
 
    type multiboot_info is record
-      flags : multiboot_info_flag;
+      flags     : multiboot_info_flag;
       -- Available memory from BIOS
       mem_lower : multiboot_uint32_t;
       mem_upper : multiboot_uint32_t;
@@ -70,9 +71,9 @@ package MultiBoot is
       mods_addr  : multiboot_uint32_t;
 
       -- multiboot_elf_section_header_table_t
-      tabsize : multiboot_uint32_t;
-      strsize : multiboot_uint32_t;
-      addr    : multiboot_uint32_t;
+      tabsize  : multiboot_uint32_t;
+      strsize  : multiboot_uint32_t;
+      addr     : multiboot_uint32_t;
       reserved : multiboot_uint32_t;
 
       -- Memory Mapping buffer

@@ -128,7 +128,8 @@ package body x86.pmm is
       with Dynamic_Predicate => (Positive (Aligned_Storage_Offset) mod PMM_PAGE_SIZE = 0);
 
       PMM_Bitmap_Address : Positive_Aligned_Address;
-      PMM_Headers        : access PMM_Header_Info := PMM_Header_Conv.To_Pointer (To_Address (Kernel_End));
+      PMM_Headers        : access PMM_Header_Info :=
+        PMM_Header_Conv.To_Pointer (To_Address (Kernel_End));
    begin
       PMM_Header_Address := To_Address (Kernel_End);
       --  Computing pmm map entry count.
@@ -151,13 +152,15 @@ package body x86.pmm is
       ------------------------------------------------------------------------
       declare
          -- Setting pmm header.
-         PMM_Header_Array_Start : System.Address := PMM_Header_Address + ((PMM_Header_Info'Size + 7) / 8);
+         PMM_Header_Array_Start : System.Address :=
+           PMM_Header_Address + ((PMM_Header_Info'Size + 7) / 8);
          subtype PMM_Header_Array is PMM_Headers_Array (1 .. pmmHeaderCount);
-         package PMM_Header_Array_Conversion is new System.Address_To_Access_Conversions (PMM_Header_Array);
+         package PMM_Header_Array_Conversion is new
+           System.Address_To_Access_Conversions (PMM_Header_Array);
 
-
-         PMM_Header_IDX         : Positive := 1;
-         Headers                : access PMM_Header_Array := PMM_Header_Array_Conversion.To_Pointer (PMM_Header_Array_Start);
+         PMM_Header_IDX : Positive := 1;
+         Headers        : access PMM_Header_Array :=
+           PMM_Header_Array_Conversion.To_Pointer (PMM_Header_Array_Start);
 
       begin
          SERIAL.send_line ("PMM_Header start at: " & PMM_Header_Address'Image);
@@ -210,14 +213,12 @@ package body x86.pmm is
       end;
    end Init;
 
-   function Get_Pmm_Start_Address return Physical_Address
-   is
+   function Get_Pmm_Start_Address return Physical_Address is
    begin
       return PMM_Header_Address;
    end Get_Pmm_Start_Address;
 
-   function Get_Pmm_End_Address return Physical_Address
-   is
+   function Get_Pmm_End_Address return Physical_Address is
    begin
       return Physical_Address (PMM_Bitmap_End_Address);
    end Get_Pmm_End_Address;

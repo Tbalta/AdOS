@@ -101,7 +101,7 @@ package x86.pmm is
       Bitmap  : access PMM_Bitmap := PMM_Bitmap_Conv.To_Pointer (PMM_Info.Bitmap);
    end PMM_Utils;
 
-   private
+private
    PMM_Header_Address     : System.Address;
    PMM_Bitmap_End_Address : System.Address;
 end x86.pmm;

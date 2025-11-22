@@ -1,5 +1,6 @@
 with SERIAL;
 with Generic_Logger;
+
 package Log is
    pragma Preelaborate;
 

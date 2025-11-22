@@ -1,4 +1,4 @@
-with Interfaces; use Interfaces;
+with Interfaces;     use Interfaces;
 with Ada.Interrupts; use Ada.Interrupts;
 
 package x86.idt is
@@ -52,9 +52,9 @@ package x86.idt is
    --!format on
 
    type Page_Fault_Error_Code is record
-      Present        : Boolean := False;
-      Write          : Boolean := False;
-      User_Mode      : Boolean := False;
+      Present           : Boolean := False;
+      Write             : Boolean := False;
+      User_Mode         : Boolean := False;
       Instruction_Fetch : Boolean := False;
    end record
    with Size => 32;

@@ -2,7 +2,7 @@ with SERIAL;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
 with File_System.ISO;
- 
+
 package body File_System.ISO is
    function To_Upper (str : String) return String is
       result : String := str;
@@ -41,16 +41,17 @@ package body File_System.ISO is
       return DRIVER_FD_ERROR;
    end Find_Free_FD;
 
-   function Atapi_Open (Driver_id : Device_Driver.Driver_id; File_Path : Path; flag : Integer) return Driver_File_Descriptor_With_Error is
+   function Atapi_Open
+     (Driver_id : Device_Driver.Driver_id; File_Path : Path; flag : Integer)
+      return Driver_File_Descriptor_With_Error
+   is
       use ISO_FILE_DESC_CONVERTER;
       file_buffer : System.Address := Atapi_Buffer'Address;
       count       : Natural;
 
       Atapi_Device : Atapi.Atapi_Device_id := Drivers (Driver_id).Atapi_Device;
-      root_lba     : Natural               := Drivers (Driver_id).root_lba;
-      root_dirsize : Unsigned_32           := Drivers (Driver_id).root_dirsize;
-
-
+      root_lba     : Natural := Drivers (Driver_id).root_lba;
+      root_dirsize : Unsigned_32 := Drivers (Driver_id).root_dirsize;
 
       function Next_File (current_file : iso_dir_ptr) return iso_dir_ptr is
       begin
@@ -62,7 +63,9 @@ package body File_System.ISO is
          return To_Address (current_file) + Storage_Offset (iso_dir'Size / 8);  -- 34 bytes offset
       end Idf_Start;
       -- Local Functions --
-      function Locate_File (str : String; lba_param : Natural; dir_size_param : Unsigned_32) return iso_dir_ptr is
+      function Locate_File
+        (str : String; lba_param : Natural; dir_size_param : Unsigned_32) return iso_dir_ptr
+      is
          current_file   : iso_dir_ptr;
          lba            : Natural := lba_param;
          dir_size       : Unsigned_32 := dir_size_param;
@@ -84,7 +87,8 @@ package body File_System.ISO is
                   subtype current_file_name is char_array (0 .. size_t (current_file.idf_len) - 1);
                   package To_Ada_Conversions is new
                     System.Address_To_Access_Conversions (current_file_name);
-                  file_name_char_array : access current_file_name := To_Ada_Conversions.To_Pointer (Idf_Start (current_file));
+                  file_name_char_array : access current_file_name :=
+                    To_Ada_Conversions.To_Pointer (Idf_Start (current_file));
                   file_name            : String :=
                     To_Upper (To_Ada (file_name_char_array.all, False));
                   stripped_file_name   : String :=
@@ -130,10 +134,10 @@ package body File_System.ISO is
          return DRIVER_FD_ERROR;
       end if;
 
-      Descriptors (FD).lba    := Integer (file.data_blk.le);
+      Descriptors (FD).lba := Integer (file.data_blk.le);
       Descriptors (FD).driver := Driver_id;
-      Descriptors (FD).used   := True;
-      Descriptors (FD).size   := Integer (file.file_size.le);
+      Descriptors (FD).used := True;
+      Descriptors (FD).size := Integer (file.file_size.le);
       Descriptors (FD).offset := 0;
 
       SERIAL.send_line ("FD: " & FD'Image);
@@ -148,7 +152,9 @@ package body File_System.ISO is
             case Drivers (i).Driver_Type is
                when Ados.ATAPI_DRIVER =>
                   FD := Atapi_Open (i, File_Path, Flag);
-               when others => raise Program_Error with "Unexpected Driver_Type";
+
+               when others =>
+                  raise Program_Error with "Unexpected Driver_Type";
             end case;
          end if;
          exit when FD /= DRIVER_FD_ERROR;
@@ -250,10 +256,13 @@ package body File_System.ISO is
    -------------------
    -- ISO 9660 Init --
    -------------------
-   function Has_Iso_Filesystem (Atapi_Device : Atapi.Atapi_Device_id; primary_descriptor : out iso_prim_voldesc) return Boolean is
+   function Has_Iso_Filesystem
+     (Atapi_Device : Atapi.Atapi_Device_id; primary_descriptor : out iso_prim_voldesc)
+      return Boolean
+   is
       use ISO_PRIM_DESC_CONVERTER;
-      init_buffer        : System.Address;
-      Count              : Natural := 0;
+      init_buffer : System.Address;
+      Count       : Natural := 0;
    begin
       SERIAL.send_line ("Checking for ISO filesystem on device " & Atapi_Device'Image);
       Count := Atapi.Read_Block (Atapi_Device, 16, Atapi_Buffer);
@@ -263,15 +272,15 @@ package body File_System.ISO is
       return To_Ada (primary_descriptor.vol_id, False) = "CD001";
    end Has_Iso_Filesystem;
 
-   procedure Add_Atapi_Driver (Device : Atapi.Atapi_Device_id; iso_volume_descriptor : iso_prim_voldesc)
-   is
+   procedure Add_Atapi_Driver
+     (Device : Atapi.Atapi_Device_id; iso_volume_descriptor : iso_prim_voldesc) is
    begin
       for I in Drivers'Range loop
          if not Drivers (I).Present then
-            Drivers (I) :=  (
-               Driver_Type => Ados.ATAPI_DRIVER,
-               Present => True,
-               root_lba => Natural (iso_volume_descriptor.root_dir.data_blk.le),
+            Drivers (I) :=
+              (Driver_Type  => Ados.ATAPI_DRIVER,
+               Present      => True,
+               root_lba     => Natural (iso_volume_descriptor.root_dir.data_blk.le),
                root_dirsize => iso_volume_descriptor.root_dir.file_size.le,
                Atapi_Device => Device);
             return;
@@ -280,11 +289,13 @@ package body File_System.ISO is
    end Add_Atapi_Driver;
 
    procedure init is
-       Volume_Descriptor : iso_prim_voldesc;
+      Volume_Descriptor : iso_prim_voldesc;
    begin
       SERIAL.send_line ("Initializing ISO filesystem");
       for Atapi_Device in Atapi.Atapi_Device_id'range loop
-         if Atapi.Is_Present (Atapi_Device) and then Has_Iso_Filesystem (Atapi_Device, Volume_Descriptor) then
+         if Atapi.Is_Present (Atapi_Device)
+           and then Has_Iso_Filesystem (Atapi_Device, Volume_Descriptor)
+         then
             Add_Atapi_Driver (Atapi_Device, Volume_Descriptor);
          end if;
       end loop;
@@ -293,7 +304,8 @@ package body File_System.ISO is
    ------------------------
    -- ISO 9660 List_File --
    ------------------------
-   procedure list_file (Atapi_Device : Atapi.Atapi_Device_id; dir_lba, dir_size_param : in Natural) is
+   procedure list_file (Atapi_Device : Atapi.Atapi_Device_id; dir_lba, dir_size_param : in Natural)
+   is
       file_buffer  : System.Address := Atapi_Buffer'Address;
       use ISO_FILE_DESC_CONVERTER;
       current_file : iso_dir_ptr := iso_dir_ptr (To_Pointer (file_buffer));
@@ -316,12 +328,15 @@ package body File_System.ISO is
                package To_Ada_Conversions is new
                  System.Address_To_Access_Conversions (current_file_name);
                file_name : access current_file_name :=
-                 To_Ada_Conversions.To_Pointer (current_file'Address + Storage_Offset (current_file'Size / 8));
+                 To_Ada_Conversions.To_Pointer
+                   (current_file'Address + Storage_Offset (current_file'Size / 8));
             begin
                SERIAL.send_line ("File: " & To_Ada (file_name.all, False));
                if current_file.flags (Directory) then
                   list_file
-                    (Atapi_Device, Natural (current_file.data_blk.le), Natural (current_file.file_size.le));
+                    (Atapi_Device,
+                     Natural (current_file.data_blk.le),
+                     Natural (current_file.file_size.le));
                   file_buffer := Atapi_Buffer'Address;
                   count := Atapi.Read_Block (Atapi_Device, Integer (lba), Atapi_Buffer);
                end if;

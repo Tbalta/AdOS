@@ -16,15 +16,17 @@ with Atapi;
 with File_System;
 
 
-package file_system.ISO with Preelaborate is
+package file_system.ISO
+  with Preelaborate
+is
 
    subtype Supported_Drivers is Ados.Ados_Driver range Ados.ATAPI_DRIVER .. Ados.ATAPI_DRIVER;
    function open (File_Path : Path; flag : Integer) return Driver_File_Descriptor_With_Error;
 
    generic
       type Read_Type is private;
+     function read (fd : Driver_File_Descriptor; Buffer : out Read_Type) return Integer;
 
-   function read (fd : Driver_File_Descriptor; Buffer : out Read_Type) return Integer;
    function seek (fd : Driver_File_Descriptor; offset : off_t; wh : whence) return off_t;
    function close (fd : Driver_File_Descriptor) return Integer;
    procedure init;
@@ -32,8 +34,8 @@ package file_system.ISO with Preelaborate is
 
 
 private
-   Atapi_Buffer : Atapi.SECTOR_BUFFER;
    BLOCK_SIZE   : constant := Atapi.SECTOR_BUFFER'Length;
+   Atapi_Buffer : Atapi.SECTOR_BUFFER;
 
    --  ISO9660 filesystem structures --
    type endian32 is record
@@ -88,14 +90,14 @@ private
      end record;
 
    type iso_prim_voldesc is record
-      vol_desc_type   : Unsigned_8;
-      vol_id          : char_array (0 .. 4);
-      vol_version     : Unsigned_8;
+      vol_desc_type : Unsigned_8;
+      vol_id        : char_array (0 .. 4);
+      vol_version   : Unsigned_8;
 
-      system_id       : char_array (0 .. 31);
-      vol_id2         : char_array (0 .. 31);
-      unused2         : char_array (0 .. 7);
-      vol_blk_count   : endian32;
+      system_id     : char_array (0 .. 31);
+      vol_id2       : char_array (0 .. 31);
+      unused2       : char_array (0 .. 7);
+      vol_blk_count : endian32;
 
       vol_set_size    : endian16;
       vol_seq_num     : endian16;
@@ -130,13 +132,12 @@ private
 
    -- ISO Driver types --
 
-   package Device_Driver
-   is
+   package Device_Driver is
       type Driver_Id_With_Error is new Natural range 0 .. 256;
       subtype Driver_id is Driver_Id_With_Error range 1 .. 256;
 
       ID_Error : constant := Driver_Id_With_Error'First;
-   
+
       type Driver (Driver_Type : Supported_Drivers := Ados.ATAPI_DRIVER) is record
          Present : Boolean := False;
          case Driver_Type is
@@ -144,9 +145,10 @@ private
                root_lba     : Natural;
                root_dirsize : Unsigned_32;
                Atapi_Device : Atapi.Atapi_Device_id;
-            when
-               others => null;
-            end case;
+
+            when others =>
+               null;
+         end case;
       end record;
 
       type Driver_Info_Array is array (Driver_id) of Driver;
@@ -162,15 +164,11 @@ private
       used   : Boolean := False;
    end record;
 
-
-
-
    package ISO_PRIM_DESC_CONVERTER is new System.Address_To_Access_Conversions (iso_prim_voldesc);
    subtype iso_prim_voldesc_ptr is ISO_PRIM_DESC_CONVERTER.Object_Pointer;
 
    package ISO_FILE_DESC_CONVERTER is new System.Address_To_Access_Conversions (iso_dir);
    subtype iso_dir_ptr is ISO_FILE_DESC_CONVERTER.Object_Pointer;
-
 
    type ISO_File_Info_Array is array (Driver_File_Descriptor) of File_Information;
    Descriptors : ISO_File_Info_Array := (others => <>);

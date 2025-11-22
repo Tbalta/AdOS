@@ -86,13 +86,13 @@ package body Atapi is
       --  Store device information
       for i in Devices'Range loop
          if not Devices (i).Present then
-         Logger.Log_Info
-         ("Found ATAPI device on controller "
-            & Controller'Image
-            & " device "
-            & Device'Image
-            & " at ID "
-            & ATAPI_Device_ID'Image (i));
+            Logger.Log_Info
+              ("Found ATAPI device on controller "
+               & Controller'Image
+               & " device "
+               & Device'Image
+               & " at ID "
+               & ATAPI_Device_ID'Image (i));
             Devices (i).Present := True;
             Devices (i).Controller := Controller;
             Devices (i).Device := Device;
@@ -112,7 +112,7 @@ package body Atapi is
       end loop;
    end discoverAtapiDevices;
 
-   procedure send_packet (Device_id: ATAPI_Device_id; packet : SCSI_PACKET) is
+   procedure send_packet (Device_id : ATAPI_Device_id; packet : SCSI_PACKET) is
       type Packet_Array is array (0 .. (SCSI_PACKET'Size / Unsigned_16'Size) - 1) of Unsigned_16
       with Pack;
       function toArray is new
@@ -120,8 +120,8 @@ package body Atapi is
       to_send              : Packet_Array := toArray (packet);
       PACKET_DATA_TRANSMIT : constant Unsigned_8 := 2;
 
-      Controller : ATA_CONTROLLER renames Devices ( Device_id ).Controller;
-      Device     : ATA_DEVICE renames Devices ( Device_id ).Device;
+      Controller : ATA_CONTROLLER renames Devices (Device_id).Controller;
+      Device     : ATA_DEVICE renames Devices (Device_id).Device;
    begin
       Outb (getReg (Controller, ATA_REG_FEATURES), 0);
       Outb (getReg (Controller, ATA_REG_SECTOR_COUNT), 0);
@@ -132,13 +132,15 @@ package body Atapi is
       for i in to_send'Range loop
          Outw (getReg (Controller, ATA_REG_DATA), to_send (i));
       end loop;
- 
+
       while Inb (getReg (Controller, ATA_REG_SECTOR_COUNT)) /= PACKET_DATA_TRANSMIT loop
          null;
       end loop;
    end send_packet;
 
-   function read_block (Device_id: ATAPI_Device_id; lba : Natural; buffer : out SECTOR_BUFFER) return Integer is
+   function read_block
+     (Device_id : ATAPI_Device_id; lba : Natural; buffer : out SECTOR_BUFFER) return Integer
+   is
       packet    : SCSI_PACKET :=
         (opcode             => 16#a8#,
          lba_lo             => Unsigned_8 (Unsigned_32 (lba) and 16#FF#),
@@ -149,15 +151,12 @@ package body Atapi is
          others             => 0);
       size_read : Integer := 0;
       data      : Unsigned_16;
-      
-      Controller : ATA_CONTROLLER renames Devices ( Device_id ).Controller;
-      Device     : ATA_DEVICE renames Devices ( Device_id ).Device;
+
+      Controller : ATA_CONTROLLER renames Devices (Device_id).Controller;
+      Device     : ATA_DEVICE renames Devices (Device_id).Device;
    begin
       Logger.Log_Info
-        ("Reading block LBA "
-         & Natural'Image (lba)
-         & " from device "
-         & Device_id'Image);
+        ("Reading block LBA " & Natural'Image (lba) & " from device " & Device_id'Image);
       send_packet (Device_id, packet);
       declare
          size_hi : Unsigned_16 := Unsigned_16 (Inb (getReg (Controller, ATA_REG_LBA_HI)));
