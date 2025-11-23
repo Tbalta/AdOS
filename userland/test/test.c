@@ -2,6 +2,8 @@
 #define SYS_WRITE 4
 #define SYS_OPEN 5
 
+#include "stdio.h"
+
 #define syscall_3(num, arg1, arg2, arg3, ret) ({ \
     asm volatile ( \
         "mov $" #num ", %%eax\n"        /* syscall number */ \
@@ -45,37 +47,16 @@ int _start() {
     int fd = open(path, 0);
     int tty = open("tty0", 0);
 
-    char buffer[100];
-    buffer[0] = 'R';
-    buffer[1] = 'E';
-    buffer[2] = 'A';
-    buffer[3] = 'D';
-    buffer[4] = ':';
-    buffer[5] = ' ';
+    char read_buffer[100];
+    int n = snprintf (read_buffer, sizeof(read_buffer), "Read: ");
 
-    int c = read(fd, buffer + 6, sizeof(buffer) - 6);
-    if (c < 0)
-    {
-        buffer[6] = 'E';
-        buffer[7] = 'R';
-        buffer[8] = 'R';
-        buffer[9] = 'O';
-        buffer[10] = 'R';
-        c = 5;
-    }
-    else
-    {
-        c += 5;
-    }
+    n += read(fd, read_buffer + n, sizeof(read_buffer) - n - 1);
+    read_buffer[n] = '\0';
+    n = snprintf(read_buffer, 100, "%s\n", read_buffer);
 
-    buffer[c + 6] = '\n';
-    buffer[c + 7] = '\0';
-
-    write(tty, buffer, c + 7);
+    write(tty, read_buffer, n);
     while (1)
     {
-    }
-    
-    asm volatile ("mov $0x90, %eax");
-    asm volatile ("int $0x80");
+        // asm volatile ("hlt");
+    }    
 }
