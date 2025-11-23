@@ -2,11 +2,15 @@
 --                                                                          --
 --                         GNAT RUN-TIME COMPONENTS                         --
 --                                                                          --
---                       S Y S T E M . I M G _ I N T                        --
+--                       A D A . A S S E R T I O N S                        --
 --                                                                          --
---                                 B o d y                                  --
+--            Copyright (C) 2015-2023, Free Software Foundation, Inc.       --
 --                                                                          --
---          Copyright (C) 1992-2019, Free Software Foundation, Inc.         --
+--                                 S p e c                                  --
+--                                                                          --
+-- This specification is derived from the Ada Reference Manual for use with --
+-- GNAT. The copyright notice above, and the license provisions that follow --
+-- apply solely to the contracts that have been added.                      --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -25,73 +29,25 @@
 -- <http://www.gnu.org/licenses/>.                                          --
 --                                                                          --
 -- GNAT was originally developed  by the GNAT team at  New York University. --
--- Extensive contributions were provided by Ada Core Technologies Inc.      --
+-- Extensive contributions were provided by Ada Core Technologies Inc. --
 --                                                                          --
 ------------------------------------------------------------------------------
 
-package body System.Img_Int is
+--  Preconditions in this unit are meant for analysis only, not for run-time
+--  checking, so that the expected exceptions are raised when calling Assert.
+--  This is enforced by setting the corresponding assertion policy to Ignore.
 
-   procedure Set_Digits
-     (T : Integer;
-      S : in out String;
-      P : in out Natural);
-   --  Set digits of absolute value of T, which is zero or negative. We work
-   --  with the negative of the value so that the largest negative number is
-   --  not a special case.
+pragma Assertion_Policy (Pre => Ignore);
 
-   -------------------
-   -- Image_Integer --
-   -------------------
+package Ada.Assertions with
+  SPARK_Mode, Pure
+is
+   Assertion_Error : exception;
 
-   procedure Image_Integer
-     (V : Integer;
-      S : in out String;
-      P : out Natural)
-   is
-      pragma Assert (S'First = 1);
+   procedure Assert (Check : Boolean) with
+     Pre => Check;
 
-   begin
-      P := 0;
-      Set_Image_Integer (V, S, P);
-   end Image_Integer;
+   procedure Assert (Check : Boolean; Message : String) with
+     Pre => Check;
 
-   ----------------
-   -- Set_Digits --
-   ----------------
-
-   procedure Set_Digits
-     (T : Integer;
-      S : in out String;
-      P : in out Natural)
-   is
-   begin
-      if T <= -10 then
-         Set_Digits (T / 10, S, P);
-         P := P + 1;
-         S (P) := Character'Val (48 - (T rem 10));
-      else
-         P := P + 1;
-         S (P) := Character'Val (48 - T);
-      end if;
-   end Set_Digits;
-
-   -----------------------
-   -- Set_Image_Integer --
-   -----------------------
-
-   procedure Set_Image_Integer
-     (V : Integer;
-      S : in out String;
-      P : in out Natural)
-   is
-   begin
-      if V >= 0 then
-         Set_Digits (-V, S, P);
-      else
-         P := P + 1;
-         S (P) := '-';
-         Set_Digits (V, S, P);
-      end if;
-   end Set_Image_Integer;
-
-end System.Img_Int;
+end Ada.Assertions;

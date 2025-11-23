@@ -36,10 +36,14 @@
 --  This unit may be used directly from an application program by providing
 --  an appropriate WITH, and the interface can be expected to remain stable.
 
-package System.Assertions is
+with Ada.Assertions;
 
-   --  Assert_Failure : exception;
+package System.Assertions is
+   pragma Pure;
+
    --  Exception raised when assertion fails
+
+   Assert_Failure : exception renames Ada.Assertions.Assertion_Error;
 
    procedure Raise_Assert_Failure (Msg : String);
    pragma No_Return (Raise_Assert_Failure);

@@ -26,7 +26,8 @@ project Default is
         "-g",
         "-gnata",
         "-gnatwM",
-        "-fno-exceptions"
+        "-fno-exceptions",
+        "-gnat2020"
       );
 
       for Default_Switches ("c") use (

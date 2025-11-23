@@ -46,8 +46,7 @@ package body System.Img_LLU is
    is
       pragma Assert (S'First = 1);
    begin
-      S (1) := ' ';
-      P := 1;
+      P := 0;
       Set_Image_Long_Long_Unsigned (V, S, P);
    end Image_Long_Long_Unsigned;
 

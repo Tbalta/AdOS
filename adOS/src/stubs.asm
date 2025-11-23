@@ -30,6 +30,7 @@ isr_stub_%+%1:
     call handler
     pop_register
     add esp, 8
+    sti
     iret
 %endmacro
 
@@ -42,6 +43,7 @@ isr_stub_%+%1:
     call handler
     pop_register
     add esp, 8
+    sti
     iret
 %endmacro
 

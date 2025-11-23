@@ -2,11 +2,11 @@
 --                                                                          --
 --                         GNAT RUN-TIME COMPONENTS                         --
 --                                                                          --
---                       S Y S T E M . I M G _ I N T                        --
+--                           A D A . A S S E R T                            --
 --                                                                          --
 --                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1992-2019, Free Software Foundation, Inc.         --
+--         Copyright (C) 2007-2023, Free Software Foundation, Inc.          --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -29,69 +29,25 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-package body System.Img_Int is
+package body Ada.Assertions with
+  SPARK_Mode
+is
+   ------------
+   -- Assert --
+   ------------
 
-   procedure Set_Digits
-     (T : Integer;
-      S : in out String;
-      P : in out Natural);
-   --  Set digits of absolute value of T, which is zero or negative. We work
-   --  with the negative of the value so that the largest negative number is
-   --  not a special case.
-
-   -------------------
-   -- Image_Integer --
-   -------------------
-
-   procedure Image_Integer
-     (V : Integer;
-      S : in out String;
-      P : out Natural)
-   is
-      pragma Assert (S'First = 1);
-
+   procedure Assert (Check : Boolean) is
    begin
-      P := 0;
-      Set_Image_Integer (V, S, P);
-   end Image_Integer;
-
-   ----------------
-   -- Set_Digits --
-   ----------------
-
-   procedure Set_Digits
-     (T : Integer;
-      S : in out String;
-      P : in out Natural)
-   is
-   begin
-      if T <= -10 then
-         Set_Digits (T / 10, S, P);
-         P := P + 1;
-         S (P) := Character'Val (48 - (T rem 10));
-      else
-         P := P + 1;
-         S (P) := Character'Val (48 - T);
+      if Check = False then
+         raise Ada.Assertions.Assertion_Error;
       end if;
-   end Set_Digits;
+   end Assert;
 
-   -----------------------
-   -- Set_Image_Integer --
-   -----------------------
-
-   procedure Set_Image_Integer
-     (V : Integer;
-      S : in out String;
-      P : in out Natural)
-   is
+   procedure Assert (Check : Boolean; Message : String) is
    begin
-      if V >= 0 then
-         Set_Digits (-V, S, P);
-      else
-         P := P + 1;
-         S (P) := '-';
-         Set_Digits (V, S, P);
+      if Check = False then
+         raise Ada.Assertions.Assertion_Error with Message;
       end if;
-   end Set_Image_Integer;
+   end Assert;
 
-end System.Img_Int;
+end Ada.Assertions;

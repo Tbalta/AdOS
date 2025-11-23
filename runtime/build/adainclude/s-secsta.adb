@@ -32,9 +32,10 @@
 with System.Parameters;       use System.Parameters;
 with System.Soft_Links;       use System.Soft_Links;
 with System.Storage_Elements; use System.Storage_Elements;
+with System.Address_To_Access_Conversions;
 
 package body System.Secondary_Stack is
-
+   pragma Assertion_Policy (Assert => Check);
    ------------------------------------
    -- Binder Allocated Stack Support --
    ------------------------------------
@@ -142,10 +143,13 @@ package body System.Secondary_Stack is
       Byte  : Memory_Index; Mem_Size : Memory_Size; Addr : out Address)
    is
       New_High_Water_Mark : Memory_Size;
+      pragma Assertion_Policy (Assert => Check);
 
    begin
       --  The allocation occurs on a reused or a brand new chunk. Such a chunk
       --  must always be connected to some previous chunk.
+      pragma Assert (Stack /= null);
+      pragma Assert (Stack = Sec_Stack'Access);
 
       if Prev_Chunk /= null then
          pragma Assert (Prev_Chunk.Next = Chunk);
@@ -234,14 +238,12 @@ package body System.Secondary_Stack is
       --  fit the memory request. This indicates that the stack is about to be
       --  depleted.
 
-      --  if not Has_Enough_Free_Memory
-      --      (Chunk    => Stack.Top.Chunk, Byte => Stack.Top.Byte,
-      --       Mem_Size => Mem_Size)
-      --  then
-      --     null;
-      --     --  TODO uncomment when exceptions are implemented.
-      --     --  raise Storage_Error with "secondary stack exhaused";
-      --  end if;
+      if not Has_Enough_Free_Memory
+          (Chunk    => Stack.Top.Chunk, Byte => Stack.Top.Byte,
+           Mem_Size => Mem_Size)
+      then
+         raise Storage_Error with "secondary stack exhaused";
+      end if;
       --  print_debug (Stack'Address);
       --  print_debug (ChunkToAddr.To_Address (Stack.Static_Chunk));
       --  print_debug
@@ -331,12 +333,17 @@ package body System.Secondary_Stack is
       return Boolean
    is
    begin
+      --  First check if the chunk is full (Byte is > Memory'Last in that
+      --  case), then check there is enough free memory.
+
       --  Byte - 1 denotes the last occupied byte. Subtracting that byte from
       --  the memory capacity of the chunk yields the size of the free memory
       --  within the chunk. The chunk can fit the request as long as the free
       --  memory is as big as the request.
 
-      return Chunk.Size - (Byte - 1) >= Mem_Size;
+      return Chunk.Memory'Last >= Byte
+        and then Chunk.Size - (Byte - 1) >= Mem_Size;
+
    end Has_Enough_Free_Memory;
 
    ----------------------
@@ -346,8 +353,8 @@ package body System.Secondary_Stack is
    function Number_Of_Chunks (Stack : SS_Stack_Ptr) return Chunk_Count is
       Chunk : SS_Chunk_Ptr;
       Count : Chunk_Count;
-
    begin
+      pragma Assert (Stack = Sec_Stack'Access);
       Chunk := Stack.Static_Chunk'Access;
       Count := 0;
       while Chunk /= null loop
@@ -372,10 +379,43 @@ package body System.Secondary_Stack is
    -- SS_Allocate --
    -----------------
 
-   procedure SS_Allocate (Addr : out Address; Storage_Size : Storage_Count) is
+   procedure SS_Allocate
+     (Addr         : out Address;
+      Storage_Size : Storage_Count;
+      Alignment    : SSE.Storage_Count := Standard'Maximum_Alignment)
+   is
+
       function Round_Up (Size : Storage_Count) return Memory_Size;
       pragma Inline (Round_Up);
       --  Round Size up to the nearest multiple of the maximum alignment
+
+      function Align_Addr (Addr : Address) return Address;
+      pragma Inline (Align_Addr);
+      --  Align Addr to the next multiple of Alignment
+
+      ----------------
+      -- Align_Addr --
+      ----------------
+
+      function Align_Addr (Addr : Address) return Address is
+         Int_Algn : constant Integer_Address := Integer_Address (Alignment);
+         Int_Addr : constant Integer_Address := To_Integer (Addr);
+      begin
+
+         --  L : Alignment
+         --  A : Standard'Maximum_Alignment
+
+         --           Addr
+         --      L     |     L           L
+         --      A--A--A--A--A--A--A--A--A--A--A
+         --                  |     |
+         --      \----/      |     |
+         --     Addr mod L   |   Addr + L
+         --                  |
+         --                Addr + L - (Addr mod L)
+
+         return To_Address (Int_Addr + Int_Algn - (Int_Addr mod Int_Algn));
+      end Align_Addr;
 
       --------------
       -- Round_Up --
@@ -386,48 +426,104 @@ package body System.Secondary_Stack is
          Size_MS : constant Memory_Size := Memory_Size (Size);
 
       begin
-         --  Detect a case where the Storage_Size is very large and may yield
+         --  Detect a case where the Size is very large and may yield
          --  a rounded result which is outside the range of Chunk_Memory_Size.
          --  Treat this case as secondary-stack depletion.
 
-         --  if Memory_Size'Last - Algn_MS < Size_MS then
-         --     null;
-         --     --  TODO uncomment when exceptions are implemented.
-         --     --  raise Storage_Error with "secondary stack exhaused";
-         --  end if;
+         if Memory_Size'Last - Algn_MS < Size_MS then
+            raise Storage_Error with "secondary stack exhausted";
+         end if;
 
          return ((Size_MS + Algn_MS - 1) / Algn_MS) * Algn_MS;
       end Round_Up;
 
       --  Local variables
 
-      Stack    : constant SS_Stack_Ptr := Get_Sec_Stack.all;
+      Stack    : constant SS_Stack_Ptr := Sec_Stack'Access;
       Mem_Size : Memory_Size;
 
-      --  Start of processing for SS_Allocate
+      Over_Aligning : constant Boolean :=
+        Alignment > Standard'Maximum_Alignment;
+
+      Padding : SSE.Storage_Count := 0;
+
+   --  Start of processing for SS_Allocate
 
    begin
-      --  It should not be possible to request an allocation of negative or
-      --  zero size.
+      pragma Assert (Stack = Sec_Stack'Access);
+      --  Alignment must be a power of two and can be:
 
-      pragma Assert (Storage_Size > 0);
+      --  - lower than or equal to Maximum_Alignment, in which case the result
+      --    will be aligned on Maximum_Alignment;
+      --  - higher than Maximum_Alignment, in which case the result will be
+      --    dynamically realigned.
 
-      --  Round the requested size up to the nearest multiple of the maximum
-      --  alignment to ensure efficient access.
+      if Over_Aligning then
+         Padding := Alignment;
+      end if;
 
-      Mem_Size := Round_Up (Storage_Size);
+      --  Round the requested size (plus the needed padding in case of
+      --  over-alignment) up to the nearest multiple of the default
+      --  alignment to ensure efficient access and that the next available
+      --  Byte is always aligned on the default alignement value.
+
+      --  It should not be possible to request an allocation of negative
+      --  size.
+
+      pragma Assert (Storage_Size >= 0);
+      Mem_Size := Round_Up (Storage_Size + Padding);
 
       Allocate_Static (Stack, Mem_Size, Addr);
+
+      if Over_Aligning then
+         Addr := Align_Addr (Addr);
+      end if;
    end SS_Allocate;
+
+   -------------
+   -- SS_Free --
+   -------------
+
+   procedure SS_Free (Stack : in out SS_Stack_Ptr) is
+      Static_Chunk : constant SS_Chunk_Ptr := Stack.Static_Chunk'Access;
+      Next_Chunk   : SS_Chunk_Ptr;
+
+   begin
+      --  Free all dynamically allocated chunks. The first dynamic chunk is
+      --  found immediately after the static chunk of the stack.
+
+      while Static_Chunk.Next /= null loop
+         Next_Chunk := Static_Chunk.Next.Next;
+         --  Free (Static_Chunk.Next);
+         Static_Chunk.Next := Next_Chunk;
+      end loop;
+
+      --  At this point one of the following outcomes has taken place:
+      --
+      --    * The stack lacks any dynamic chunks
+      --
+      --    * The stack had dynamic chunks which were all freed
+      --
+      --  Either way, there should be nothing hanging off the static chunk
+
+      pragma Assert (Static_Chunk.Next = null);
+
+      --  Free the stack only when it was dynamically allocated
+
+      --  if Stack.Freeable then
+      --     Free (Stack);
+      --  end if;
+   end SS_Free;
 
    ----------------
    -- SS_Get_Max --
    ----------------
 
    function SS_Get_Max return Long_Long_Integer is
-      Stack : constant SS_Stack_Ptr := Get_Sec_Stack.all;
+      Stack : constant SS_Stack_Ptr := Sec_Stack'Access;
 
    begin
+      pragma Assert (Stack = Sec_Stack'Access);
       return Long_Long_Integer (Stack.High_Water_Mark);
    end SS_Get_Max;
 
@@ -490,14 +586,32 @@ package body System.Secondary_Stack is
          return Total;
       end Total_Memory_Size;
 
+      -----------------------
+      -- Stack_Ptr_To_Addr --
+      -----------------------
+      package CONV is new
+        System.Address_To_Access_Conversions (SS_Chunk);
+      package CONV2 is new
+        System.Address_To_Access_Conversions (SS_Stack);
       --  Local variables
 
-      Stack : constant SS_Stack_Ptr := Get_Sec_Stack.all;
+      Stack : constant SS_Stack_Ptr := Sec_Stack'Access;
 
    --  Start of processing for SS_Info
 
    begin
       Put_Line ("Secondary Stack information:");
+
+      Put_Line (" stack is " &
+         CONV2.To_Address (CONV2.Object_Pointer (Stack))'Image);
+      pragma Assert (Stack = Sec_Stack'Access);
+
+      if Stack.Top.Chunk = null then
+         Put_Line ("  <TOP chunk is null>");
+      else
+         Put_Line (" stack top chunk is " &
+            CONV.To_Address (CONV.Object_Pointer (Stack.Top.Chunk))'Image);
+      end if;
 
       Put_Line
         ("  Total size              : " & Total_Memory_Size (Stack)'Img &
@@ -527,6 +641,7 @@ package body System.Secondary_Stack is
       --  Start of processing for SS_Init
 
    begin
+      pragma Assert (Stack = null);
       --  if Size = Unspecified_Size then
       Stack := known_stack;
       --  end if;
@@ -557,9 +672,10 @@ package body System.Secondary_Stack is
    -------------
 
    function SS_Mark return Mark_Id is
-      Stack : constant SS_Stack_Ptr := Get_Sec_Stack.all;
-
+      Stack : constant SS_Stack_Ptr := Sec_Stack'Access;
    begin
+      pragma Assert (Get_Sec_Stack_NT'Access = Get_Sec_Stack);
+      pragma Assert (Stack = Sec_Stack'Access);
       return (Stack => Stack, Top => Stack.Top);
    end SS_Mark;
 
@@ -569,6 +685,7 @@ package body System.Secondary_Stack is
 
    procedure SS_Release (M : Mark_Id) is
    begin
+      pragma Assert (M.Stack = Sec_Stack'Access);
       M.Stack.Top := M.Top;
    end SS_Release;
 
@@ -581,6 +698,7 @@ package body System.Secondary_Stack is
       Id    : Chunk_Id;
 
    begin
+      pragma Assert (Stack = Sec_Stack'Access);
       Chunk := Stack.Static_Chunk'Access;
       Id    := 1;
       while Chunk /= null loop
@@ -615,7 +733,7 @@ package body System.Secondary_Stack is
       --      Size_Up_To_Chunk   size in use
 
       --  ??? this calculation may overflow on 32bit targets
-
+      pragma Assert (Stack.Top.Chunk /= null);
       return Stack.Top.Chunk.Size_Up_To_Chunk + Stack.Top.Byte - 1;
    end Used_Memory_Size;
 

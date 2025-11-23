@@ -11,7 +11,7 @@ RUN mkdir /src
 WORKDIR /src
 
 # Clone binutils
-RUN wget https://ftp.gnu.org/gnu/binutils/binutils-2.40.tar.gz && \
+RUN wget https://sourceware.org/pub/binutils/releases/binutils-2.40.tar.gz && \
     tar -xzf binutils-2.40.tar.gz && \
     rm binutils-2.40.tar.gz
 

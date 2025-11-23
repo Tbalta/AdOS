@@ -799,8 +799,8 @@ package body Ada.Exceptions is
             exit;
          end if;
       end loop;
-      Raise_Exception (E,  "at " & Big_File_Name (1 .. File_Name_Length) &
-         L'Image & ":" & C'Image);
+      Raise_Exception (E,  " at " & Big_File_Name (1 .. File_Name_Length)
+         & ":" & L'Image & ":" & C'Image);
    end Raise_With_Location_And_Msg;
 
    --------------------

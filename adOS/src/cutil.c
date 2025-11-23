@@ -46,9 +46,9 @@ void print_mmap(multiboot_info_t *mbi)
     }
 }
 
-void PANIC(const char *text)
+void PANIC(const char *msg)
 {
-    LOG("PANIC: %s", text);
+    LOG("PANIC: %s", msg);
     while (1)
         asm volatile("hlt");
 }

@@ -45,8 +45,7 @@ package body System.Img_Uns is
    is
       pragma Assert (S'First = 1);
    begin
-      S (1) := ' ';
-      P := 1;
+      P := 0;
       Set_Image_Unsigned (V, S, P);
    end Image_Unsigned;
 
