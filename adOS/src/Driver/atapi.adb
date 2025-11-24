@@ -1,10 +1,15 @@
 with Interfaces;  use Interfaces;
-with x86.Port_IO; use x86.Port_IO;
+with x86.Port_IO;
 with Log;
 with Ada.Unchecked_Conversion;
 
 package body Atapi is
    package Logger renames Log.Serial_Logger;
+
+   function Inb is new x86.Port_IO.Inb (Unsigned_8);
+   procedure Outb is new x86.Port_IO.Outb (Unsigned_8);
+   procedure Outw is new x86.Port_IO.Outw (Unsigned_16);
+   function Inw is new x86.Port_IO.Inw (Unsigned_16);
 
    procedure busy_wait (Controller : ATA_CONTROLLER) is
       status : Unsigned_8;
@@ -96,6 +101,7 @@ package body Atapi is
             Devices (i).Present := True;
             Devices (i).Controller := Controller;
             Devices (i).Device := Device;
+            Logger.Log_Info (Devices (i)'Image);
             exit;
          end if;
       end loop;

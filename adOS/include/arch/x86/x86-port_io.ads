@@ -1,4 +1,3 @@
-with Interfaces;
 with System;
 -------------------------------------------------------------------------------
 --  X86.PORT_IO
@@ -20,7 +19,20 @@ package x86.Port_IO is
    --  Exceptions:
    --    None.
    ----------------------------------------------------------------------------
-   function Inb (Port : System.Address) return Interfaces.Unsigned_8
+   --  function Inb (Port : System.Address) return Interfaces.Unsigned_8
+   --  with Volatile_Function;
+   
+   ----------------------------------------------------------------------------
+   --  Inb
+   --
+   --  Purpose:
+   --    This function reads a byte from a particular IO port.
+   --  Exceptions:
+   --    None.
+   ----------------------------------------------------------------------------
+   generic 
+      type Read_Type is private;
+   function Inb (Port : System.Address) return Read_Type
    with Volatile_Function;
 
    ----------------------------------------------------------------------------
@@ -31,7 +43,9 @@ package x86.Port_IO is
    --  Exceptions:
    --    None.
    ----------------------------------------------------------------------------
-   procedure Outb (Port : System.Address; Data : Interfaces.Unsigned_8);
+   generic 
+      type Write_Type is private;
+   procedure Outb (Port : System.Address; Data : Write_Type);
 
 
    ----------------------------------------------------------------------------
@@ -42,7 +56,9 @@ package x86.Port_IO is
    --  Exceptions:
    --    None.
    ----------------------------------------------------------------------------
-   function Inw (Port : System.Address) return Interfaces.Unsigned_16
+   generic 
+      type Read_Type is private;
+   function Inw (Port : System.Address) return Read_Type
    with Volatile_Function;
 
    ----------------------------------------------------------------------------
@@ -53,5 +69,7 @@ package x86.Port_IO is
    --  Exceptions:
    --    None.
    ----------------------------------------------------------------------------
-   procedure Outw (Port : System.Address; Data : Interfaces.Unsigned_16);
+   generic 
+      type Write_Type is private;
+   procedure Outw (Port : System.Address; Data : Write_Type);
 end x86.Port_IO;

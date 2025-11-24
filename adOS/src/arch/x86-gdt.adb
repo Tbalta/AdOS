@@ -70,13 +70,7 @@ package body x86.gdt is
       gdt_pointer.base := Global_Descriptor_Table'Address;
 
       Logger.Log_Info
-        ("gdt_pointer ="
-         & " Address: "
-         & gdt_pointer'Address'Image
-         & " Base: "
-         & gdt_pointer.base'Image
-         & " Limit: "
-         & gdt_pointer.limit'Image);
+        ("gdt_pointer =" & gdt_pointer'Image);
 
       for i in Global_Descriptor_Table'Range loop
          -- !format off

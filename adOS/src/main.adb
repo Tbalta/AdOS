@@ -22,7 +22,7 @@ with x86.Userspace;           use x86.Userspace;
 with Log;
 with Ada.Assertions;
 with Util;
-
+with VGA;
 procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Address) is
    package MultiBoot_Conversion is new System.Address_To_Access_Conversions (multiboot_info);
    info : access multiboot_info := MultiBoot_Conversion.To_Pointer (multiboot_address);
@@ -37,6 +37,7 @@ begin
    --  Multiboot information display --
    ------------------------------------
    SERIAL.send_line ("magic: " & magic'Image);
+   SERIAL.send_line ("multiboot_info: " & info.all'Image);
    declare
       str : String := Util.Read_String_From_Address (info.cmdline);
    begin
@@ -119,6 +120,11 @@ begin
          Logger.Log_Error ("Error closing file");
       end if;
    end;
+
+   VGA.test;
+   while True loop
+      null;
+   end loop;
 
    -----------------
    -- ELF Loading --
