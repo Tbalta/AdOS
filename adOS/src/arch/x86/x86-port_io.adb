@@ -30,6 +30,12 @@ package body x86.Port_IO is
       return Data;
    end Inb;
 
+   function Read_Port_8 return Read_Type is
+      function Read_Port is new Inb (Read_Type);
+   begin
+      return Read_Port (Port);
+   end Read_Port_8;
+
    ----------------------------------------------------------------------------
    --  Outb
    ----------------------------------------------------------------------------
@@ -42,6 +48,12 @@ package body x86.Port_IO is
            (Write_Type'Asm_Input ("a", Data), System.Address'Asm_Input ("Nd", Port)),
          Volatile => True);
    end Outb;
+
+   procedure Write_Port_8 (Data : Write_Type) is
+      procedure Write_Port is new Outb (Write_Type);
+   begin
+      Write_Port (Port, Data);
+   end Write_Port_8;
 
    ----------------------------------------------------------------------------
    --  Inw

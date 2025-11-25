@@ -10,7 +10,7 @@ with System;
 -------------------------------------------------------------------------------
 
 package x86.Port_IO is
-   pragma Preelaborate (x86.Port_IO);
+   pragma Pure;
    ----------------------------------------------------------------------------
    --  Inb
    --
@@ -35,6 +35,12 @@ package x86.Port_IO is
    function Inb (Port : System.Address) return Read_Type
    with Volatile_Function;
 
+   generic
+      Port : System.Address;
+      type Read_Type is private;
+   function Read_Port_8 return Read_Type
+   with Volatile_Function;
+
    ----------------------------------------------------------------------------
    --  Outb
    --
@@ -46,6 +52,11 @@ package x86.Port_IO is
    generic 
       type Write_Type is private;
    procedure Outb (Port : System.Address; Data : Write_Type);
+   
+   generic 
+      Port : System.Address;
+      type Write_Type is private;
+   procedure Write_Port_8 (Data : Write_Type);
 
 
    ----------------------------------------------------------------------------

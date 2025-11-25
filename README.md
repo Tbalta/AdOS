@@ -83,6 +83,8 @@ sudo cp bin/gnatformat /usr/local/bin
 ```
 
 # Additional resources used for development
+# Ada
 https://github.com/cirosantilli/x86-bare-metal-examples <br />
 https://github.com/ajxs/cxos/ <br />
 https://wiki.osdev.org/Ada_Bare_bones <br />
+https://www.adaic.org/resources/add_content/standards/22rm/rm-bar.pdf <br />

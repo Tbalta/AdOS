@@ -4,7 +4,7 @@ with System;
 with System.Storage_Elements; use System.Storage_Elements;
 
 package SERIAL is
-   pragma Preelaborate (SERIAL);
+   pragma Pure;
    subtype Baudrate is Natural range 1 .. 115_200;
    type SerialPorts is (COM1, COM2, COM3, COM4, COM5, COM6);
 

@@ -122,6 +122,7 @@ begin
    end;
 
    VGA.test;
+   --  VGA.Switch_To_Mode (VGA.VGA_640x480_2_Color);
    while True loop
       null;
    end loop;
