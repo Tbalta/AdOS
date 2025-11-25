@@ -17,6 +17,7 @@ package VGA is
    );
 
    procedure Switch_To_Mode (mode : Graphic_Mode);
+   procedure enable_320x200x256;
    private
    -----------------------------------
    -- Miscellaneous Output Register --

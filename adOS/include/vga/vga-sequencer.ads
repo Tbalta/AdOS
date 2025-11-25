@@ -95,7 +95,7 @@ package VGA.Sequencer is
    end record
       with Size => 8;
    for Character_Map_Select_Register use record
-      Map_B_LSB at 0 range 0 .. 2;
+      Map_B_LSB at 0 range 0 .. 1;
       Map_A_LSB at 0 range 2 .. 3;
       Map_B_MSB at 0 range 4 .. 4;
       Map_A_MSB at 0 range 5 .. 5;
