@@ -1,14 +1,19 @@
-with VGA.Sequencer;
 with x86.Port_Io;
+with SERIAL;
+with Interfaces; use Interfaces;
 with Ada.Unchecked_Conversion;
 package body VGA.Sequencer is
 
    procedure Write_Data (Value : Data_Type)
    is
       procedure Write is new x86.Port_IO.Write_Port_8 (Data_Register_Address, Data_Type);
+      function To_U8 is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Data_Type);
    begin
       Write_Address (Index);
       Write (Value);
+      SERIAL.send_string (Value'Image & "| is ");
+      SERIAL.send_hex (Unsigned_32 (To_U8 (Value)));
+      SERIAL.send_line("");
    end Write_Data;
 
    function Read_Data return Data_Type

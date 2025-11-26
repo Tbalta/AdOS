@@ -23,6 +23,7 @@ with Log;
 with Ada.Assertions;
 with Util;
 with VGA;
+with Interfaces;
 procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Address) is
    package MultiBoot_Conversion is new System.Address_To_Access_Conversions (multiboot_info);
    info : access multiboot_info := MultiBoot_Conversion.To_Pointer (multiboot_address);
@@ -121,12 +122,24 @@ begin
       end if;
    end;
 
-   VGA.test;
+   --  VGA.test;
    VGA.enable_320x200x256;
-   --  VGA.Switch_To_Mode (VGA.VGA_640x480_2_Color);
-   while True loop
-      null;
-   end loop;
+   declare
+      FB : System.Address;
+      procedure memset (buf: System.Address; c : Interfaces.Unsigned_8; n : interfaces.Unsigned_32);
+      pragma Import (C, memset, "memset");
+   begin
+      FB :=  VGA.Get_Frame_Buffer;
+      Logger.Log_Info ("Frame_Buffer: " & FB'Image);
+      memset (FB, 5, 320*200);
+      memset (FB, 70, 240*200);
+      memset (FB, 90, 160*200);
+      memset (FB, 250, 80*200);
+      
+   end;
+   --  while True loop
+   --     null;
+   --  end loop;
 
    -----------------
    -- ELF Loading --

@@ -58,10 +58,12 @@ package body SERIAL is
          send_char (hex_array (Integer (number mod 16) + 1));
       end recur;
    begin
+      send_string ("0x");
       if data = 0 then
          send_char ('0');
       end if;
       recur (data);
+      send_string (" ");
    end send_hex;
 
    procedure send_char (c : Character) is

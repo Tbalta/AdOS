@@ -10,6 +10,11 @@
     printf("\033[0;34m[INFO ]\033[0m(" __FILE__                            \
            ":" STR(__LINE__) "): " fmt "\r\n" __VA_OPT__(, ) __VA_ARGS__); \
   }
+#define LOG_ERROR(fmt, ...)                                                      \
+  {                                                                        \
+    printf("\033[0;31m[INFO ]\033[0m(" __FILE__                            \
+           ":" STR(__LINE__) "): " fmt "\r\n" __VA_OPT__(, ) __VA_ARGS__); \
+  }
 
 #define WAIT                     \
   {                              \

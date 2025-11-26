@@ -1,8 +1,60 @@
 with System;
 with x86.Port_IO;
+with Interfaces; use Interfaces;
 package VGA.CRTC is
    pragma Pure;
+   -----------------------
+   -- Blanking_Register --
+   -----------------------
+   type bit is range 0 .. 1;
+   for bit'Size use 1;
+   subtype End_Horizontal_Blanking_LSB is Unsigned_5;
+   subtype End_Horizontal_Blanking_MSB is bit;
+   type End_Horizontal_Blanking_Value (Bit_Access : Boolean) is record
+      case Bit_Access is
+         When True =>
+            LSB : End_Horizontal_Blanking_LSB;
+            MSB : End_Horizontal_Blanking_MSB;
+         when False =>
+            Value : Unsigned_6;
+         end case;
+      end record;
+   pragma Unchecked_Union (End_Horizontal_Blanking_Value);
 
+   subtype Vertical_Total_LSB is Unsigned_8;
+   subtype Vertical_Total_BT8 is bit;
+   subtype Vertical_Total_BT9 is bit;
+   type Vertical_Total_Value (Bit_Access : Boolean) is record
+      case Bit_Access is
+         when True =>
+            LSB : Vertical_Total_LSB;
+            BT8 : Vertical_Total_BT8;
+            BT9 : Vertical_Total_BT9;
+         when False =>
+            Value : Unsigned_10;
+         end case;
+      end record
+         with Size => 10;
+   pragma Unchecked_Union (Vertical_Total_Value);
+   for Vertical_Total_Value use record
+      LSB at 0 range 0 .. 7;
+      BT8 at 0 range 8 .. 8;
+      BT9 at 0 range 9 .. 9;
+      Value at 0 range 0 .. 9;
+   end record;
+
+   subtype Vertical_Display_Enable_End_BT9 is bit;
+   subtype Vertical_Display_Enable_End_BT8 is bit;
+
+   subtype Vertical_Retrace_Start_BT9 is bit;
+   subtype Vertical_Retrace_Start_BT8 is bit;
+
+    subtype Line_Compare_BT8 is bit;
+    subtype Line_Compare_BT9 is bit;
+
+
+    subtype Vertical_Blanking_Start_BT8 is bit;
+    subtype Vertical_Blanking_Start_BT9 is bit;
    --------------------
    -- Horizontal_Total_Register --
    --------------------
@@ -30,16 +82,18 @@ package VGA.CRTC is
    --------------------
    -- End_Horizontal_Blanking_Register --
    --------------------
+   type Skew_Amount is range 0 .. 3;
    type End_Horizontal_Blanking_Register is record
-      End_Blanking : Unsigned_8;
-      Display_Enable_Skew : Unsigned_8;
+      End_Blanking : End_Horizontal_Blanking_LSB;
+      Display_Enable_Skew : Skew_Amount;
+      one                 : bit := 1;
    end record
       with Size => 8;
    for End_Horizontal_Blanking_Register use record
       End_Blanking at 0 range 0 .. 4;
       Display_Enable_Skew at 0 range 5 .. 6;
+      one at 0 range 7 .. 7;
    end record;
-   for End_Horizontal_Blanking_Register'Size use 8;
    procedure Write_End_Horizontal_Blanking_Register (Register : End_Horizontal_Blanking_Register);
    function  Read_End_Horizontal_Blanking_Register return End_Horizontal_Blanking_Register;
 
@@ -56,9 +110,9 @@ package VGA.CRTC is
    -- End_Horizontal_Retrace_Register --
    --------------------
    type End_Horizontal_Retrace_Register is record
-       EHR : Unsigned_8;
-       HRD : Unsigned_8;
-       EB5 : Unsigned_8;
+       EHR : Unsigned_5;
+       HRD : Unsigned_2;
+       EB5 : End_Horizontal_Blanking_MSB;
    end record
       with Size => 8;
    for End_Horizontal_Retrace_Register use record
@@ -66,7 +120,6 @@ package VGA.CRTC is
       HRD at 0 range 5 .. 6;
       EB5 at 0 range 7 .. 7;
    end record;
-   for End_Horizontal_Retrace_Register'Size use 8;
    procedure Write_End_Horizontal_Retrace_Register (Register : End_Horizontal_Retrace_Register);
    function  Read_End_Horizontal_Retrace_Register return End_Horizontal_Retrace_Register;
    
@@ -84,14 +137,14 @@ package VGA.CRTC is
    -- Overflow_Register --
    --------------------
    type Overflow_Register is record
-       VT8 : Unsigned_8;
-       VDE8 : Unsigned_8;
-       VRS8 : Unsigned_8;
-       VBS8 : Unsigned_8;
-       LC8 : Unsigned_8;
-       VT9 : Unsigned_8;
-       VDE9 : Unsigned_8;
-       VRS9 : Unsigned_8;
+       VT8 : Vertical_Total_BT8;
+       VDE8 : Vertical_Display_Enable_End_BT8;
+       VRS8 : Vertical_Retrace_Start_BT8;
+       VBS8 : Vertical_Blanking_Start_BT8;
+       LC8 : Line_Compare_BT8;
+       VT9 : Vertical_Total_BT9;
+       VDE9 : Vertical_Display_Enable_End_BT9;
+       VRS9 : Vertical_Retrace_Start_BT9;
    end record
       with Size => 8;
    for Overflow_Register use record
@@ -104,7 +157,6 @@ package VGA.CRTC is
        VDE9 at 0 range 6 .. 6;
        VRS9 at 0 range 7 .. 7;
    end record;
-   for Overflow_Register'Size use 8;
    procedure Write_Overflow_Register (Register : Overflow_Register);
    function  Read_Overflow_Register return Overflow_Register;
 
@@ -112,41 +164,43 @@ package VGA.CRTC is
    -- Preset_Row_Scan_Register --
    --------------------
    type Preset_Row_Scan_Register is record
-       Starting_Row_Scan_Count : Unsigned_8;
-       Byte_Panning : Unsigned_8;
+       Starting_Row_Scan_Count : Unsigned_5;
+       Byte_Panning : Unsigned_2;
+       unused : bit := 0;
    end record
       with Size => 8;
    for Preset_Row_Scan_Register use record
        Starting_Row_Scan_Count at 0 range 0 .. 4;
        Byte_Panning at 0 range 5 .. 6;
+       unused at 0 range 7 .. 7;
    end record;
    procedure Write_Preset_Row_Scan_Register (Register : Preset_Row_Scan_Register);
    function  Read_Preset_Row_Scan_Register return Preset_Row_Scan_Register;
 
    --------------------
-   -- Maxixum_Scan_Line_Register --
+   -- Maximum_Scan_Line_Register --
    --------------------
-   type Maxixum_Scan_Line_Register is record
-       MSL  : Unsigned_8;
-       VBS9 : Unsigned_8;
-       LC9 : Unsigned_8;
+   type Maximum_Scan_Line_Register is record
+       MSL  : Unsigned_5;
+       VBS9 : Vertical_Blanking_Start_BT9;
+       LC9 : Line_Compare_BT9;
        Double_Scanning : Boolean;
    end record
       with Size => 8;
-   for Maxixum_Scan_Line_Register use record
+   for Maximum_Scan_Line_Register use record
        MSL  at 0 range 0 .. 4;
        VBS9 at 0 range 5 .. 5;
        LC9 at 0 range 6 .. 6;
        Double_Scanning at 0 range 7 .. 7;
    end record;
-   procedure Write_Maxixum_Scan_Line_Register (Register : Maxixum_Scan_Line_Register);
-   function  Read_Maxixum_Scan_Line_Register return Maxixum_Scan_Line_Register;
+   procedure Write_Maximum_Scan_Line_Register (Register : Maximum_Scan_Line_Register);
+   function  Read_Maximum_Scan_Line_Register return Maximum_Scan_Line_Register;
 
    --------------------
    -- Cursor_Start_Register --
    --------------------
    type Cursor_Start_Register is record
-       Row_Scan_Cursor_Begins  : Unsigned_8;
+       Row_Scan_Cursor_Begins  : Unsigned_5;
        Cursor_Off : Boolean;
    end record
       with Size => 8;
@@ -161,8 +215,8 @@ package VGA.CRTC is
    -- Cursor_End_Register --
    --------------------
    type Cursor_End_Register is record
-       Row_Scan_Cursor_Ends  : Unsigned_8;
-       Cursor_Skew_Control : Unsigned_8;
+       Row_Scan_Cursor_Ends  : Unsigned_5;
+       Cursor_Skew_Control : Unsigned_2;
    end record
       with Size => 8;
    for Cursor_End_Register use record
@@ -217,10 +271,10 @@ package VGA.CRTC is
    -- Vertical_Retrace_End_Register --
    --------------------
    type Vertical_Retrace_End_Register is record
-       VRE  : Unsigned_8;
+       VRE  : Unsigned_4;
        Clear_Vertical_Interrupt : Boolean;
        Enable_Vertical_Interrupt : Boolean;
-       Select_5_Refresh_Cycles : Unsigned_8;
+       Select_5_Refresh_Cycles : Boolean;
        Protect_Register : Boolean;
    end record
       with Size => 8;
@@ -235,12 +289,12 @@ package VGA.CRTC is
    function  Read_Vertical_Retrace_End_Register return Vertical_Retrace_End_Register;
 
          --------------------
-   -- Vertical_Display_Enable_End --
+   -- Vertical_Display_Enable_End_Register --
    --------------------
-   type Vertical_Display_Enable_End is new Unsigned_8;
-   for Vertical_Display_Enable_End'Size use 8;
-   procedure Write_Vertical_Display_Enable_End (Register : Vertical_Display_Enable_End);
-   function  Read_Vertical_Display_Enable_End return Vertical_Display_Enable_End;
+   type Vertical_Display_Enable_End_Register is new Unsigned_8;
+   for Vertical_Display_Enable_End_Register'Size use 8;
+   procedure Write_Vertical_Display_Enable_End_Register (Register : Vertical_Display_Enable_End_Register);
+   function  Read_Vertical_Display_Enable_End_Register return Vertical_Display_Enable_End_Register;
 
          --------------------
    -- Offset_Register --
@@ -254,15 +308,17 @@ package VGA.CRTC is
    -- Underline_Location_Register --
    --------------------
    type Underline_Location_Register is record
-       Start_Under_Line  : Unsigned_8;
+       Start_Under_Line  : Unsigned_5;
        Count_By_4 : Boolean;
        Double_Word : Boolean;
+       unused : bit := 0;
    end record
       with Size => 8;
    for Underline_Location_Register use record
        Start_Under_Line  at 0 range 0 .. 4;
        Count_By_4 at 0 range 5 .. 5;
        Double_Word at 0 range 6 .. 6;
+       unused at 0 range 7 .. 7;
    end record;
    procedure Write_Underline_Location_Register (Register : Underline_Location_Register);
    function  Read_Underline_Location_Register return Underline_Location_Register;
@@ -318,8 +374,8 @@ package VGA.CRTC is
    function  Read_Line_Compare_register return Line_Compare_register;
 
 private
-   Address_Register_Address : System.Address := 16#03C4#;
-   Data_Register_Address    : System.Address := 16#03C5#;
+   Address_Register_Address : constant System.Address := 16#03D4#;
+   Data_Register_Address    : constant System.Address := 16#03D5#;
    type CRTC_Registers is (
       Horizontal_Total,
       Horizontal_Display_Enable_End,
@@ -340,7 +396,8 @@ private
       Vertical_Retrace_Start,
       Vertical_Retrace_End,
       Vertical_Display_Enable_End,
-      Offset_Underline_Location,
+      Offset,
+      Underline_Location,
       Start_Vertical_Blanking,
       End_Vertical_Blanking,
       CRT_Mode_Control,
@@ -373,17 +430,17 @@ private
       CRT_Mode_Control               => 16#17#,
       Line_Compare                   => 16#18#
    );
-   for CRTC_Registers'Address use 8;
+   for CRTC_Registers'Size use 8;
    
-   procedure Write_Address is new x86.Port_IO.Write_Port_8 (Address_Register_Address, Sequencer_Registers);
+   procedure Write_Address is new x86.Port_IO.Write_Port_8 (Address_Register_Address, CRTC_Registers);
 
    generic
       type Data_Type is private;
-      Index : Sequencer_Registers;
+      Index : CRTC_Registers;
    procedure Write_Data (Value : Data_Type);
    generic
       type Data_Type is private;
-      Index : Sequencer_Registers;
+      Index : CRTC_Registers;
    function Read_Data return Data_Type;
 
 

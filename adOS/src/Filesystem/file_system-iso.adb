@@ -50,8 +50,8 @@ package body File_System.ISO is
       count       : Natural;
 
       Atapi_Device : Atapi.Atapi_Device_id := Drivers (Driver_id).Atapi_Device;
-      root_lba     : Natural := Drivers (Driver_id).root_lba;
-      root_dirsize : Unsigned_32 := Drivers (Driver_id).root_dirsize;
+      root_lba     : Natural               := Drivers (Driver_id).root_lba;
+      root_dirsize : Unsigned_32           := Drivers (Driver_id).root_dirsize;
 
       function Next_File (current_file : iso_dir_ptr) return iso_dir_ptr is
       begin
@@ -134,10 +134,10 @@ package body File_System.ISO is
          return DRIVER_FD_ERROR;
       end if;
 
-      Descriptors (FD).lba := Integer (file.data_blk.le);
+      Descriptors (FD).lba    := Integer (file.data_blk.le);
       Descriptors (FD).driver := Driver_id;
-      Descriptors (FD).used := True;
-      Descriptors (FD).size := Integer (file.file_size.le);
+      Descriptors (FD).used   := True;
+      Descriptors (FD).size   := Integer (file.file_size.le);
       Descriptors (FD).offset := 0;
 
       SERIAL.send_line ("FD: " & FD'Image);
