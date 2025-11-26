@@ -122,7 +122,6 @@ begin
       end if;
    end;
 
-   --  VGA.test;
    VGA.enable_320x200x256;
    declare
       FB : System.Address;
@@ -137,9 +136,6 @@ begin
       memset (FB, 250, 80*200);
       
    end;
-   --  while True loop
-   --     null;
-   --  end loop;
 
    -----------------
    -- ELF Loading --
