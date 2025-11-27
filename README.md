@@ -91,3 +91,4 @@ https://github.com/ajxs/cxos/ <br />
 https://wiki.osdev.org/Ada_Bare_bones <br />
 # VGA
 http://www.mcamafia.de/pdf/ibm_vgaxga_trm2.pdf
+http://www.osdever.net/FreeVGA/vga/crtcreg.htm

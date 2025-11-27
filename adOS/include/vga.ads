@@ -3,6 +3,8 @@ with System;
 with Interfaces; use Interfaces;
 package VGA is
    pragma Pure;
+
+
    type Unsigned_2 is range 0 .. 2**2-1; 
    type Unsigned_3 is range 0 .. 2**3-1; 
    type Unsigned_4 is range 0 .. 2**4-1; 
@@ -10,7 +12,6 @@ package VGA is
    type Unsigned_6 is range 0 .. 2**6-1; 
    type Unsigned_10 is range 0 .. 2**10-1; 
 
-   procedure test;
    function Get_Frame_Buffer return System.Address;
    type Graphic_Mode is (
       VGA_320x200_4_Color,
@@ -27,6 +28,9 @@ package VGA is
 
    procedure Switch_To_Mode (mode : Graphic_Mode);
    procedure enable_320x200x256;
+   
+   type Register_Index is new Unsigned_8 range 0 .. 2**8-1;
+   for Register_Index'Size use 8;
    private
    -----------------------------------
    -- Miscellaneous Output Register --
