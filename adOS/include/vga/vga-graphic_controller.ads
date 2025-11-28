@@ -1,7 +1,7 @@
 with System;
 with x86.Port_IO;
 package VGA.Graphic_Controller is
-   pragma Pure;
+   pragma Preelaborate;
    ------------------------
    -- Set_Reset_Register --
    ------------------------

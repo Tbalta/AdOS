@@ -2,7 +2,7 @@ with x86.Port_IO;
 with System;
 with Interfaces; use Interfaces;
 package VGA is
-   pragma Pure;
+   pragma Preelaborate;
 
 
    type Unsigned_2 is range 0 .. 2**2-1; 
@@ -26,7 +26,7 @@ package VGA is
       VGA_640x480_2_Color => 16#11#
    );
 
-   procedure Switch_To_Mode (mode : Graphic_Mode);
+   procedure Set_Graphic_Mode (Width, Height, Color_Depth : Positive);
    procedure enable_320x200x256;
    
    type Register_Index is new Unsigned_8 range 0 .. 2**8-1;

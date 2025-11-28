@@ -24,6 +24,7 @@ with Ada.Assertions;
 with Util;
 with VGA;
 with Interfaces;
+with VGA.CRTC;
 procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Address) is
    package MultiBoot_Conversion is new System.Address_To_Access_Conversions (multiboot_info);
    info : access multiboot_info := MultiBoot_Conversion.To_Pointer (multiboot_address);
@@ -122,7 +123,9 @@ begin
       end if;
    end;
 
-   VGA.enable_320x200x256;
+   --  VGA.enable_320x200x256;
+   VGA.Set_Graphic_Mode (320, 200, 256);
+   VGA.CRTC.Dump_CRTC_Register;
    declare
       FB : System.Address;
       procedure memset (buf: System.Address; c : Interfaces.Unsigned_8; n : interfaces.Unsigned_32);
@@ -134,7 +137,7 @@ begin
       memset (FB, 70, 320*150);
       memset (FB, 90, 320*100);
       memset (FB, 250, 320*50);
-      memset (FB, 0, 160);
+      memset (FB, 210, 160);
       
    end;
 

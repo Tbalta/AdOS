@@ -1,7 +1,7 @@
 with System;
 with x86.Port_IO;
 package VGA.Sequencer is
-   pragma Pure;
+   pragma Preelaborate;
 
    --------------------
    -- Reset_Register --

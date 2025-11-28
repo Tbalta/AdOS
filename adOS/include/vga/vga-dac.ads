@@ -2,7 +2,7 @@ with System;
 with x86.Port_IO;
 with Interfaces; use Interfaces;
 package VGA.DAC is
-   pragma Pure;
+   pragma Preelaborate;
    
    procedure load_default_palette;
 private

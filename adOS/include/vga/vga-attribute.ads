@@ -3,7 +3,7 @@ with x86.Port_IO;
 with Interfaces; use Interfaces;
 with VGA;
 package VGA.Attribute is
-   pragma Pure;
+   pragma Preelaborate;
 
    -------------------------------
    -- Attribute Controller Type --

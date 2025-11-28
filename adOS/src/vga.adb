@@ -8,22 +8,10 @@ with VGA.Sequencer; use VGA.Sequencer;
 with VGA.CRTC;     use VGA.CRTC;
 with VGA.Attribute;     use VGA.Attribute;
 with VGA.DAC;           use VGA.DAC;
-with System.Storage_Elements; use System.Storage_Elements;
+with Util;
 package body VGA is
    use Standard.ASCII;
    package Logger renames Log.Serial_Logger;
-
-   procedure Switch_To_Mode (mode : Graphic_Mode)
-   is
-   begin
-      System.Machine_Code.Asm (
-         "xor %%ah, %%ah" & LF &
-         "mov %0, %%al"   & LF &
-         "int $0x10",
-      Inputs => (Graphic_Mode'Asm_Input("g", mode)),
-      Volatile => True,
-      Clobber => "eax");
-   end Switch_To_Mode;
 
    function Get_Frame_Buffer return System.Address is
       Miscellaneous : Miscellaneous_Register := Read_Miscellaneous_Register;
@@ -51,13 +39,13 @@ package body VGA is
       Register := Read_ISR1 (System.Address (16#03DA#));
    end Reset_Attribute_Register;
 
-   procedure Set_Horizontal_Blanking (Blanking_Start : Horizontal_Blanking_Start; Blanking_Duration : Unsigned_6)
+   procedure Set_Horizontal_Blanking (Blanking_Start : Positive; Blanking_Duration : Positive)
    is
-      Blanking_Duration_Breakdown : End_Blanking_T := (Value => Blanking_Duration, Bit_Access => False);
+      Blanking_Duration_Breakdown : End_Blanking_T := (Value => Unsigned_6 (Blanking_Duration), Bit_Access => False);
       EHB_Register : End_Horizontal_Blanking_Register := Read_End_Horizontal_Blanking_Register;
       EHR_Register : End_Horizontal_Retrace_Register := Read_End_Horizontal_Retrace_Register;
    begin
-         Write_Start_Horizontal_Blanking_Register (Blanking_Start);
+         Write_Start_Horizontal_Blanking_Register (Horizontal_Blanking_Start (Blanking_Start));
 
          EHB_Register.End_Blanking := Blanking_Duration_Breakdown.LSB;
          Write_End_Horizontal_Blanking_Register (EHB_Register);
@@ -65,15 +53,15 @@ package body VGA is
          EHR_Register.EB5 := Blanking_Duration_Breakdown.MSB;
          Write_End_Horizontal_Retrace_Register (EHR_Register);
    end Set_Horizontal_Blanking;
-   
 
-   procedure Set_Horizontal_Retrace (Retrace_Start : Start_Horizontal_Retrace_Pulse_Register; Retrace_Duration : Unsigned_5)
+
+   procedure Set_Horizontal_Retrace (Retrace_Start : Positive; Retrace_Duration : Natural)
    is
       EHR_Register : End_Horizontal_Retrace_Register := Read_End_Horizontal_Retrace_Register;
    begin
-         Write_Start_Horizontal_Retrace_Pulse_Register (Retrace_Start);
+         Write_Start_Horizontal_Retrace_Pulse_Register (Start_Horizontal_Retrace_Pulse_Register (Retrace_Start));
 
-         EHR_Register.EHR := Retrace_Duration;
+         EHR_Register.EHR := Unsigned_5 (Retrace_Duration);
          Write_End_Horizontal_Retrace_Register (EHR_Register);
    end Set_Horizontal_Retrace;
    
@@ -168,6 +156,196 @@ package body VGA is
       raise Program_Error;
    end Compute_Needed_Memory_Map;
 
+   function Get_Pixel_Size (Color_Depth : Positive) return Positive
+   is
+   begin
+      case Color_Depth is
+         when 256 => 
+            return 8;
+         when others =>
+            raise Program_Error;
+      end case;
+   end Get_Pixel_Size;
+
+   function Compute_Dot_Per_Pixel (Color_Depth : Positive) return Positive
+   is
+   begin
+      if Color_Depth = 256 then
+         -- In 256 mode 4 pixels are outputed from memory each dot clock
+         -- Hence, 2 dot ticks are required for 1 pixel.
+         return 2;
+      else
+         return 1;
+      end if;
+   end Compute_Dot_Per_Pixel;
+
+   procedure Prepare_CRTC_For_Configuration
+   is
+   begin
+      Write_End_Horizontal_Blanking_Register ((Display_Enable_Skew => 0, others => <>));
+      Write_End_Horizontal_Retrace_Register ((HRD => 0, others => <>));
+      Write_Vertical_Retrace_End_Register ((Clear_Vertical_Interrupt  => False,
+                                    Enable_Vertical_Interrupt => False,
+                                    Select_5_Refresh_Cycles   => False,
+                                    Protect_Register          => False,
+                                    others => 0));
+     Write_Maximum_Scan_Line_Register ((
+                                       Double_Scanning => False,
+                                       others => <>));
+      Write_Start_Address_High_Register (0);
+      Write_Start_Address_Low_Register (0);
+
+      Write_Cursor_Location_High_Register (0);
+      Write_Cursor_Location_Low_Register (0);
+   end Prepare_CRTC_For_Configuration;
+
+   procedure Set_Graphic_Mode (Width, Height, Color_Depth : Positive)
+   is
+      -- HW Properties --
+      CELL_GRAN_RND             : constant := 8;
+      MIN_PORCH_RND             : constant := 1;
+      V_SYNC_RND                : constant := 3;
+      H_Sync_Percent            : constant := 8;
+      Line_Compare_Disable      : constant := 16#3FF#;
+
+      Dot_Per_Pixel : Positive := Compute_Dot_Per_Pixel (Color_Depth);
+      -- HORIZONTAL configuration --
+      Character_Displayed       : Positive :=  (Util.Round (Width, CELL_GRAN_RND) / CELL_GRAN_RND) * Dot_Per_Pixel;
+
+      -- Blanking start rigth after the last character is displayed
+      Horizontal_Blank_Start    : Positive := Character_Displayed;
+      Horizontal_Blank_Duration : Positive := 34; -- TODO Compute this value
+
+      -- Retrace start after blanking
+      Horizontal_Sync_Start : Positive := Character_Displayed + Horizontal_Blank_Duration;
+      Horizontal_Sync_Duration  : Positive := Util.Round (H_Sync_Percent * Height / 100, CELL_GRAN_RND) / CELL_GRAN_RND;
+
+      Horizontal_Total : Positive := Character_Displayed + Horizontal_Sync_Duration + Horizontal_Blank_Duration;
+      --  Horizontal_Total : Positive := 100;
+
+      -- Vertical configuration --
+      Vertical_Displayed : Positive := Height;
+      Vertical_Blanking_Start    : Positive := Vertical_Displayed + 6;
+      Vertical_Blanking_Duration : Positive := 186;
+
+      Vertical_Sync_Start    : Positive := Vertical_Blanking_Start + Vertical_Blanking_Duration;
+      Vertical_Sync_Duration : Positive := 14;
+
+      Vertical_Total : Positive := Vertical_Displayed + Vertical_Blanking_Duration + Vertical_Sync_Duration;
+
+      -- Other configuration --
+      Pixel_Per_Address   : constant := 2; -- TODO compute this value
+      Memory_Address_Size : constant := 2; -- TODO compute this value
+      Offset : Positive := Width / (Pixel_Per_Address * Memory_Address_Size * 2);
+      Memory_Map : Memory_Map_Addressing := Compute_Needed_Memory_Map (Width, Height, Get_Pixel_Size (Color_Depth));
+
+   begin
+      Logger.Log_Info ("Horizontal_Total" & Horizontal_Total'Image);
+      Logger.Log_Info ("Character_Displayed" & Character_Displayed'Image);
+      Logger.Log_Info ("Vertical_Displayed" & Vertical_Displayed'Image);
+      Logger.Log_Info ("Vertical_Total" & Vertical_Total'Image);
+      Logger.Log_Info ("Offset" & Offset'Image);
+
+      ----------
+      -- MISC --
+      ----------
+      Write_Miscellaneous_Output_Register ((IOS => True, ERAM => True, CS => Clock_25M_640_320_PELs, Size => Size_400_Lines));
+
+      ---------------
+      -- Sequencer --
+      ---------------
+      Write_Reset_Register ((ASR => True, SR => True));
+      Write_Clocking_Mode_Register ((D89 => CELL_GRAN_RND = 8,
+                                     SL  => False,
+                                     DC  => True,
+                                     SH4 => False,
+                                     SO  => False));
+      Write_Map_Mask_Register ((others => True));
+      Write_Character_Map_Select_Register (To_Character_Map_Select_Register (Map_2_1st_8KB, Map_2_1st_8KB));
+      Write_Memory_Mode_Register ((Extended_Memory => True, Odd_Even => True, Chain_4 => True));
+
+
+      --------------------
+      -- CRT Controller --
+      --------------------
+      Prepare_CRTC_For_Configuration;
+
+      Write_Horizontal_Total_Register (Horizontal_Total_Register (Horizontal_Total - 5));
+      Write_Horizontal_Display_Enable_End_Register (Horizontal_Display_Enable_End_Register (Character_Displayed - 1));
+      Set_Horizontal_Blanking (Character_Displayed, Horizontal_Blank_Duration);
+      Set_Horizontal_Retrace (Horizontal_Sync_Start, Horizontal_Sync_Duration);
+
+      Set_Vertical_Total (Vertical_total - 2);
+      Set_Vertical_Display (Vertical_Displayed - 1);
+      Set_vertical_Sync (Vertical_Sync_Start, Vertical_Sync_Duration);
+      Set_Vertical_Blanking (Vertical_Blanking_Start, Vertical_Blanking_Duration);
+
+      Set_Line_Compare (Line_Compare_Disable);
+      Write_Cursor_Start_Register ((Row_Scan_Cursor_Begins => 0, Cursor_Off => False));
+      Write_Cursor_End_Register ((Row_Scan_Cursor_Ends => 0, Cursor_Skew_Control => 0));
+
+      Write_Offset_Register (Offset_Register (Offset));
+      Write_Underline_Location_Register ((Start_Under_Line => 0, Count_By_4 => False, Double_Word => True, others => <>));
+
+      Write_Maximum_Scan_Line_Register ((MSL           => 1 - 1,
+                                       Double_Scanning => False,
+                                       others => 0));
+
+
+      Write_CRT_Mode_Control_Register ((CSM_0         => True,
+                                       SRC            => True,
+                                       HRS            => False,
+                                       Count_By_2     => False,
+                                       Address_Wrap   => True,
+                                       Word_Byte_Mode => False,
+                                       Hardware_Reset => True));
+      Logger.Log_Info ("Setting GC");
+      Write_Set_Reset_Register((SR0 => False, SR1 => False, SR2 => False, SR3 => False));
+      Write_Enable_Set_Reset_Register ((ESR0 => False, ESR1 => False, ESR2 => False, ESR3 => False));
+      Write_Color_Compare_Register ((CC0 => False, CC1 => False, CC2 => False, CC3 => False));
+      Write_Data_Rotate_Register ((Rotate_Count => 0, Function_Select => No_Function));
+      Write_Read_Map_Select_Register (0);
+      Write_Graphics_Mode_Register ((WM                  => Mode_0,
+                                     Read_Mode           => False,
+                                     Odd_Even            => False,
+                                     Shift_Register_Mode => False,
+                                     Color_Mode          => True));
+      Write_Miscellaneous_Register ((Graphics_Mode => True, Odd_Even => False, Memory_Map => Memory_Map));
+      Write_Color_Dont_Care_Register ((M0X => True, M1X => True, M2X => True, M3X => True));
+      Write_Bit_Mask_Register ((others => True));
+
+      Logger.Log_Info ("Setting Attribute");
+      Reset_Attribute_Register;
+      for i in Internal_Palette_Register_Index range 0 .. 15 loop
+         Write_Internal_Palette_Register (i, Internal_Palette_Register (i));
+      end loop;
+
+      Write_Attribute_Mode_Control_Register ((Graphic_Mode              => True,
+                                          Mono_Emulation            => False,
+                                          Enable_Line_Graphics      => False,
+                                          Enable_Blink              => False,
+                                          PEL_Panning_Compatibility => False,
+                                          PEL_Width                 => True,
+                                          P5_P4_Select              => False));
+      Write_Overscan_Color_Register (0);
+      Write_Color_Plane_Enable_Register (16#0F#);
+      Write_Horizontal_PEL_Panning_Register (16#00#);
+      Write_Color_Select_Register ((Select_Color_4 => False,
+                                    Select_Color_5 => False,
+                                    Select_Color_6 => False,
+                                    Select_Color_7 => False));
+
+      -- Disable IPAS to load color values to register
+      Reset_Attribute_Register;
+      Select_Attribute_Register (16#0#);
+      load_default_palette;
+
+      -- Reenable IPAS for normal operations
+      Reset_Attribute_Register;
+      Select_Attribute_Register (16#20#);
+
+   end Set_Graphic_Mode;
+
    procedure enable_320x200x256 is
       -- HW_SPECIFIC --
       Vertical_total   : constant := 449; -- Number of horizontal pixel
@@ -191,7 +369,7 @@ package body VGA is
       Offset : constant := Width / (Pixel_Per_Address * Memory_Address_Size * 2);
       
       -- CRTC Variable --
-      Horizontal_Displayed       : constant := 40;
+      Horizontal_Displayed       : constant := 80;
       Horizontal_Sync_Start      : constant := 44;
       Horizontal_Sync_Duration   : constant := 0;
    

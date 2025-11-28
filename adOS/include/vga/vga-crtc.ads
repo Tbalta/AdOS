@@ -2,8 +2,9 @@ with System;
 with x86.Port_IO;
 with Interfaces; use Interfaces;
 package VGA.CRTC is
-   pragma Pure;
+   pragma Preelaborate;
 
+   procedure Dump_CRTC_Register;
    -----------------
    -- CRTC Values --
    -----------------
@@ -167,8 +168,7 @@ package VGA.CRTC is
    -------------------------------
    -- Horizontal_Total_Register --
    -------------------------------
-   type Horizontal_Total_Register is new Unsigned_8;
-   for Horizontal_Total_Register'Size use 8;
+   subtype Horizontal_Total_Register is Unsigned_8;
    procedure Write_Horizontal_Total_Register (Register : Horizontal_Total_Register);
    function  Read_Horizontal_Total_Register return Horizontal_Total_Register;
 
@@ -289,7 +289,7 @@ package VGA.CRTC is
    -- Maximum_Scan_Line_Register --
    --------------------------------
    type Maximum_Scan_Line_Register is record
-       MSL  : Unsigned_5;
+       MSL  : Unsigned_5 := 0;
        VBS9 : Start_Vertical_Blanking_VSB9;
        LC9 : Line_Compare_LC9;
        Double_Scanning : Boolean;
@@ -551,6 +551,8 @@ private
       Index : CRTC_Registers;
    function Read_Register return Data_Type;
 
+   type Register_Value is array (CRTC_Registers) of Unsigned_8;
+   Register_Array : Register_Value := (others => 0);
 
 
 end VGA.CRTC;

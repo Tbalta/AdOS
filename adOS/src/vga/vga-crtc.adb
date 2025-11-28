@@ -16,12 +16,75 @@ package body VGA.CRTC is
       procedure Write is new x86.Port_IO.Write_Port_8 (Data_Register_Address, Data_Type);
       function To_U8 is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Data_Type);
    begin
+      Register_Array (Index) := To_U8 (Value);
       Write_Address (Index);
       Write (Value);
       SERIAL.send_string (Value'Image & "| is ");
       SERIAL.send_hex (Unsigned_32 (To_U8 (Value)));
       SERIAL.send_line("");
    end Write_Register;
+
+   procedure Dump_CRTC_Register is 
+      function To_U8_Horizontal_Total is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Horizontal_Total_Register);
+      function To_U8_Horizontal_Display_Enable_End is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Horizontal_Display_Enable_End_Register);
+      function To_U8_Start_Horizontal_Blanking is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Horizontal_Blanking_Start);
+      function To_U8_End_Horizontal_Blanking is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => End_Horizontal_Blanking_Register);
+      function To_U8_Start_Horizontal_Retrace_Pulse is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Start_Horizontal_Retrace_Pulse_Register);
+      function To_U8_End_Horizontal_Retrace is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => End_Horizontal_Retrace_Register);
+      function To_U8_Vertical_Total is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Vertical_Total_Register);
+      function To_U8_Overflow is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Overflow_Register);
+      function To_U8_Preset_Row_Scan is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Preset_Row_Scan_Register);
+      function To_U8_Maximum_Scan_Line is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Maximum_Scan_Line_Register);
+      function To_U8_Cursor_Start is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Cursor_Start_Register);
+      function To_U8_Cursor_End is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Cursor_End_Register);
+      function To_U8_Start_Address_High is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Start_Address_High_Register);
+      function To_U8_Start_Address_Low is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Start_Address_Low_Register);
+      function To_U8_Cursor_Location_High is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Cursor_Location_High_Register);
+      function To_U8_Cursor_Location_Low is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Cursor_Location_Low_Register);
+      function To_U8_Vertical_Retrace_Start is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Vertical_Retrace_Start_Register);
+      function To_U8_Vertical_Retrace_End is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Vertical_Retrace_End_Register);
+      function To_U8_Vertical_Display_Enable_End is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Vertical_Display_Enable_End_Register);
+      function To_U8_Offset is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Offset_Register);
+      function To_U8_Underline_Location is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Underline_Location_Register);
+      function To_U8_Start_Vertical_Blanking is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Start_Vertical_Blanking_Register);
+      function To_U8_End_Vertical_Blanking is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => End_Vertical_Blanking_Register);
+      function To_U8_CRT_Mode_Control is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => CRT_Mode_Control_Register);
+      function To_U8_Line_Compare is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Line_Compare_Register);
+   begin
+      for I in Register_Array'Range loop
+         SERIAL.send_string (I'image & "-> ");
+         SERIAL.send_hex (Unsigned_32 (Register_Array (I)));
+         SERIAL.send_line ("");
+      end loop;
+      SERIAl.send_line (Read_Maximum_Scan_Line_Register'Image);
+      --  SERIAL.send_line (Register_Array'Image);
+      SERIAL.send_hex (Unsigned_32 (To_U8_Horizontal_Total (Read_Horizontal_Total_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Horizontal_Display_Enable_End (Read_Horizontal_Display_Enable_End_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Start_Horizontal_Blanking (Read_Start_Horizontal_Blanking_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_End_Horizontal_Blanking (Read_End_Horizontal_Blanking_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Start_Horizontal_Retrace_Pulse (Read_Start_Horizontal_Retrace_Pulse_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_End_Horizontal_Retrace (Read_End_Horizontal_Retrace_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Vertical_Total (Read_Vertical_Total_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Overflow (Read_Overflow_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Preset_Row_Scan (Read_Preset_Row_Scan_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Maximum_Scan_Line (Read_Maximum_Scan_Line_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Cursor_Start (Read_Cursor_Start_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Cursor_End (Read_Cursor_End_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Start_Address_High (Read_Start_Address_High_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Start_Address_Low (Read_Start_Address_Low_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Cursor_Location_High (Read_Cursor_Location_High_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Cursor_Location_Low (Read_Cursor_Location_Low_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Vertical_Retrace_Start (Read_Vertical_Retrace_Start_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Vertical_Retrace_End (Read_Vertical_Retrace_End_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Vertical_Display_Enable_End (Read_Vertical_Display_Enable_End_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Offset (Read_Offset_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Underline_Location (Read_Underline_Location_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Start_Vertical_Blanking (Read_Start_Vertical_Blanking_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_End_Vertical_Blanking (Read_End_Vertical_Blanking_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_CRT_Mode_Control (Read_CRT_Mode_Control_Register)));
+      SERIAL.send_hex (Unsigned_32 (To_U8_Line_Compare (Read_Line_Compare_Register)));
+      SERIAL.send_line("");
+   end Dump_CRTC_Register;
 
 
    ----------------------------------------

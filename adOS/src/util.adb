@@ -1,5 +1,6 @@
 with System;
 with System.Address_To_Access_Conversions;
+with Util;
 
 package body Util is
    function Read_String_From_Address (addr : System.Address) return String is
@@ -15,5 +16,19 @@ package body Util is
       return path_access.all;
    end Read_String_From_Address;
 
+   function Round (val : Integer; Alignment : Integer) return Integer
+   is
+   begin
+      return ((val + Alignment - 1) / Alignment) * Alignment;
+   end Round;
 
+   function sqrt (val : Integer) return Integer is
+      x : Integer := 0;
+   begin
+      while x * x < val loop
+         x := x + 1;
+      end loop;
+
+      return x;
+   end sqrt;
 end Util;
