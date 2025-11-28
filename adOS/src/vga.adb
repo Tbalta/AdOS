@@ -8,6 +8,7 @@ with VGA.Sequencer; use VGA.Sequencer;
 with VGA.CRTC;     use VGA.CRTC;
 with VGA.Attribute;     use VGA.Attribute;
 with VGA.DAC;           use VGA.DAC;
+with System.Storage_Elements; use System.Storage_Elements;
 package body VGA is
    use Standard.ASCII;
    package Logger renames Log.Serial_Logger;
@@ -148,27 +149,56 @@ package body VGA is
       Write_Maximum_Scan_Line_Register (MSL_Register);
    end Set_Line_Compare;
 
+   function Compute_Needed_Memory_Map (Width, Height : Positive; Pixel_Size : Positive) return Memory_Map_Addressing
+   is
+      Storage_Needed : Positive := Width * Height * Pixel_Size / System.Storage_Unit;
+   begin
 
+      if Storage_Needed <= 32 * 1024 then
+         return B0000_32KB;
+      end if;
+
+      if Storage_Needed <= 64 * 1024 then
+         return A0000_64KB;
+      end if;
+
+      if Storage_Needed <= 128 * 1024 then
+         return A0000_128KB;
+      end if;
+      raise Program_Error;
+   end Compute_Needed_Memory_Map;
 
    procedure enable_320x200x256 is
-      Width : constant := 320;
+      -- HW_SPECIFIC --
+      Vertical_total   : constant := 449; -- Number of horizontal pixel
+      Horizontal_Total : constant := 100;
+
+
+      -- Mode_Specific --
+      Pixel_Per_Character : constant := 8;
+      Width  : constant := 320;
+      Height : constant := 200;
+
+      Vertical_Displayed     : constant := 400;
+      Scan_Per_Character_Row : constant := Vertical_Displayed / Height;
+      
+      Memory_Map : Memory_Map_Addressing := Compute_Needed_Memory_Map (Width, Height, 8);
+
+
       Pixel_Per_Address : constant := 2;
       Memory_Address_Size  : constant := 2;
 
       Offset : constant := Width / (Pixel_Per_Address * Memory_Address_Size * 2);
       
       -- CRTC Variable --
-      Horizontal_Total     : constant := 100;
-      Horizontal_Displayed : constant := 80;
-      Horizontal_Sync_Start      : constant := 84;
+      Horizontal_Displayed       : constant := 40;
+      Horizontal_Sync_Start      : constant := 44;
       Horizontal_Sync_Duration   : constant := 0;
    
-      Horizontal_Blanking_Character_Start    : constant := 80;
+      Horizontal_Blanking_Character_Start    : constant := Width / Pixel_Per_Character;
       Horizontal_Blanking_Character_Duration : constant := 34;
 
 
-      Vertical_total         : constant := 449;
-      Vertical_Displayed     : constant := 400;
       Vertical_Sync_Start    : constant := 412;
       Vertical_Sync_Duration : constant := 14;
 
@@ -176,7 +206,6 @@ package body VGA is
       Vertical_Blanking_Start : constant :=  406;
 
       Line_Compare_Disable : constant := 16#3FF#;
-      Scan_Per_Character_Row : constant := 2;
 
       Regenerative_Buffer : Start_Address_T := (Value => 0, Bit_Access => False);
    begin
@@ -190,9 +219,9 @@ package body VGA is
       ---------------
       Logger.Log_Info ("Sequencer");
       Write_Reset_Register ((ASR => True, SR => True));
-      Write_Clocking_Mode_Register ((D89 => True,
+      Write_Clocking_Mode_Register ((D89 => Pixel_Per_Character = 8,
                                      SL  => False,
-                                     DC  => False,
+                                     DC  => True,
                                      SH4 => False,
                                      SO  => False));
       Write_Map_Mask_Register ((Map_0_Enable => True,
@@ -246,12 +275,8 @@ package body VGA is
       Write_Cursor_Location_High_Register (0);
       Write_Cursor_Location_Low_Register (0);
 
-      --  Write_Vertical_Display_Enable_End_Register (Vertical_Display_Enable_End.LSB);
       Write_Offset_Register (Offset);
       Write_Underline_Location_Register ((Start_Under_Line => 0, Count_By_4 => False, Double_Word => True, others => <>));
-
-      -- Vertical_Blanking --
-      Write_End_Vertical_Blanking_Register (186 - 1);
 
 
       Write_CRT_Mode_Control_Register ((CSM_0          => True,
@@ -276,7 +301,7 @@ package body VGA is
                                      Odd_Even            => False,
                                      Shift_Register_Mode => False,
                                      Color_Mode          => True));
-      Write_Miscellaneous_Register ((Graphics_Mode => True, Odd_Even => False, Memory_Map => A0000_64KB));
+      Write_Miscellaneous_Register ((Graphics_Mode => True, Odd_Even => False, Memory_Map => Memory_Map));
       Write_Color_Dont_Care_Register ((M0X => True, M1X => True, M2X => True, M3X => True));
       Write_Bit_Mask_Register (Register => (others => True));
 
@@ -316,6 +341,7 @@ package body VGA is
                                     Select_Color_5 => False,
                                     Select_Color_6 => False,
                                     Select_Color_7 => False));
+
       -- Disable IPAS to load color values to register
       Reset_Attribute_Register;
       Select_Attribute_Register (16#0#);

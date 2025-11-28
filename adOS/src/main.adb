@@ -131,9 +131,10 @@ begin
       FB :=  VGA.Get_Frame_Buffer;
       Logger.Log_Info ("Frame_Buffer: " & FB'Image);
       memset (FB, 5, 320*200);
-      memset (FB, 70, 240*200);
-      memset (FB, 90, 160*200);
-      memset (FB, 250, 80*200);
+      memset (FB, 70, 320*150);
+      memset (FB, 90, 320*100);
+      memset (FB, 250, 320*50);
+      memset (FB, 0, 160);
       
    end;
 
