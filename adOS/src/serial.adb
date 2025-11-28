@@ -8,6 +8,9 @@ package body SERIAL is
    pragma Suppress (Overflow_Check);
    pragma Suppress (All_Checks);
 
+   procedure outb is new x86.Port_IO.Outb (Unsigned_8);
+   function inb is new x86.Port_IO.Inb (Unsigned_8);
+
    procedure set_baud_rate (serial_divisor : Divisor) is
       divisor_low  : Interfaces.Unsigned_8;
       divisor_high : Interfaces.Unsigned_8;
@@ -15,17 +18,17 @@ package body SERIAL is
    begin
       divisor_low := Unsigned_8 (serial_divisor and 16#FF#);
       divisor_high := Unsigned_8 (Shift_Right (serial_divisor, 8) and 16#FF#);
-      x86.Port_IO.Outb (port + Storage_Offset (4), 16#80#);
-      x86.Port_IO.Outb (port + Storage_Offset (1), divisor_low);
-      x86.Port_IO.Outb (port + Storage_Offset (2), divisor_high);
-      x86.Port_IO.Outb (port + Storage_Offset (4), 16#03#);
-      x86.Port_IO.Outb (port + Storage_Offset (3), 16#47#);
+      outb (port + Storage_Offset (4), 16#80#);
+      outb (port + Storage_Offset (1), divisor_low);
+      outb (port + Storage_Offset (2), divisor_high);
+      outb (port + Storage_Offset (4), 16#03#);
+      outb (port + Storage_Offset (3), 16#47#);
    end set_baud_rate;
 
    function can_send_byte return Standard.Boolean is
       port : constant System.Address := To_Address (16#3F8#);
    begin
-      return ((x86.Port_IO.Inb (port + Storage_Offset (5)) and 16#20#) = 16#20#);
+      return ((Inb (port + Storage_Offset (5)) and 16#20#) = 16#20#);
    end can_send_byte;
 
    procedure send_string (data : String) is
@@ -64,7 +67,7 @@ package body SERIAL is
    procedure send_char (c : Character) is
       port : constant System.Address := To_Address (16#3F8#);
    begin
-      x86.Port_IO.Outb (port + Storage_Offset (0), Character'Pos (c));
+      Outb (port + Storage_Offset (0), Character'Pos (c));
    end send_char;
    procedure serial_init (rate : Baudrate) is
    begin
@@ -77,7 +80,7 @@ package body SERIAL is
    procedure send_raw_byte (b : Interfaces.Unsigned_8) is
       port : constant System.Address := To_Address (16#3F8#);
    begin
-      x86.Port_IO.Outb (port + Storage_Offset (0), b);
+      Outb (port + Storage_Offset (0), b);
    end send_raw_byte;
 
    procedure send_cchar (c : Interfaces.C.char) is

@@ -1,6 +1,6 @@
 with Interfaces; use Interfaces;
 
-with x86.Port_IO; use x86.Port_IO;
+with x86.Port_IO;
 
 package body pic is
 
@@ -12,7 +12,7 @@ package body pic is
       INIT    : constant Unsigned_8 := 16#10#;
 
       pragma Unreferenced (SINGLE, EDGE, CASCADE);
-
+      procedure Outb is new x86.Port_IO.Outb (Unsigned_8);
    begin
       Outb (Rep (MASTER_CMD), INIT or ICW4); -- ICW1
       Outb (Rep (SLAVE_CMD), INIT or ICW4); -- ICW1
