@@ -94,3 +94,4 @@ http://www.mcamafia.de/pdf/ibm_vgaxga_trm2.pdf
 http://www.osdever.net/FreeVGA/vga/crtcreg.htm
 https://www.worldradiohistory.com/Archive-Byte/80s/Byte-1988-11-IBM-Issue.pdf
 https://wiki.osdev.org/Video_Signals_And_Timing
+https://glenwing.github.io/docs/VESA-GTF-1.1.pdf

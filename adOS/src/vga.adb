@@ -39,32 +39,94 @@ package body VGA is
       Register := Read_ISR1 (System.Address (16#03DA#));
    end Reset_Attribute_Register;
 
-   procedure Set_Horizontal_Blanking (Blanking_Start : Positive; Blanking_Duration : Positive)
+   procedure Set_Horizontal_Blanking (start : Positive; duration : Positive)
    is
-      Blanking_Duration_Breakdown : End_Blanking_T := (Value => Unsigned_6 (Blanking_Duration), Bit_Access => False);
+      --  To program Horizontal_Blanking_End for a signal width of W, the
+      --  following algorithm is used: the width W, in character
+      --  clock units, is added to the value from the Start
+      --  Horizontal Blanking register. The 6 low-order bits of the
+      --  result are the 6-bit value programmed
+      Horizontal_Blanking_End : Natural := (Start + Duration) mod 2 ** End_Blanking_T'Size;
+      Blanking_End_Breakdown  : End_Blanking_T := (Value => Unsigned_6 (Horizontal_Blanking_End), Bit_Access => False);
+
       EHB_Register : End_Horizontal_Blanking_Register := Read_End_Horizontal_Blanking_Register;
       EHR_Register : End_Horizontal_Retrace_Register := Read_End_Horizontal_Retrace_Register;
    begin
-         Write_Start_Horizontal_Blanking_Register (Horizontal_Blanking_Start (Blanking_Start));
+         Write_Start_Horizontal_Blanking_Register (Horizontal_Blanking_Start (start));
 
-         EHB_Register.End_Blanking := Blanking_Duration_Breakdown.LSB;
+         EHB_Register.End_Blanking := Blanking_End_Breakdown.LSB;
          Write_End_Horizontal_Blanking_Register (EHB_Register);
 
-         EHR_Register.EB5 := Blanking_Duration_Breakdown.MSB;
+         EHR_Register.EB5 := Blanking_End_Breakdown.MSB;
          Write_End_Horizontal_Retrace_Register (EHR_Register);
    end Set_Horizontal_Blanking;
 
-
-   procedure Set_Horizontal_Retrace (Retrace_Start : Positive; Retrace_Duration : Natural)
+   procedure Set_Horizontal_Retrace (Start : Positive; Duration : Natural)
    is
+      --  To program these bits with a signal width of W, the
+      --  following algorithm is used: the width W, in character
+      --  clock units, is added to the value in the Start Retrace
+      --  register. The 5 low-order bits of the result are the 5-bit
+      --  value programmed.
+      HR_End : Unsigned_5 := Unsigned_5 ((Start + Duration) mod 2 ** Unsigned_5'Size);
+
       EHR_Register : End_Horizontal_Retrace_Register := Read_End_Horizontal_Retrace_Register;
    begin
-         Write_Start_Horizontal_Retrace_Pulse_Register (Start_Horizontal_Retrace_Pulse_Register (Retrace_Start));
+         Write_Start_Horizontal_Retrace_Pulse_Register (Start_Horizontal_Retrace_Pulse_Register (Start));
 
-         EHR_Register.EHR := Unsigned_5 (Retrace_Duration);
+         EHR_Register.EHR := Unsigned_5 (HR_End);
          Write_End_Horizontal_Retrace_Register (EHR_Register);
    end Set_Horizontal_Retrace;
-   
+
+   procedure Set_Vertical_Blanking (Start : Natural; Duration : Natural)
+   is
+      Start_Vertical_Blanking : Start_Vertical_Blanking_T := (Value => Unsigned_10 (Start), Bit_Access => False);
+      --  To program the End Blanking Register with a ‘vertical blanking’ signal of width W,
+      --  the following algorithm is used: the width W, in horizontal scan
+      --  line units, is added to the value in the Start Vertical Blanking
+      --  register minus 1. The 8 low-order bits of the result are the 8-bit
+      --  value programmed.
+      Vertical_Blanking_End : Natural := (Start + Duration - 1) mod 2 ** End_Vertical_Blanking_Register'Size;
+
+      Overflow : Overflow_Register := Read_Overflow_Register;
+      Maximum_Scan_Line : Maximum_Scan_Line_Register := Read_Maximum_Scan_Line_Register;
+   begin
+      Overflow.VBS8 := Start_Vertical_Blanking.VSB8;
+      Maximum_Scan_Line.VBS9 := Start_Vertical_Blanking.VSB9;
+
+      Write_Start_Vertical_Blanking_Register (Start_Vertical_Blanking.LSB);
+      Write_Overflow_Register (Overflow);
+      Write_Maximum_Scan_Line_Register (Maximum_Scan_Line);
+      Write_End_Vertical_Blanking_Register (End_Vertical_Blanking_Register (Vertical_Blanking_End));
+   end Set_Vertical_Blanking;
+
+   procedure Set_Vertical_Retrace (start : Natural; duration : Natural)
+   is
+      Start_Vertical_Retrace : Vertical_Retrace_Start_T := (Value => Unsigned_10 (start), Bit_Access => False);
+
+      --  To program the End Vertical Retrace bits with a signal width of W,
+      --  the following algorithm is used: the width W, in
+      --  horizontal scan units, is added to the value in the Start
+      --  Vertical Retrace register. The 4 low-order bits of the
+      --  result are the 4-bit value programmed.
+      Vertical_Retrace_End : Unsigned_4 := Unsigned_4 ((Start + Duration) mod 2 ** Unsigned_4'Size);
+
+
+      VRE_Register : Vertical_Retrace_End_Register := Read_Vertical_Retrace_End_Register;
+      Overflow : Overflow_Register := Read_Overflow_Register;
+   begin
+      Write_Vertical_Retrace_Start_Register (Start_Vertical_Retrace.LSB);
+
+      Overflow.VRS8 := Start_Vertical_Retrace.VRS8;
+      Overflow.VRS9 := Start_Vertical_Retrace.VRS9;
+      Write_Overflow_Register (Overflow);
+
+
+      VRE_Register.VRE := Vertical_Retrace_End;
+      Write_Vertical_Retrace_End_Register (VRE_Register);
+   end Set_Vertical_Retrace;
+
+
    procedure Set_Vertical_Total (total : Natural)
    is
       Vertical_Total : Vertical_Total_T := (Value => Unsigned_10 (total), Bit_Access => False);
@@ -88,39 +150,6 @@ package body VGA is
       Write_Overflow_Register (Overflow);
    end Set_Vertical_Display;
 
-   procedure Set_vertical_Sync (start : Natural; duration : Natural)
-   is
-      Retrace_Start : Vertical_Retrace_Start_T := (Value => Unsigned_10 (start), Bit_Access => False);
-      VRE_Register : Vertical_Retrace_End_Register := Read_Vertical_Retrace_End_Register;
-      Overflow : Overflow_Register := Read_Overflow_Register;
-   begin
-      Write_Vertical_Retrace_Start_Register (Retrace_Start.LSB);
-
-      Overflow.VRS8 := Retrace_Start.VRS8;
-      Overflow.VRS9 := Retrace_Start.VRS9;
-      Write_Overflow_Register (Overflow);
-
-
-      VRE_Register.VRE := Unsigned_4 (duration);
-      Write_Vertical_Retrace_End_Register (VRE_Register);
-   end Set_vertical_Sync;
-
-   procedure Set_Vertical_Blanking (Start : Natural; Duration : Natural)
-   is
-      Start_Vertical_Blanking : Start_Vertical_Blanking_T := (Value => Unsigned_10 (Start), Bit_Access => False);
-      Blanking_Duration : End_Vertical_Blanking_Register := End_Vertical_Blanking_Register (Duration);
-
-      Overflow : Overflow_Register := Read_Overflow_Register;
-      Maximum_Scan_Line : Maximum_Scan_Line_Register := Read_Maximum_Scan_Line_Register;
-   begin
-      Overflow.VBS8 := Start_Vertical_Blanking.VSB8;
-      Maximum_Scan_Line.VBS9 := Start_Vertical_Blanking.VSB9;
-
-      Write_Start_Vertical_Blanking_Register (Start_Vertical_Blanking.LSB);
-      Write_Overflow_Register (Overflow);
-      Write_Maximum_Scan_Line_Register (Maximum_Scan_Line);
-      Write_End_Vertical_Blanking_Register (Blanking_Duration);
-   end Set_Vertical_Blanking;
 
    procedure Set_Line_Compare (Line : Natural)
    is
@@ -203,9 +232,6 @@ package body VGA is
    is
       -- HW Properties --
       CELL_GRAN_RND             : constant := 8;
-      MIN_PORCH_RND             : constant := 1;
-      V_SYNC_RND                : constant := 3;
-      H_Sync_Percent            : constant := 8;
       Line_Compare_Disable      : constant := 16#3FF#;
 
       Dot_Per_Pixel : Positive := Compute_Dot_Per_Pixel (Color_Depth);
@@ -214,24 +240,23 @@ package body VGA is
 
       -- Blanking start rigth after the last character is displayed
       Horizontal_Blank_Start    : Positive := Character_Displayed;
-      Horizontal_Blank_Duration : Positive := 34; -- TODO Compute this value
+      Horizontal_Blank_Duration : Positive := 20; -- gtf.py
 
       -- Retrace start after blanking
-      Horizontal_Sync_Start : Positive := Character_Displayed + Horizontal_Blank_Duration;
-      Horizontal_Sync_Duration  : Positive := Util.Round (H_Sync_Percent * Height / 100, CELL_GRAN_RND) / CELL_GRAN_RND;
+      Horizontal_Sync_Start    : Positive := 82; -- gtf.py
+      Horizontal_Sync_Duration : Positive := 8; -- gtf.py
 
-      Horizontal_Total : Positive := Character_Displayed + Horizontal_Sync_Duration + Horizontal_Blank_Duration;
-      --  Horizontal_Total : Positive := 100;
+      Horizontal_Total : Positive := 100; -- gtf.py
 
       -- Vertical configuration --
-      Vertical_Displayed : Positive := Height;
-      Vertical_Blanking_Start    : Positive := Vertical_Displayed + 6;
-      Vertical_Blanking_Duration : Positive := 186;
+      Vertical_Displayed         : Positive := Height;
+      Vertical_Blanking_Start    : Positive := Vertical_Displayed;
+      Vertical_Blanking_Duration : Positive := 18; -- gtf.py
 
-      Vertical_Sync_Start    : Positive := Vertical_Blanking_Start + Vertical_Blanking_Duration;
-      Vertical_Sync_Duration : Positive := 14;
+      Vertical_Sync_Start    : Positive := 201; -- gtf.py
+      Vertical_Sync_Duration : Positive := 17; -- gtf.py
 
-      Vertical_Total : Positive := Vertical_Displayed + Vertical_Blanking_Duration + Vertical_Sync_Duration;
+      Vertical_Total : Positive := 218; -- -- gtf.py
 
       -- Other configuration --
       Pixel_Per_Address   : constant := 2; -- TODO compute this value
@@ -277,7 +302,7 @@ package body VGA is
 
       Set_Vertical_Total (Vertical_total - 2);
       Set_Vertical_Display (Vertical_Displayed - 1);
-      Set_vertical_Sync (Vertical_Sync_Start, Vertical_Sync_Duration);
+      Set_Vertical_Retrace (Vertical_Sync_Start, Vertical_Sync_Duration);
       Set_Vertical_Blanking (Vertical_Blanking_Start, Vertical_Blanking_Duration);
 
       Set_Line_Compare (Line_Compare_Disable);
@@ -370,18 +395,18 @@ package body VGA is
       
       -- CRTC Variable --
       Horizontal_Displayed       : constant := 80;
-      Horizontal_Sync_Start      : constant := 44;
-      Horizontal_Sync_Duration   : constant := 0;
+      Horizontal_Sync_Start      : constant := 84;
+      Horizontal_Sync_Duration   : constant := 12;
    
-      Horizontal_Blanking_Character_Start    : constant := Width / Pixel_Per_Character;
-      Horizontal_Blanking_Character_Duration : constant := 34;
+      Horizontal_Blanking_Character_Start    : constant := (Width / Pixel_Per_Character) * 2;
+      Horizontal_Blanking_Character_Duration : constant := 18;
 
 
       Vertical_Sync_Start    : constant := 412;
-      Vertical_Sync_Duration : constant := 14;
+      Vertical_Sync_Duration : constant := 18;
 
-      Vertical_Blanking_Duration : constant := 186;
       Vertical_Blanking_Start : constant :=  406;
+      Vertical_Blanking_Duration : constant := 36;
 
       Line_Compare_Disable : constant := 16#3FF#;
 
@@ -437,7 +462,7 @@ package body VGA is
 
       Set_Vertical_Total (Vertical_total - 2);
       Set_Vertical_Display (Vertical_Displayed - 1);
-      Set_vertical_Sync (Vertical_Sync_Start, Vertical_Sync_Duration);
+      Set_Vertical_Retrace (Vertical_Sync_Start, Vertical_Sync_Duration);
       Set_Vertical_Blanking (Vertical_Blanking_Start, Vertical_Blanking_Duration);
 
       Set_Line_Compare (Line_Compare_Disable);

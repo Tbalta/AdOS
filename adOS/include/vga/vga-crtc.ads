@@ -194,7 +194,7 @@ package VGA.CRTC is
    type Skew_Amount is range 0 .. 3;
    type End_Horizontal_Blanking_Register is record
       End_Blanking : End_Blanking_LSB;
-      Display_Enable_Skew : Skew_Amount;
+      Display_Enable_Skew : Skew_Amount := 0;
       one                 : bit := 1;
    end record
       with Size => 8;
