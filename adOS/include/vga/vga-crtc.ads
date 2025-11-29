@@ -535,8 +535,8 @@ private
    -----------------------------------------------------------------------------------------------------------
    -- CRTC Register Address --
    -----------------------------------------------------------------------------------------------------------
-   Address_Register_Address : constant System.Address := 16#03D4#;
-   Data_Register_Address    : constant System.Address := 16#03D5#;
+   Address_Register_Address : constant x86.Port_IO.Port_Address := 16#03D4#;
+   Data_Register_Address    : constant x86.Port_IO.Port_Address := 16#03D5#;
    procedure Write_Address is new x86.Port_IO.Write_Port_8 (Address_Register_Address, CRTC_Registers);
 
    ---------------------------------------------------------------------------------------------------------

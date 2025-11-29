@@ -1,3 +1,5 @@
+# (c) 2025, Tanguy Baltazart
+# Calculation in this file are extracted from https://glenwing.github.io/docs/VESA-GTF-1.1.pdf
 import math
 
 
@@ -224,7 +226,6 @@ V_ODD_BACK_PORCH=V_BACK_PORCH*H_PERIOD
 BOT_MARGIN_US=BOT_MARGIN*H_PERIOD
 
 
-
 TOTAL_H_TIME = round(TOTAL_PIXELS/CELL_GRAN,0)
 
 
@@ -252,10 +253,3 @@ print ("Vertical (odd) Blanking Duration (lines)", V_ODD_BLANKING_LINES )
 # I decided Horizontal Retrace will start at V_LINES_RND + V_ODD_FRONT_PORCH_LINES
 print ("Vertical Sync Start", V_LINES_RND + V_ODD_FRONT_PORCH_LINES)
 print ("Vertical Sync Duration", V_SYNC_BP)
-
-
-
-
-# H_PERIOD_EST = ( (1/V_FIELD_RATE_RQD) - MIN_VSYNC_BP / 1000000) / (V_LINES_RND + (2 * TOP_MARGIN) + MIN_VSYNC_BP +INTERLACE) * 1000000
-
-# V_FIELD_RATE_RQD = round (I_P_FREQ_RQD * 2) if INTERLACE_REQUIRED else I_P_FREQ_RQD

@@ -16,10 +16,10 @@ private
    end record;
 
    type Palette is array (1 .. 256) of Palette_Color;
-   Palette_Address_Register_Write_Address : constant System.Address := 16#03C8#;
-   Palette_Data_Register_Address : constant System.Address := 16#03C9#;
-   DAC_State_Register_Address : constant System.Address := 16#03C7#;
-   PEL_Mask_Register_Address : constant System.Address := 16#03C6#;
+   Palette_Address_Register_Write_Address : constant x86.Port_IO.Port_Address := 16#03C8#;
+   Palette_Data_Register_Address          : constant x86.Port_IO.Port_Address := 16#03C9#;
+   DAC_State_Register_Address             : constant x86.Port_IO.Port_Address := 16#03C7#;
+   PEL_Mask_Register_Address              : constant x86.Port_IO.Port_Address := 16#03C6#;
 
    type DAC_Register is (
       DAC_State,

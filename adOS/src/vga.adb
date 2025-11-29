@@ -36,7 +36,7 @@ package body VGA is
       Register : Unsigned_8;
       pragma Unreferenced (Register);
    begin
-      Register := Read_ISR1 (System.Address (16#03DA#));
+      Register := Read_ISR1 (x86.Port_IO.Port_Address (16#03DA#));
    end Reset_Attribute_Register;
 
    procedure Set_Horizontal_Blanking (start : Positive; duration : Positive)

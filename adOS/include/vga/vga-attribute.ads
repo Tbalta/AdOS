@@ -98,9 +98,9 @@ private
    --------------------------------
    -- Attribute Register Address --
    --------------------------------
-   Address_Register_Address    : constant System.Address := 16#03C0#;
-   Read_Data_Register_Address  : constant System.Address := 16#03C1#;
-   Write_Data_Register_Address : constant System.Address := 16#03C0#;
+   Address_Register_Address    : constant x86.Port_IO.Port_Address := 16#03C0#;
+   Read_Data_Register_Address  : constant x86.Port_IO.Port_Address := 16#03C1#;
+   Write_Data_Register_Address : constant x86.Port_IO.Port_Address := 16#03C0#;
    procedure Write_Address is new x86.Port_IO.Write_Port_8 (Address_Register_Address, Attribute_Register_Index);
 
 

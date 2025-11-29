@@ -75,8 +75,8 @@ package VGA is
       Size at 0 range 6 .. 7;
       end record;
 
-   Miscellaneous_Output_Register_Read_Address : constant System.Address := 16#03CC#;
-   Miscellaneous_Output_Register_Write_Address : constant System.Address := 16#03C2#;
+   Miscellaneous_Output_Register_Read_Address  : constant x86.Port_IO.Port_Address := 16#03CC#;
+   Miscellaneous_Output_Register_Write_Address : constant x86.Port_IO.Port_Address := 16#03C2#;
 
    function Read_Miscellaneous_Output_Register is new x86.Port_IO.Read_Port_8 (Miscellaneous_Output_Register_Read_Address, Miscellaneous_Output_Register);
    procedure Write_Miscellaneous_Output_Register is new x86.Port_IO.Write_Port_8 (Miscellaneous_Output_Register_Write_Address, Miscellaneous_Output_Register);

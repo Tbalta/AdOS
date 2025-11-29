@@ -46,7 +46,7 @@ package body Atapi is
    end waitForDrive;
 
    procedure selectDevice (Controller : ATA_CONTROLLER; Device : ATA_DEVICE) is
-      DCR : constant System.Address := getDcr (Controller);
+      DCR : constant x86.Port_IO.Port_Address := getDcr (Controller);
 
       SRST              : constant Unsigned_8 := Shift_Left (1, 2);
       INTERRUPT_DISABLE : constant Unsigned_8 := Shift_Left (1, 1);
@@ -77,7 +77,7 @@ package body Atapi is
         ("Signature: "
          & Signature (0)'Image
          & " "
-         & To_Integer (getReg (Controller, ATA_REG_SECTOR_COUNT))'Image);
+         & getReg (Controller, ATA_REG_SECTOR_COUNT)'Image);
       return Signature = (ATAPI_SIG_SC, ATAPI_SIG_LBA_LO, ATAPI_SIG_LBA_MI, ATAPI_SIG_LBA_HI);
    end isAtapiDevice;
 

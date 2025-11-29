@@ -189,8 +189,8 @@ package VGA.Graphic_Controller is
 
 
 private
-   Address_Register_Address : constant System.Address := 16#03CE#;
-   Data_Register_Address    : constant System.Address := 16#03CF#;
+   Address_Register_Address : constant x86.Port_IO.Port_Address := 16#03CE#;
+   Data_Register_Address    : constant x86.Port_IO.Port_Address := 16#03CF#;
    type Graphic_Controller_Register is (
       Set_Reset,
       Enable_Set_Reset,

@@ -123,8 +123,8 @@ package VGA.Sequencer is
 
 
 private
-   Address_Register_Address : constant System.Address := 16#03C4#;
-   Data_Register_Address    : constant System.Address := 16#03C5#;
+   Address_Register_Address : constant x86.Port_IO.Port_Address := 16#03C4#;
+   Data_Register_Address    : constant x86.Port_IO.Port_Address := 16#03C5#;
    type Sequencer_Registers is (
       Reset,
       Clocking_Mode,
