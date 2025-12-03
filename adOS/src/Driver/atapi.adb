@@ -161,8 +161,8 @@ package body Atapi is
       Controller : ATA_CONTROLLER renames Devices (Device_id).Controller;
       Device     : ATA_DEVICE renames Devices (Device_id).Device;
    begin
-      Logger.Log_Info
-        ("Reading block LBA " & Natural'Image (lba) & " from device " & Device_id'Image);
+      --  Logger.Log_Info
+      --    ("Reading block LBA " & Natural'Image (lba) & " from device " & Device_id'Image);
       send_packet (Device_id, packet);
       declare
          size_hi : Unsigned_16 := Unsigned_16 (Inb (getReg (Controller, ATA_REG_LBA_HI)));

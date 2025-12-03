@@ -106,8 +106,8 @@ package body x86.pmm is
       Offset : Natural := Address_To_Offset (addr);
 
    begin
-      SERIAL.send_line
-        ("PMM: Freeing page at " & To_Address (addr)'Image & " with offset " & Offset'Image);
+      --  SERIAL.send_line
+      --    ("PMM: Freeing page at " & To_Address (addr)'Image & " with offset " & Offset'Image);
       if Offset = -1 then
          return;
       end if;

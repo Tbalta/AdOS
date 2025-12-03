@@ -128,23 +128,24 @@ begin
 
    --  VGA.enable_320x200x256;
    VGA.Set_Graphic_Mode (320, 200, 256);
-   Logger.Log_Info (VGA.GTF.Get_Configuration (640, 400)'Image);
-
-   VGA.CRTC.Dump_CRTC_Register;
    declare
-      FB : System.Address;
-      procedure memset
-        (buf : System.Address; c : Interfaces.Unsigned_8; n : interfaces.Unsigned_32);
-      pragma Import (C, memset, "memset");
-   begin
-      FB := VGA.Get_Frame_Buffer;
-      Logger.Log_Info ("Frame_Buffer: " & FB'Image);
-      memset (FB, 5, 320 * 200);
-      memset (FB, 70, 320 * 150);
-      memset (FB, 90, 320 * 100);
-      memset (FB, 250, 320 * 50);
-      memset (FB, 210, 160);
+      use File_System;
+      fd : File_System.File_Descriptor_With_Error := FD_ERROR;
 
+      type vga_buffer is array (Integer range 0 .. 320 * 200) of Unsigned_8;
+      function VGA_Write is new File_System.write (vga_buffer);
+
+      package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
+
+      Buffer : access vga_buffer := null;
+   begin
+      fd := open ("vga", 0);
+      Buffer := Conversion.To_Pointer (mmap (fd, 320 * 200));
+      Buffer (0 .. 320 * 200) := (others => 5);
+      Buffer (0 .. 320 * 150) := (others => 70);
+      Buffer (0 .. 320 * 100) := (others => 90);
+      Buffer (0 .. 320 * 50)  := (others => 250);
+      close (fd);
    end;
 
    -----------------

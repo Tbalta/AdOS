@@ -183,6 +183,7 @@ package body File_System.ISO is
       read_size        : Natural := Min (cnt, f_size - f_offset);
       sectors_count    : Natural := ((read_size + BLOCK_SIZE - 1) / BLOCK_SIZE);
       count            : Natural;
+      Current_Offset   : Storage_Offset := Storage_offset (f_offset) mod BLOCK_SIZE;
       procedure memcpy (dest : System.Address; src : System.Address; size : Natural);
       pragma Import (C, memcpy, "memcpy");
    begin
@@ -193,9 +194,10 @@ package body File_System.ISO is
       for lba in base_lba .. (base_lba + sectors_count - 1) loop
          read_buffer := Atapi_Buffer'Address;
          count := Atapi.Read_Block (Atapi_Device, lba, Atapi_Buffer);
-         memcpy (out_buffer, read_buffer + Storage_Offset (f_offset), Min (cnt, BLOCK_SIZE));
+         memcpy (out_buffer, read_buffer + Current_Offset, Min (cnt, BLOCK_SIZE));
          out_buffer := out_buffer + Storage_Offset (Min (cnt, BLOCK_SIZE));
          cnt := cnt - Min (cnt, BLOCK_SIZE);
+         Current_Offset := 0;
       end loop;
 
       Buffer := Temporary_Object;

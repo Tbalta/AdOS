@@ -13,15 +13,30 @@
 package VGA.GTF is
    pragma Preelaborate;
 
-   generic
-      type Data_Type is(<>);
-      with function "+" (Left, Right : Data_Type) return Data_Type is <>;
-      with function "-" (Left, Right : Data_Type) return Data_Type is <>;
-      with function "/" (Left, Right : Data_Type) return Data_Type is <>;
-   function Round_Divide (a, b : Data_Type) return Data_Type;
+   type VGA_Timing is record
+      Total_H        : Character_Count;
+      Active_H_Chars : Character_Count;
 
-   function Get_Configuration
-     (H_PIXELS : Pixel_Count; V_LINES : Scan_Line_Count) return VGA_Configuration;
+      H_Blanking_Start    : Character_Count;
+      H_Blanking_Duration : Character_Count;
+
+      H_Retrace_Start    : Character_Count;
+      H_Retrace_Duration : Character_Count;
+
+      Total_V        : Scan_Line_Count;
+      Active_V_Chars : Scan_Line_Count;
+
+      V_Blanking_Start    : Scan_Line_Count;
+      V_Blanking_Duration : Scan_Line_Count;
+
+      V_Retrace_Start    : Scan_Line_Count;
+      V_Retrace_Duration : Scan_Line_Count;
+   end record;
+
+
+
+   function Compute_Timing
+     (H_PIXELS : Pixel_Count; V_LINES : Scan_Line_Count) return VGA_Timing;
 private
 
 

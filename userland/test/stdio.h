@@ -5,4 +5,5 @@
 int puts(const char *s);
 int printf(const char *format, ...);
 int snprintf(char *buf, size_t size, const char *fmt, ...);
+char* itoa (char *buf, size_t size, unsigned int val);
 #endif

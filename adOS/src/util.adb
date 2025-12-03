@@ -1,3 +1,12 @@
+------------------------------------------------------------------------------
+--                                   UTIL                                   --
+--                                                                          --
+--                                 B o d y                                  --
+-- (c) 2025 Tanguy Baltazart                                                --
+-- License : See LICENCE.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
 with System;
 with System.Address_To_Access_Conversions;
 with Util;
@@ -30,4 +39,10 @@ package body Util is
 
       return x;
    end sqrt;
+
+   function Floor_Divide (a, b : Data_Type) return Data_Type is
+   begin
+      return (a + b - (b / b)) / b;
+   end Floor_Divide;
+
 end Util;

@@ -170,13 +170,13 @@ package body x86.vmm is
          Create_Page_Table
            (Page_Directory, PD_Index, Is_Writable => Is_Writable, Is_Usermode => Is_Usermode);
       end if;
-      Logger.Log_Info
-        ("Mapping physical page "
-         & Address_To_Map'Image
-         & " at PD index "
-         & PD_Index'Image
-         & " PT index "
-         & PT_Index'Image);
+      --  Logger.Log_Info
+      --    ("Mapping physical page "
+      --     & Address_To_Map'Image
+      --     & " at PD index "
+      --     & PD_Index'Image
+      --     & " PT index "
+      --     & PT_Index'Image);
       Map_Page_Table_Entry
         (To_Page_Table (Page_Directory.all (PD_Index)),
          PT_Index,
@@ -498,14 +498,14 @@ package body x86.vmm is
       PT_Count          : Natural := Natural ((size + 4_095) / 4_096);
    begin
       Disable_Paging;
-      Logger.Log_Info
-        ("Unmapping "
-         & Size'Image
-         & " bytes at "
-         & Address'Image
-         & " spanning "
-         & PT_Count'Image
-         & " pages.");
+      --  Logger.Log_Info
+      --    ("Unmapping "
+      --     & Size'Image
+      --     & " bytes at "
+      --     & Address'Image
+      --     & " spanning "
+      --     & PT_Count'Image
+      --     & " pages.");
       for i in 0 .. PT_Count - 1 loop
          Unmap_Page (PD, Address_Breakdown.Directory, Address_Breakdown.Table);
          Next (Address_Breakdown.Directory, Address_Breakdown.Table);

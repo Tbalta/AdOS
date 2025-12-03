@@ -4,6 +4,8 @@ with SERIAL;
 with System.Address_To_Access_Conversions;
 with Interfaces.C;
 with Util;
+with System.Storage_Elements; use System.Storage_Elements;
+with VGA;
 
 package body Syscall is
    package Logger renames Log.Serial_Logger;
@@ -21,7 +23,7 @@ package body Syscall is
       process : in x86.vmm.CR3_register;
       result  : out Syscall_Result) is
    begin
-      Logger.Log_Info ("Handling syscall number: " & number'Image);
+      --  Logger.Log_Info ("Handling syscall number: " & number'Image);
       x86.vmm.Load_Kernel_Mapping;
       x86.vmm.Enable_Paging;
       case number is
@@ -57,7 +59,8 @@ package body Syscall is
       Kernel_CR3    : constant x86.vmm.CR3_register := x86.vmm.Get_Kernel_CR3;
       Kernel_Buffer : System.Address := System.Null_Address;
 
-      type byte_array is array (0 .. Integer (count) - 1) of Interfaces.C.char;
+      type byte_array is array (0 .. Integer (count) - 1) of aliased Unsigned_8
+         with Pack => True;
       package Conversion is new System.Address_To_Access_Conversions (byte_array);
 
       function Write is new File_System.write (byte_array);
@@ -65,8 +68,8 @@ package body Syscall is
 
       fd : File_System.File_Descriptor;
    begin
-      Logger.Log_Info
-        ("Write_Syscall: fd=" & arg1'Image & " buffer=" & buffer'Image & " count=" & count'Image);
+      --  Logger.Log_Info
+      --    ("Write_Syscall: fd=" & arg1'Image & " buffer=" & buffer'Image & " count=" & count'Image);
 
       -- Check --
       if not File_System.Is_File_Descriptor (Integer (arg1)) then
@@ -86,7 +89,7 @@ package body Syscall is
 
       -- write --
       result.Signed_Value := Integer_32 (Write (fd, kernel_buffer_access));
-      Logger.Log_Info ("Write_Syscall'Result=" & result.Signed_Value'Image);
+      --  Logger.Log_Info ("Write_Syscall'Result=" & result.Signed_Value'Image);
       x86.vmm.Unmap (Kernel_CR3, Kernel_Buffer, count);
    end Write_Syscall;
 
@@ -107,7 +110,8 @@ package body Syscall is
       Kernel_CR3    : constant x86.vmm.CR3_register := x86.vmm.Get_Kernel_CR3;
       Kernel_Buffer : System.Address := System.Null_Address;
 
-      type byte_array is array (0 .. Integer (count) - 1) of Interfaces.C.char;
+      type byte_array is array (0 .. Integer (count) - 1) of aliased Unsigned_8
+         with Pack => True;
       package Conversion is new System.Address_To_Access_Conversions (byte_array);
 
       function Read is new File_System.read (byte_array);
@@ -115,8 +119,9 @@ package body Syscall is
 
       fd : File_System.File_Descriptor;
    begin
-      Logger.Log_Info
-        ("Read_Syscall: arg1=" & arg1'Image & " buffer=" & buffer'Image & " count=" & count'Image);
+      pragma Assert (byte_array'Size = count * 8);
+      --  Logger.Log_Info
+      --    ("Read_Syscall: arg1=" & arg1'Image & " buffer=" & buffer'Image & " count=" & count'Image);
       -- Check --
       if not File_System.Is_File_Descriptor (Integer (arg1)) then
          Logger.Log_Error ("Read_Syscall: Invalid file descriptor: " & fd'Image);
@@ -135,7 +140,10 @@ package body Syscall is
 
       -- read --
       result.Signed_Value := Integer_32 (Read (fd, kernel_buffer_access.all));
-      Logger.Log_Info ("Read_Syscall'Result=" & result.Signed_Value'Image);
+      --  for char of kernel_buffer_access.all loop
+      --     Logger.Log_Info(Integer (char)'image);
+      --  end loop;
+      --  Logger.Log_Info ("Read_Syscall'Result=" & result.Signed_Value'Image);
       x86.vmm.Unmap (Kernel_CR3, Kernel_Buffer, count);
    end Read_Syscall;
 
@@ -172,5 +180,6 @@ package body Syscall is
       end;
 
       x86.vmm.Unmap (Kernel_CR3, Kernel_Path, Max_Length);
+      Logger.Log_Info ("Continue");
    end Open_Syscall;
 end Syscall;

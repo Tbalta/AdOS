@@ -9,6 +9,7 @@ package Syscall is
    SYSCALL_READ  : constant Unsigned_32 := 3;
    SYSCALL_WRITE : constant Unsigned_32 := 4;
    SYSCALL_OPEN  : constant Unsigned_32 := 5;
+   SYSCALL_MMAP  : constant Unsigned_32 := 90;
 
    type Syscall_Result (signed : Boolean) is record
       case signed is

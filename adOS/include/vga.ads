@@ -1,3 +1,15 @@
+------------------------------------------------------------------------------
+--                                   VGA                                    --
+--                                                                          --
+--                                 S p e c                                  --
+-- (c) 2025 Tanguy Baltazart                                                --
+-- License : See LICENCE.txt in the root directory.                         --
+--                                                                          --
+--                                                                          --
+--  Description:                                                            --
+--    VGA mode configuration                                                --
+------------------------------------------------------------------------------
+
 with x86.Port_IO;
 with System;
 with Interfaces; use Interfaces;
@@ -13,42 +25,14 @@ package VGA is
    type Unsigned_10 is range 0 .. 2 ** 10 - 1;
 
    function Get_Frame_Buffer return System.Address;
-   type Graphic_Mode is
-     (VGA_320x200_4_Color, VGA_640x200_2_Color, VGA_640x350, VGA_640x480_2_Color);
-   for Graphic_Mode use
-     (VGA_320x200_4_Color => 16#4#,
-      VGA_640x200_2_Color => 16#6#,
-      VGA_640x350         => 16#F#,
-      VGA_640x480_2_Color => 16#11#);
 
    procedure Set_Graphic_Mode (Width, Height, Color_Depth : Positive);
-   --  procedure enable_320x200x256;
 
    type Register_Index is new Unsigned_8 range 0 .. 2 ** 8 - 1;
    for Register_Index'Size use 8;
    subtype Character_Count is Natural;
    subtype Pixel_Count is Natural;
    subtype Scan_Line_Count is Natural;
-
-   type VGA_Configuration is record
-      Total_H        : Character_Count;
-      Active_H_Chars : Character_Count;
-
-      H_Blanking_Start    : Character_Count;
-      H_Blanking_Duration : Character_Count;
-
-      H_Retrace_Start    : Character_Count;
-      H_Retrace_Duration : Character_Count;
-
-      Total_V        : Scan_Line_Count;
-      Active_V_Chars : Scan_Line_Count;
-
-      V_Blanking_Start    : Scan_Line_Count;
-      V_Blanking_Duration : Scan_Line_Count;
-
-      V_Retrace_Start    : Scan_Line_Count;
-      V_Retrace_Duration : Scan_Line_Count;
-   end record;
 
 private
    -----------------------------------

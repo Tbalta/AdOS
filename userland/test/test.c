@@ -43,18 +43,39 @@ int open (const char *pathname, int flags)
 
 
 int _start() {
-    const char path[] = "test2.txt";
-    int fd = open(path, 0);
+    unsigned char vga_line[320] = {0};
+    char bmp_header[14];
+    char read_buffer[100];
+
     int tty = open("tty0", 0);
 
-    char read_buffer[100];
-    int n = snprintf (read_buffer, sizeof(read_buffer), "Read: ");
+    int ados = open("ados.bmp", 0);
 
-    n += read(fd, read_buffer + n, sizeof(read_buffer) - n - 1);
-    read_buffer[n] = '\0';
-    n = snprintf(read_buffer, 100, "%s\n", read_buffer);
 
+    read (ados, bmp_header, sizeof (bmp_header));
+
+    int start = *(int*)(bmp_header + 10);
+    int n = snprintf (read_buffer, sizeof(read_buffer), "bmp_start: %d\n", start);
     write(tty, read_buffer, n);
+    
+    unsigned char dummy;
+    for (int i = 14; i < start ; i += sizeof (dummy))
+    {
+        read(ados, &dummy, sizeof (dummy));
+    }
+    
+    int vga = open("vga", 0);
+    for (int i = 0; i < 200; i++)
+    {
+        int count = read(ados, vga_line, sizeof(vga_line));
+        if (count != sizeof (vga_line))
+        {
+            write(tty, "not enough data read", 21);
+            while (1);
+        }
+        write(vga, vga_line, sizeof(vga_line));
+    }
+
     while (1)
     {
         // asm volatile ("hlt");

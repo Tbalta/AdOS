@@ -15,18 +15,19 @@ package body VGA.GTF is
 
    use all type Pixel_Count;
 
-   function Round_Divide (a, b : Data_Type) return Data_Type is
-   begin
-      return (a + b - (b / b)) / b;
-   end Round_Divide;
-
-   function Get_Configuration
-     (H_PIXELS : Pixel_Count; V_LINES : Scan_Line_Count) return VGA_Configuration
+   --------------------
+   -- Compute_Timing --
+   --------------------
+   function Compute_Timing
+     (H_PIXELS : Pixel_Count; V_LINES : Scan_Line_Count) return VGA_Timing
    is
+      -- Hardware specific --
       M             : constant Float := 600.0;
       C             : constant Float := 40.0;
       K             : constant Float := 128.0;
       J             : constant Float := 20.0;
+
+      -- Default value --
       MIN_VSYNC_BP  : constant Float := 550.0;
       MIN_PORCH_RND : constant Scan_Line_Count := 1;
       V_SYNC_RND : constant := 3;
@@ -34,16 +35,17 @@ package body VGA.GTF is
 
       IDEAL_DUTY_CYCLE_SCALING : constant := 100;
       CELL_GRAN : constant Pixel_Count := 8;
-
       I_P_FREQ_RQD : constant := 25.0;
 
-      function Pixel_Round_Divide is new Round_Divide (Pixel_Count);
-      function Character_Round_Divide is new Round_Divide (Character_Count);
+
+      -- Util --
+      function Pixel_Floor_Divide is new Util.Floor_Divide (Pixel_Count);
+      function Character_Floor_Divide is new Util.Floor_Divide (Character_Count);
 
       function To_Character_Count (pixel : Pixel_Count) return Character_Count
-      is ((Character_Count (Pixel_Round_Divide (pixel, CELL_GRAN))));
+      is ((Character_Count (Pixel_Floor_Divide (pixel, CELL_GRAN))));
 
-      H_PIXELS_RND : Pixel_Count := Pixel_Round_Divide (H_PIXELS, CELL_GRAN) * CELL_GRAN;
+      H_PIXELS_RND : Pixel_Count := Pixel_Floor_Divide (H_PIXELS, CELL_GRAN) * CELL_GRAN;
       V_LINES_RND  : Scan_Line_Count := V_LINES;
 
       -- 3. Find the pixel clock rate required:
@@ -183,7 +185,7 @@ package body VGA.GTF is
 
          V_Retrace_Start     => V_SYNC_START,
          V_Retrace_Duration  => V_SYNC_BP);
-   end Get_Configuration;
+   end Compute_Timing;
 
 
 end VGA.GTF;
