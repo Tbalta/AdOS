@@ -3,14 +3,14 @@ with x86.Port_Io;
 with Ada.Unchecked_Conversion;
 with SERIAL;
 with Interfaces; use Interfaces;
+
 package body VGA.Attribute is
-   
-   
+
+
    -------------------------------
    -- Select_Attribute_Register --
    -------------------------------
-   procedure Select_Attribute_Register (Index : Attribute_Register_Index)
-   is
+   procedure Select_Attribute_Register (Index : Attribute_Register_Index) is
    begin
       Write_Address (Index);
    end Select_Attribute_Register;
@@ -22,8 +22,7 @@ package body VGA.Attribute is
    --  type Data_Type is private;        --
    --  Index : Attribute_Register_Index; --
    ----------------------------------------
-   procedure Write_Register (Value : Data_Type)
-   is
+   procedure Write_Register (Value : Data_Type) is
       procedure Write is new x86.Port_IO.Write_Port_8 (Write_Data_Register_Address, Data_Type);
       function To_U8 is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Data_Type);
    begin
@@ -39,20 +38,20 @@ package body VGA.Attribute is
    --  type Data_Type is private;        --
    --  Index : Attribute_Register_Index; --
    ----------------------------------------
-   function Read_Register return Data_Type
-   is
+   function Read_Register return Data_Type is
       function Read is new x86.Port_IO.Read_Port_8 (Read_Data_Register_Address, Data_Type);
    begin
       Write_Address (Index);
       return Read;
    end Read_Register;
-   
+
 
    ----------------------------------
    -- Register Specific Read/Write --
    ----------------------------------
    -- Internal_Palette --
-   procedure Write_Internal_Palette_Register (Index : Internal_Palette_Register_Index; Register : Internal_Palette_Register)
+   procedure Write_Internal_Palette_Register
+     (Index : Internal_Palette_Register_Index; Register : Internal_Palette_Register)
    is
       procedure Write is new Write_Register (Internal_Palette_Register, Index);
    begin
@@ -61,75 +60,67 @@ package body VGA.Attribute is
 
 
    -- Attribute_Mode_Control --
-   procedure Write_Attribute_Mode_Control_Register (Register : Attribute_Mode_Control_Register)
-   is
-      procedure Write is new Write_Register (Attribute_Mode_Control_Register, Attribute_Mode_Control);
+   procedure Write_Attribute_Mode_Control_Register (Register : Attribute_Mode_Control_Register) is
+      procedure Write is new
+        Write_Register (Attribute_Mode_Control_Register, Attribute_Mode_Control);
    begin
       Write (Register);
    end Write_Attribute_Mode_Control_Register;
 
-   function Read_Attribute_Mode_Control_Register return Attribute_Mode_Control_Register
-   is
+   function Read_Attribute_Mode_Control_Register return Attribute_Mode_Control_Register is
       function Read is new Read_Register (Attribute_Mode_Control_Register, Attribute_Mode_Control);
    begin
       return Read;
    end Read_Attribute_Mode_Control_Register;
 
    -- Overscan_Color --
-   procedure Write_Overscan_Color_Register (Register : Overscan_Color_Register)
-   is
+   procedure Write_Overscan_Color_Register (Register : Overscan_Color_Register) is
       procedure Write is new Write_Register (Overscan_Color_Register, Overscan_Color);
    begin
       Write (Register);
    end Write_Overscan_Color_Register;
 
-   function Read_Overscan_Color_Register return Overscan_Color_Register
-   is
+   function Read_Overscan_Color_Register return Overscan_Color_Register is
       function Read is new Read_Register (Overscan_Color_Register, Overscan_Color);
    begin
       return Read;
    end Read_Overscan_Color_Register;
 
    -- Color_Plane_Enable --
-   procedure Write_Color_Plane_Enable_Register (Register : Color_Plane_Enable_Register)
-   is
+   procedure Write_Color_Plane_Enable_Register (Register : Color_Plane_Enable_Register) is
       procedure Write is new Write_Register (Color_Plane_Enable_Register, Color_Plane_Enable);
    begin
       Write (Register);
    end Write_Color_Plane_Enable_Register;
 
-   function Read_Color_Plane_Enable_Register return Color_Plane_Enable_Register
-   is
+   function Read_Color_Plane_Enable_Register return Color_Plane_Enable_Register is
       function Read is new Read_Register (Color_Plane_Enable_Register, Color_Plane_Enable);
    begin
       return Read;
    end Read_Color_Plane_Enable_Register;
 
    -- Horizontal_PEL_Panning --
-   procedure Write_Horizontal_PEL_Panning_Register (Register : Horizontal_PEL_Panning_Register)
-   is
-      procedure Write is new Write_Register (Horizontal_PEL_Panning_Register, Horizontal_PEL_Panning);
+   procedure Write_Horizontal_PEL_Panning_Register (Register : Horizontal_PEL_Panning_Register) is
+      procedure Write is new
+        Write_Register (Horizontal_PEL_Panning_Register, Horizontal_PEL_Panning);
    begin
       Write (Register);
    end Write_Horizontal_PEL_Panning_Register;
 
-   function Read_Horizontal_PEL_Panning_Register return Horizontal_PEL_Panning_Register
-   is
+   function Read_Horizontal_PEL_Panning_Register return Horizontal_PEL_Panning_Register is
       function Read is new Read_Register (Horizontal_PEL_Panning_Register, Horizontal_PEL_Panning);
    begin
       return Read;
    end Read_Horizontal_PEL_Panning_Register;
 
    -- Color_Select --
-   procedure Write_Color_Select_Register (Register : Color_Select_Register)
-   is
+   procedure Write_Color_Select_Register (Register : Color_Select_Register) is
       procedure Write is new Write_Register (Color_Select_Register, Color_Select);
    begin
       Write (Register);
    end Write_Color_Select_Register;
 
-   function Read_Color_Select_Register return Color_Select_Register
-   is
+   function Read_Color_Select_Register return Color_Select_Register is
       function Read is new Read_Register (Color_Select_Register, Color_Select);
    begin
       return Read;

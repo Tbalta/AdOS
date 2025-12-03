@@ -151,7 +151,7 @@ package body Syscall is
    is
       use File_System;
       use all type System.Address;
-      Max_Length  : constant := 256;
+      Max_Length : constant := 256;
       Kernel_CR3  : constant x86.vmm.CR3_register := x86.vmm.Get_Kernel_CR3;
       Kernel_Path : constant System.Address :=
         x86.vmm.Process_To_Process_Map (process, File_Path, Kernel_CR3, Max_Length);

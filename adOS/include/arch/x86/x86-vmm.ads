@@ -157,10 +157,7 @@ package x86.vmm is
       Is_Writable : Boolean := False;
       Is_Usermode : Boolean := False) return Virtual_Address;
 
-   procedure Unmap
-     (CR3     : CR3_register;
-      Address : System.Address;
-      Size    : Storage_Count);
+   procedure Unmap (CR3 : CR3_register; Address : System.Address; Size : Storage_Count);
 
    function Process_To_Process_Map
      (Source_CR3     : CR3_register;

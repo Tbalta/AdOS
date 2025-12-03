@@ -16,8 +16,7 @@ package body Util is
       return path_access.all;
    end Read_String_From_Address;
 
-   function Round (val : Integer; Alignment : Integer) return Integer
-   is
+   function Round (val : Integer; Alignment : Integer) return Integer is
    begin
       return ((val + Alignment - 1) / Alignment) * Alignment;
    end Round;

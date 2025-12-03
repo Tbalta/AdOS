@@ -1,6 +1,5 @@
-
 package body VGA.DAC is
-   
+
    procedure load_default_palette is
    begin
       Write_Address (0);

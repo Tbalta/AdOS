@@ -13,7 +13,7 @@ with System;
 
 package x86.Port_IO is
    pragma Pure;
-   
+
    type Port_Address is new System.Address;
    ----------------------------------------------------------------------------
    --  Inb
@@ -25,8 +25,7 @@ package x86.Port_IO is
    ----------------------------------------------------------------------------
    generic
       type Read_Type is private;
-   function Inb (Port : Port_Address) return Read_Type
-   with Volatile_Function;
+   function Inb (Port : Port_Address) return Read_Type with Volatile_Function;
 
    ----------------------------------------------------------------------------
    --  Read_Port_8
@@ -39,8 +38,7 @@ package x86.Port_IO is
    generic
       Port : Port_Address;
       type Read_Type is private;
-   function Read_Port_8 return Read_Type
-   with Volatile_Function;
+   function Read_Port_8 return Read_Type with Volatile_Function;
 
    ----------------------------------------------------------------------------
    --  8 bit write functions
@@ -50,11 +48,11 @@ package x86.Port_IO is
    --  Exceptions:
    --    Assert_Error when Write_Type'Size /= 8
    ----------------------------------------------------------------------------
-   generic 
+   generic
       type Write_Type is private;
    procedure Outb (Port : Port_Address; Data : Write_Type);
-   
-   generic 
+
+   generic
       Port : Port_Address;
       type Write_Type is private;
    procedure Write_Port_8 (Data : Write_Type);
@@ -68,10 +66,9 @@ package x86.Port_IO is
    --  Exceptions:
    --    Assert_Error when Read_Type'Size /= 16
    ----------------------------------------------------------------------------
-   generic 
+   generic
       type Read_Type is private;
-   function Inw (Port : Port_Address) return Read_Type
-   with Volatile_Function;
+   function Inw (Port : Port_Address) return Read_Type with Volatile_Function;
 
    ----------------------------------------------------------------------------
    --  16 bit write functions
@@ -81,7 +78,7 @@ package x86.Port_IO is
    --  Exceptions:
    --    Assert_Error when Write_Type'Size /= 16
    ----------------------------------------------------------------------------
-   generic 
+   generic
       type Write_Type is private;
    procedure Outw (Port : Port_Address; Data : Write_Type);
 end x86.Port_IO;

@@ -1,4 +1,4 @@
-with Interfaces;  use Interfaces;
+with Interfaces; use Interfaces;
 with x86.Port_IO;
 with Log;
 with Ada.Unchecked_Conversion;

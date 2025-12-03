@@ -11,7 +11,8 @@
 with Interfaces; use Interfaces;
 
 
-package body pic is
+package body pic
+is
    ---------
    -- Rep --
    ---------

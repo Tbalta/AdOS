@@ -11,7 +11,8 @@ package body SERIAL is
    procedure outb is new x86.Port_IO.Outb (Unsigned_8);
    function inb is new x86.Port_IO.Inb (Unsigned_8);
 
-   procedure Write_COM1_Transmit_Buffer is new x86.Port_IO.Write_Port_8 (COM1, Interfaces.Unsigned_8);
+   procedure Write_COM1_Transmit_Buffer is new
+     x86.Port_IO.Write_Port_8 (COM1, Interfaces.Unsigned_8);
 
    procedure set_baud_rate (serial_divisor : Divisor) is
       use all type x86.Port_IO.Port_Address;

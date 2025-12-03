@@ -2,13 +2,14 @@ with System;
 with x86.Port_IO;
 with Interfaces; use Interfaces;
 with VGA;
+
 package VGA.Attribute is
    pragma Preelaborate;
 
    -------------------------------
    -- Attribute Controller Type --
    -------------------------------
-   type Attribute_Register_Index is new VGA.Register_Index range 0 .. 2**6-1;
+   type Attribute_Register_Index is new VGA.Register_Index range 0 .. 2 ** 6 - 1;
    for Attribute_Register_Index'Size use 8;
    procedure Select_Attribute_Register (Index : Attribute_Register_Index);
 
@@ -18,34 +19,36 @@ package VGA.Attribute is
    -------------------------------
    type Internal_Palette_Register is new Unsigned_6;
    for Internal_Palette_Register'Size use 8;
-   subtype Internal_Palette_Register_Index is Attribute_Register_Index range 0 .. 2**5 - 1;
-   procedure Write_Internal_Palette_Register (Index : Internal_Palette_Register_Index; Register : Internal_Palette_Register);
+   subtype Internal_Palette_Register_Index is Attribute_Register_Index range 0 .. 2 ** 5 - 1;
+   procedure Write_Internal_Palette_Register
+     (Index : Internal_Palette_Register_Index; Register : Internal_Palette_Register);
 
 
    -------------------------------------
    -- Attribute_Mode_Control_Register --
    -------------------------------------
    type Attribute_Mode_Control_Register is record
-      Graphic_Mode : Boolean;
-      Mono_Emulation : Boolean;
-      Enable_Line_Graphics : Boolean;
-      Enable_Blink : Boolean;
+      Graphic_Mode              : Boolean;
+      Mono_Emulation            : Boolean;
+      Enable_Line_Graphics      : Boolean;
+      Enable_Blink              : Boolean;
       PEL_Panning_Compatibility : Boolean;
-      PEL_Width : Boolean;
-      P5_P4_Select : Boolean;
+      PEL_Width                 : Boolean;
+      P5_P4_Select              : Boolean;
    end record
-      with Size => 8;
-   for Attribute_Mode_Control_Register use record
-      Graphic_Mode at 0 range 0 .. 0;
-      Mono_Emulation at 0 range 1 .. 1;
-      Enable_Line_Graphics at 0 range 2 .. 2;
-      Enable_Blink at 0 range 3 .. 3;
-      PEL_Panning_Compatibility at 0 range 5 .. 5;
-      PEL_Width at 0 range 6 .. 6;
-      P5_P4_Select at 0 range 7 .. 7;
-   end record;
+   with Size => 8;
+   for Attribute_Mode_Control_Register use
+     record
+       Graphic_Mode at 0 range 0 .. 0;
+       Mono_Emulation at 0 range 1 .. 1;
+       Enable_Line_Graphics at 0 range 2 .. 2;
+       Enable_Blink at 0 range 3 .. 3;
+       PEL_Panning_Compatibility at 0 range 5 .. 5;
+       PEL_Width at 0 range 6 .. 6;
+       P5_P4_Select at 0 range 7 .. 7;
+     end record;
    procedure Write_Attribute_Mode_Control_Register (Register : Attribute_Mode_Control_Register);
-   function  Read_Attribute_Mode_Control_Register return Attribute_Mode_Control_Register;
+   function Read_Attribute_Mode_Control_Register return Attribute_Mode_Control_Register;
 
 
    -----------------------------
@@ -54,7 +57,7 @@ package VGA.Attribute is
    type Overscan_Color_Register is new Unsigned_4;
    for Overscan_Color_Register'Size use 8;
    procedure Write_Overscan_Color_Register (Register : Overscan_Color_Register);
-   function  Read_Overscan_Color_Register return Overscan_Color_Register;
+   function Read_Overscan_Color_Register return Overscan_Color_Register;
 
 
    ---------------------------------
@@ -63,7 +66,7 @@ package VGA.Attribute is
    type Color_Plane_Enable_Register is new Unsigned_8;
    for Color_Plane_Enable_Register'Size use 8;
    procedure Write_Color_Plane_Enable_Register (Register : Color_Plane_Enable_Register);
-   function  Read_Color_Plane_Enable_Register return Color_Plane_Enable_Register;
+   function Read_Color_Plane_Enable_Register return Color_Plane_Enable_Register;
 
 
    -------------------------------------
@@ -72,8 +75,8 @@ package VGA.Attribute is
    type Horizontal_PEL_Panning_Register is new Unsigned_4;
    for Horizontal_PEL_Panning_Register'Size use 8;
    procedure Write_Horizontal_PEL_Panning_Register (Register : Horizontal_PEL_Panning_Register);
-   function  Read_Horizontal_PEL_Panning_Register return Horizontal_PEL_Panning_Register;
-  
+   function Read_Horizontal_PEL_Panning_Register return Horizontal_PEL_Panning_Register;
+
 
    ---------------------------
    -- Color_Select_Register --
@@ -84,16 +87,17 @@ package VGA.Attribute is
       Select_Color_6 : Boolean;
       Select_Color_7 : Boolean;
    end record
-      with Size => 8;
-   for Color_Select_Register use record
-      Select_Color_4 at 0 range 0 .. 0;
-      Select_Color_5 at 0 range 1 .. 1;
-      Select_Color_6 at 0 range 2 .. 2;
-      Select_Color_7 at 0 range 3 .. 3;
-   end record;
+   with Size => 8;
+   for Color_Select_Register use
+     record
+       Select_Color_4 at 0 range 0 .. 0;
+       Select_Color_5 at 0 range 1 .. 1;
+       Select_Color_6 at 0 range 2 .. 2;
+       Select_Color_7 at 0 range 3 .. 3;
+     end record;
    procedure Write_Color_Select_Register (Register : Color_Select_Register);
-   function  Read_Color_Select_Register return Color_Select_Register;
-  
+   function Read_Color_Select_Register return Color_Select_Register;
+
 private
    --------------------------------
    -- Attribute Register Address --
@@ -101,7 +105,8 @@ private
    Address_Register_Address    : constant x86.Port_IO.Port_Address := 16#03C0#;
    Read_Data_Register_Address  : constant x86.Port_IO.Port_Address := 16#03C1#;
    Write_Data_Register_Address : constant x86.Port_IO.Port_Address := 16#03C0#;
-   procedure Write_Address is new x86.Port_IO.Write_Port_8 (Address_Register_Address, Attribute_Register_Index);
+   procedure Write_Address is new
+     x86.Port_IO.Write_Port_8 (Address_Register_Address, Attribute_Register_Index);
 
 
    --------------------

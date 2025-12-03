@@ -8,7 +8,6 @@ package SERIAL is
    pragma Pure;
    subtype Baudrate is Natural range 1 .. 115_200;
 
-
    subtype Divisor is Unsigned_16 range 0 .. Unsigned_16'Last;
    procedure serial_init (rate : Baudrate);
    procedure send_char (c : Character);
