@@ -86,6 +86,134 @@ package body VGA.CRTC is
       SERIAL.send_line("");
    end Dump_CRTC_Register;
 
+      procedure Set_Horizontal_Blanking (start : Positive; duration : Positive)
+      is
+         --  To program Horizontal_Blanking_End for a signal width of W, the
+         --  following algorithm is used: the width W, in character
+         --  clock units, is added to the value from the Start
+         --  Horizontal Blanking register. The 6 low-order bits of the
+         --  result are the 6-bit value programmed
+         Horizontal_Blanking_End : Natural := (Start + Duration) mod 2 ** End_Blanking_T'Size;
+         Blanking_End_Breakdown  : End_Blanking_T := (Value => Unsigned_6 (Horizontal_Blanking_End), Bit_Access => False);
+
+         EHB_Register : End_Horizontal_Blanking_Register := Read_End_Horizontal_Blanking_Register;
+         EHR_Register : End_Horizontal_Retrace_Register := Read_End_Horizontal_Retrace_Register;
+      begin
+            Write_Start_Horizontal_Blanking_Register (Horizontal_Blanking_Start (start));
+
+            EHB_Register.End_Blanking := Blanking_End_Breakdown.LSB;
+            Write_End_Horizontal_Blanking_Register (EHB_Register);
+
+            EHR_Register.EB5 := Blanking_End_Breakdown.MSB;
+            Write_End_Horizontal_Retrace_Register (EHR_Register);
+      end Set_Horizontal_Blanking;
+
+      procedure Set_Horizontal_Retrace (Start : Character_Count; Duration : Character_Count)
+      is
+         --  To program these bits with a signal width of W, the
+         --  following algorithm is used: the width W, in character
+         --  clock units, is added to the value in the Start Retrace
+         --  register. The 5 low-order bits of the result are the 5-bit
+         --  value programmed.
+         HR_End : Unsigned_5 := Unsigned_5 ((Start + Duration) mod 2 ** Unsigned_5'Size);
+
+         EHR_Register : End_Horizontal_Retrace_Register := Read_End_Horizontal_Retrace_Register;
+      begin
+            Write_Start_Horizontal_Retrace_Pulse_Register (Start_Horizontal_Retrace_Pulse_Register (Start));
+
+            EHR_Register.EHR := Unsigned_5 (HR_End);
+            Write_End_Horizontal_Retrace_Register (EHR_Register);
+      end Set_Horizontal_Retrace;
+
+      procedure Set_Vertical_Blanking (Start : Natural; Duration : Natural)
+      is
+         Start_Vertical_Blanking : Start_Vertical_Blanking_T := (Value => Unsigned_10 (Start), Bit_Access => False);
+         --  To program the End Blanking Register with a ‘vertical blanking’ signal of width W,
+         --  the following algorithm is used: the width W, in horizontal scan
+         --  line units, is added to the value in the Start Vertical Blanking
+         --  register minus 1. The 8 low-order bits of the result are the 8-bit
+         --  value programmed.
+         Vertical_Blanking_End : Natural := (Start + Duration - 1) mod 2 ** End_Vertical_Blanking_Register'Size;
+
+         Overflow : Overflow_Register := Read_Overflow_Register;
+         Maximum_Scan_Line : Maximum_Scan_Line_Register := Read_Maximum_Scan_Line_Register;
+      begin
+         Overflow.VBS8 := Start_Vertical_Blanking.VSB8;
+         Maximum_Scan_Line.VBS9 := Start_Vertical_Blanking.VSB9;
+
+         Write_Start_Vertical_Blanking_Register (Start_Vertical_Blanking.LSB);
+         Write_Overflow_Register (Overflow);
+         Write_Maximum_Scan_Line_Register (Maximum_Scan_Line);
+         Write_End_Vertical_Blanking_Register (End_Vertical_Blanking_Register (Vertical_Blanking_End));
+      end Set_Vertical_Blanking;
+
+      procedure Set_Vertical_Retrace (start : Natural; duration : Natural)
+      is
+         Start_Vertical_Retrace : Vertical_Retrace_Start_T := (Value => Unsigned_10 (start), Bit_Access => False);
+
+         --  To program the End Vertical Retrace bits with a signal width of W,
+         --  the following algorithm is used: the width W, in
+         --  horizontal scan units, is added to the value in the Start
+         --  Vertical Retrace register. The 4 low-order bits of the
+         --  result are the 4-bit value programmed.
+         Vertical_Retrace_End : Unsigned_4 := Unsigned_4 ((Start + Duration) mod 2 ** Unsigned_4'Size);
+
+
+         VRE_Register : Vertical_Retrace_End_Register := Read_Vertical_Retrace_End_Register;
+         Overflow : Overflow_Register := Read_Overflow_Register;
+      begin
+         Write_Vertical_Retrace_Start_Register (Start_Vertical_Retrace.LSB);
+
+         Overflow.VRS8 := Start_Vertical_Retrace.VRS8;
+         Overflow.VRS9 := Start_Vertical_Retrace.VRS9;
+         Write_Overflow_Register (Overflow);
+
+
+         VRE_Register.VRE := Vertical_Retrace_End;
+         Write_Vertical_Retrace_End_Register (VRE_Register);
+      end Set_Vertical_Retrace;
+
+
+      procedure Set_Vertical_Total (total : Scan_Line_Count)
+      is
+         Vertical_Total : Vertical_Total_T := (Value => Unsigned_10 (total), Bit_Access => False);
+         Overflow : Overflow_Register := Read_Overflow_Register;
+      begin
+         Write_Vertical_Total_Register (Vertical_Total.LSB);
+         Overflow.VT8 := Vertical_Total.VT8;
+         Overflow.VT9 := Vertical_Total.VT9;
+         Write_Overflow_Register (Overflow);
+      end Set_Vertical_Total;
+
+      procedure Set_Vertical_Display (display : Natural)
+      is
+         Vertical_Displayed : Vertical_Display_Enable_End_T := (Value => Unsigned_10 (display), Bit_Access => False);
+
+         Overflow : Overflow_Register := Read_Overflow_Register;
+      begin
+         Write_Vertical_Display_Enable_End_Register (Vertical_Displayed.LSB);
+         Overflow.VDE8 := Vertical_Displayed.VDE8;
+         Overflow.VDE9 := Vertical_Displayed.VDE9;
+         Write_Overflow_Register (Overflow);
+      end Set_Vertical_Display;
+
+
+      procedure Set_Line_Compare (Line : Natural)
+      is
+         Line_Compare : Line_Compare_T := (Value => Unsigned_10 (Line), Bit_Access => False);
+         MSL_Register : Maximum_Scan_Line_Register := Read_Maximum_Scan_Line_Register;
+         Overflow : Overflow_Register := Read_Overflow_Register;
+      begin
+         Write_Line_Compare_register (Line_Compare.LSB);
+
+         Overflow.LC8 := Line_Compare.LC8;
+         Write_Overflow_Register (Overflow);
+
+         MSL_Register.LC9 := Line_Compare.LC9;
+         Write_Maximum_Scan_Line_Register (MSL_Register);
+      end Set_Line_Compare;
+
+
 
    ----------------------------------------
    --            Read_Register           --

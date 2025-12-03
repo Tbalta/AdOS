@@ -22,11 +22,11 @@ package body Util is
       return ((val + Alignment - 1) / Alignment) * Alignment;
    end Round;
 
-   function sqrt (val : Integer) return Integer is
-      x : Integer := 0;
+   function sqrt (val : Float) return Float is
+      x : Float := 0.0;
    begin
       while x * x < val loop
-         x := x + 1;
+         x := x + 1.0;
       end loop;
 
       return x;

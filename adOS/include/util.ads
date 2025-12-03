@@ -7,6 +7,6 @@ package Util is
 
    function Round (val : Integer; Alignment : Integer) return Integer;
 
-   function sqrt (val : Integer) return Integer;
+   function sqrt (val : Float) return Float;
 
 end Util;

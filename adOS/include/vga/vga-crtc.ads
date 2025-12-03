@@ -5,6 +5,13 @@ package VGA.CRTC is
    pragma Preelaborate;
 
    procedure Dump_CRTC_Register;
+   procedure Set_Horizontal_Blanking (start : Positive; duration : Positive);
+   procedure Set_Horizontal_Retrace (Start : Character_Count; Duration : Character_Count);
+   procedure Set_Vertical_Blanking (Start : Natural; Duration : Natural);
+   procedure Set_Vertical_Retrace (start : Natural; duration : Natural);
+   procedure Set_Vertical_Total (total : Scan_Line_Count);
+   procedure Set_Vertical_Display (display : Natural);
+   procedure Set_Line_Compare (Line : Natural);
    -----------------
    -- CRTC Values --
    -----------------

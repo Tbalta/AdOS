@@ -1,12 +1,12 @@
 ------------------------------------------------------------------------------
 --                                                                          --
---                         GNAT RUN-TIME COMPONENTS                         --
+--                         GNAT COMPILER COMPONENTS                         --
 --                                                                          --
---                       S Y S T E M . I M G _ U N S                        --
+--                       S Y S T E M . F A T _ F L T                        --
 --                                                                          --
 --                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 1992-2019, Free Software Foundation, Inc.         --
+--          Copyright (C) 1992-2023, Free Software Foundation, Inc.         --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -29,33 +29,19 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
---  This package contains the routines for supporting the Image attribute for
---  modular integer types up to size Unsigned'Size, and also for conversion
---  operations required in Text_IO.Modular_IO for such types.
+--  This package contains an instantiation of the floating-point attribute
+--  runtime routines for the type Float.
 
-with System.Unsigned_Types;
+with System.Fat_Gen;
 
-package System.Img_Uns is
+package System.Fat_Flt is
    pragma Pure;
-   subtype Unsigned is Unsigned_Types.Unsigned;
 
-   procedure Image_Unsigned
-     (V : System.Unsigned_Types.Unsigned;
-      S : in out String;
-      P : out Natural);
-   pragma Inline (Image_Unsigned);
-   --  Computes Unsigned'Image (V) and stores the result in S (1 .. P) setting
-   --  the resulting value of P. The caller guarantees that S is long enough to
-   --  hold the result, and that S'First is 1.
+   --  Note the only entity from this package that is accessed by Rtsfind
+   --  is the name of the package instantiation. Entities within this package
+   --  (i.e. the individual floating-point attribute routines) are accessed
+   --  by name using selected notation.
 
-   procedure Set_Image_Unsigned
-     (V : System.Unsigned_Types.Unsigned;
-      S : in out String;
-      P : in out Natural);
-   --  Stores the image of V in S starting at S (P + 1), P is updated to point
-   --  to the last character stored. The value stored is identical to the value
-   --  of Unsigned'Image (V) except that no leading space is stored. The caller
-   --  guarantees that S is long enough to hold the result. S need not have a
-   --  lower bound of 1.
+   package Attr_Float is new System.Fat_Gen (Float);
 
-end System.Img_Uns;
+end System.Fat_Flt;

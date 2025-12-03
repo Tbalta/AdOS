@@ -2,11 +2,11 @@
 --                                                                          --
 --                         GNAT RUN-TIME COMPONENTS                         --
 --                                                                          --
---                       S Y S T E M . I M G _ U N S                        --
+--                 S Y S T E M . F L O A T _ C O N T R O L                  --
 --                                                                          --
 --                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 1992-2019, Free Software Foundation, Inc.         --
+--                     Copyright (C) 2000-2023, AdaCore                     --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -29,33 +29,31 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
---  This package contains the routines for supporting the Image attribute for
---  modular integer types up to size Unsigned'Size, and also for conversion
---  operations required in Text_IO.Modular_IO for such types.
+--  Control functions for floating-point unit
 
-with System.Unsigned_Types;
-
-package System.Img_Uns is
+package System.Float_Control is
    pragma Pure;
-   subtype Unsigned is Unsigned_Types.Unsigned;
+   --  This is not fully correct, but this unit is with-ed by pure units
+   --  (eg s-imgrea).
 
-   procedure Image_Unsigned
-     (V : System.Unsigned_Types.Unsigned;
-      S : in out String;
-      P : out Natural);
-   pragma Inline (Image_Unsigned);
-   --  Computes Unsigned'Image (V) and stores the result in S (1 .. P) setting
-   --  the resulting value of P. The caller guarantees that S is long enough to
-   --  hold the result, and that S'First is 1.
-
-   procedure Set_Image_Unsigned
-     (V : System.Unsigned_Types.Unsigned;
-      S : in out String;
-      P : in out Natural);
-   --  Stores the image of V in S starting at S (P + 1), P is updated to point
-   --  to the last character stored. The value stored is identical to the value
-   --  of Unsigned'Image (V) except that no leading space is stored. The caller
-   --  guarantees that S is long enough to hold the result. S need not have a
-   --  lower bound of 1.
-
-end System.Img_Uns;
+   procedure Reset;
+   pragma Inline (Reset);
+   --  Reset the floating-point processor to the default state needed to get
+   --  correct Ada semantics for the target. Some third party tools change
+   --  the settings for the floating-point processor. Reset can be called
+   --  to reset the floating-point processor into the mode required by GNAT
+   --  for correct operation. Use this call after a call to foreign code if
+   --  you suspect incorrect floating-point operation after the call.
+   --
+   --  For example under Windows NT some system DLL calls change the default
+   --  FPU arithmetic to 64 bit precision mode. However, since in Ada 95 it
+   --  is required to provide full access to the floating-point types of the
+   --  architecture, GNAT requires full 80-bit precision mode, and Reset makes
+   --  sure this mode is established.
+   --
+   --  Similarly on the PPC processor, it is important that overflow and
+   --  underflow exceptions be disabled.
+   --
+   --  The call to Reset simply has no effect if the target environment
+   --  does not give rise to such concerns.
+end System.Float_Control;

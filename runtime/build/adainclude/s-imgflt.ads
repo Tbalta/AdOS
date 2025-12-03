@@ -1,12 +1,12 @@
 ------------------------------------------------------------------------------
 --                                                                          --
---                         GNAT RUN-TIME COMPONENTS                         --
+--                         GNAT COMPILER COMPONENTS                         --
 --                                                                          --
---                       S Y S T E M . I M G _ U N S                        --
+--                       S Y S T E M . I M G _ F L T                        --
 --                                                                          --
 --                                 S p e c                                  --
 --                                                                          --
---          Copyright (C) 1992-2019, Free Software Foundation, Inc.         --
+--            Copyright (C) 2021-2024, Free Software Foundation, Inc.       --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -29,33 +29,37 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
---  This package contains the routines for supporting the Image attribute for
---  modular integer types up to size Unsigned'Size, and also for conversion
---  operations required in Text_IO.Modular_IO for such types.
+--  This package contains routines for the Image attribute of floating point
+--  types based on Float, also used for Float_IO output.
 
+with System.Image_R;
+with System.Img_Uns;
+with System.Powten_Flt;
 with System.Unsigned_Types;
 
-package System.Img_Uns is
-   pragma Pure;
-   subtype Unsigned is Unsigned_Types.Unsigned;
+package System.Img_Flt is
 
-   procedure Image_Unsigned
-     (V : System.Unsigned_Types.Unsigned;
-      S : in out String;
-      P : out Natural);
-   pragma Inline (Image_Unsigned);
-   --  Computes Unsigned'Image (V) and stores the result in S (1 .. P) setting
-   --  the resulting value of P. The caller guarantees that S is long enough to
-   --  hold the result, and that S'First is 1.
+   package Impl is new Image_R
+     (Float,
+      System.Powten_Flt.Maxpow,
+      System.Powten_Flt.Powten'Address,
+      Unsigned_Types.Unsigned,
+      System.Img_Uns.Set_Image_Unsigned);
 
-   procedure Set_Image_Unsigned
-     (V : System.Unsigned_Types.Unsigned;
-      S : in out String;
-      P : in out Natural);
-   --  Stores the image of V in S starting at S (P + 1), P is updated to point
-   --  to the last character stored. The value stored is identical to the value
-   --  of Unsigned'Image (V) except that no leading space is stored. The caller
-   --  guarantees that S is long enough to hold the result. S need not have a
-   --  lower bound of 1.
+   procedure Image_Float
+     (V    : Float;
+      S    : in out String;
+      P    : out Natural;
+      Digs : Natural)
+     renames Impl.Image_Floating_Point;
 
-end System.Img_Uns;
+   procedure Set_Image_Float
+     (V    : Float;
+      S    : in out String;
+      P    : in out Natural;
+      Fore : Natural;
+      Aft  : Natural;
+      Exp  : Natural)
+     renames Impl.Set_Image_Real;
+
+end System.Img_Flt;

@@ -2,11 +2,11 @@
 --                                                                          --
 --                         GNAT RUN-TIME COMPONENTS                         --
 --                                                                          --
---                       S Y S T E M . I M G _ U N S                        --
+--                 S Y S T E M . F L O A T _ C O N T R O L                  --
 --                                                                          --
---                                 S p e c                                  --
+--                                 B o d y                                  --
 --                                                                          --
---          Copyright (C) 1992-2019, Free Software Foundation, Inc.         --
+--                       Copyright (C) 2011-2023, AdaCore                   --
 --                                                                          --
 -- GNAT is free software;  you can  redistribute it  and/or modify it under --
 -- terms of the  GNU General Public License as published  by the Free Soft- --
@@ -29,33 +29,19 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
---  This package contains the routines for supporting the Image attribute for
---  modular integer types up to size Unsigned'Size, and also for conversion
---  operations required in Text_IO.Modular_IO for such types.
+--  This implementation calls an imported function.
 
-with System.Unsigned_Types;
+package body System.Float_Control is
 
-package System.Img_Uns is
-   pragma Pure;
-   subtype Unsigned is Unsigned_Types.Unsigned;
+   -----------
+   -- Reset --
+   -----------
 
-   procedure Image_Unsigned
-     (V : System.Unsigned_Types.Unsigned;
-      S : in out String;
-      P : out Natural);
-   pragma Inline (Image_Unsigned);
-   --  Computes Unsigned'Image (V) and stores the result in S (1 .. P) setting
-   --  the resulting value of P. The caller guarantees that S is long enough to
-   --  hold the result, and that S'First is 1.
+   procedure Reset is
+      procedure Init_Float;
+      pragma Import (C, Init_Float, "__gnat_init_float");
+   begin
+      Init_Float;
+   end Reset;
 
-   procedure Set_Image_Unsigned
-     (V : System.Unsigned_Types.Unsigned;
-      S : in out String;
-      P : in out Natural);
-   --  Stores the image of V in S starting at S (P + 1), P is updated to point
-   --  to the last character stored. The value stored is identical to the value
-   --  of Unsigned'Image (V) except that no leading space is stored. The caller
-   --  guarantees that S is long enough to hold the result. S need not have a
-   --  lower bound of 1.
-
-end System.Img_Uns;
+end System.Float_Control;

@@ -27,10 +27,36 @@ package VGA is
    );
 
    procedure Set_Graphic_Mode (Width, Height, Color_Depth : Positive);
-   procedure enable_320x200x256;
+   --  procedure enable_320x200x256;
    
    type Register_Index is new Unsigned_8 range 0 .. 2**8-1;
    for Register_Index'Size use 8;
+   subtype Character_Count is Natural;
+   subtype Pixel_Count     is Natural;
+   subtype Scan_Line_Count is Natural;
+
+
+   type VGA_Configuration is record
+      Total_H : Character_Count;
+      Active_H_Chars : Character_Count;
+
+      H_Blanking_Start : Character_Count;
+      H_Blanking_Duration : Character_Count;
+
+      H_Retrace_Start : Character_Count;
+      H_Retrace_Duration : Character_Count;
+
+
+      Total_V : Scan_Line_Count;
+      Active_V_Chars : Scan_Line_Count;
+
+      V_Blanking_Start : Scan_Line_Count;
+      V_Blanking_Duration : Scan_Line_Count;
+
+      V_Retrace_Start : Scan_Line_Count;
+      V_Retrace_Duration : Scan_Line_Count;
+   end record;
+
    private
    -----------------------------------
    -- Miscellaneous Output Register --

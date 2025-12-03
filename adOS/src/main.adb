@@ -1,4 +1,5 @@
 with SERIAL;
+with VGA.GTF;
 with x86.gdt;
 with x86.idt;
 with x86.pmm;                 use x86.pmm;
@@ -23,6 +24,7 @@ with Log;
 with Ada.Assertions;
 with Util;
 with VGA;
+with VGA.GTF;
 with Interfaces;
 with VGA.CRTC;
 procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Address) is
@@ -125,6 +127,8 @@ begin
 
    --  VGA.enable_320x200x256;
    VGA.Set_Graphic_Mode (320, 200, 256);
+   Logger.Log_Info (VGA.GTF.Get_Configuration (640, 400)'Image);
+
    VGA.CRTC.Dump_CRTC_Register;
    declare
       FB : System.Address;

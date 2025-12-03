@@ -226,7 +226,8 @@ V_ODD_BACK_PORCH=V_BACK_PORCH*H_PERIOD
 BOT_MARGIN_US=BOT_MARGIN*H_PERIOD
 
 
-TOTAL_H_TIME = round(TOTAL_PIXELS/CELL_GRAN,0)
+print (math.sqrt(((100-C)**2) + (0.4*M* (TOTAL_ACTIVE_PIXELS + RIGHT_MARGIN + LEFT_MARGIN) / PIXEL_FREQ)))
+print (IDEAL_DUTY_CYCLE)
 
 
 print ("Vertical Total: ", TOTAL_V_LINES)
@@ -246,7 +247,7 @@ print ("")
 
 
 # I decided Horizontal Blanking start after active display (no border)
-print ("Vertical Blanking Start (lines)", V_LINES_RND )
+print ("Vertical Blanking Start (lines)", ADDR_LINES_PER_FRAME )
 print ("Vertical (even) Blanking Duration (lines)", V_EVEN_BLANKING_LINES )
 print ("Vertical (odd) Blanking Duration (lines)", V_ODD_BLANKING_LINES )
 
