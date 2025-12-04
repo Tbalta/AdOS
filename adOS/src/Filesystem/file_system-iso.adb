@@ -2,8 +2,10 @@ with SERIAL;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
 with File_System.ISO;
-
+with System.Address_To_Access_Conversions;
+with Log;
 package body File_System.ISO is
+   package Logger renames Log.Serial_Logger;
    function To_Upper (str : String) return String is
       result : String := str;
    begin
@@ -180,10 +182,10 @@ package body File_System.ISO is
       read_buffer      : System.Address;
       base_lba         : Natural := (f_offset / BLOCK_SIZE) + f_lba;
       cnt              : Natural := Read_Type'Size / Storage_Unit;
-      read_size        : Natural := Min (cnt, f_size - f_offset);
-      sectors_count    : Natural := ((read_size + BLOCK_SIZE - 1) / BLOCK_SIZE);
-      count            : Natural;
       Current_Offset   : Storage_Offset := Storage_offset (f_offset) mod BLOCK_SIZE;
+      read_size        : Natural := Min (cnt, f_size - f_offset);
+      sectors_count    : Natural := ((read_size + Natural (Current_Offset) + BLOCK_SIZE - 1) / BLOCK_SIZE);
+      count            : Natural;
       procedure memcpy (dest : System.Address; src : System.Address; size : Natural);
       pragma Import (C, memcpy, "memcpy");
    begin
@@ -191,12 +193,13 @@ package body File_System.ISO is
          return -1;
       end if;
       -- Adjust the offset of the lba
+      Logger.Log_Info ("Reading: " & base_lba'Image & " + " & Current_Offset'Image & " .. " & Integer (base_lba + sectors_count - 1)'Image);
       for lba in base_lba .. (base_lba + sectors_count - 1) loop
          read_buffer := Atapi_Buffer'Address;
          count := Atapi.Read_Block (Atapi_Device, lba, Atapi_Buffer);
-         memcpy (out_buffer, read_buffer + Current_Offset, Min (cnt, BLOCK_SIZE));
-         out_buffer := out_buffer + Storage_Offset (Min (cnt, BLOCK_SIZE));
-         cnt := cnt - Min (cnt, BLOCK_SIZE);
+         memcpy (out_buffer, read_buffer + Current_Offset, Min (cnt, BLOCK_SIZE - Integer (Current_Offset)));
+         out_buffer := out_buffer + Storage_Offset (Min (cnt, BLOCK_SIZE - Integer (Current_Offset)));
+         cnt := cnt - Min (cnt, BLOCK_SIZE - Integer (Current_Offset));
          Current_Offset := 0;
       end loop;
 

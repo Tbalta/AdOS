@@ -160,6 +160,7 @@ package body Atapi is
 
       Controller : ATA_CONTROLLER renames Devices (Device_id).Controller;
       Device     : ATA_DEVICE renames Devices (Device_id).Device;
+      Data_Port  : constant x86.Port_IO.Port_Address := getReg (Controller, ATA_REG_DATA);
    begin
       --  Logger.Log_Info
       --    ("Reading block LBA " & Natural'Image (lba) & " from device " & Device_id'Image);
@@ -172,7 +173,7 @@ package body Atapi is
       end;
 
       for i in 0 .. (Integer (buffer'Length / 2) - 1) loop
-         data := Inw (getReg (Controller, ATA_REG_DATA));
+         data := Inw (Data_Port);
          --  Logger.Log_Info ("Data read: " & Unsigned_16'Image (data mod 16#100#));
          --  Logger.Log_Info ("Storing at buffer index: " & Integer'Image (buffer'First + (i * 2)));
          buffer (buffer'First + (i * 2)) := Unsigned_8 (data mod 16#100#);

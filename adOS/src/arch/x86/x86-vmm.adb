@@ -189,7 +189,8 @@ package body x86.vmm is
    procedure Unmap_Page
      (Page_Directory       : Page_Directory_Access;
       Page_Directory_Start : Page_Directory_Index;
-      Page_Table_Start     : Page_Table_Index)
+      Page_Table_Start     : Page_Table_Index;
+      Free_Page            : Boolean)
    is
       PD_Index : Page_Directory_Index := Page_Directory_Start;
       PT_Index : Page_Table_Index := Page_Table_Start;
@@ -197,7 +198,10 @@ package body x86.vmm is
       if not Page_Directory (PD_Index).Present then
          return;
       end if;
-      PMM.Free_Page (To_Address (To_Page_Table (Page_Directory (PD_Index)) (PT_Index).Address));
+
+      if Free_Page then
+         PMM.Free_Page (To_Address (To_Page_Table (Page_Directory (PD_Index)) (PT_Index).Address));
+      end if;
       To_Page_Table (Page_Directory (PD_Index)) (PT_Index).Present := False;
    end Unmap_Page;
 
@@ -476,6 +480,7 @@ package body x86.vmm is
          User_Physical_Address :=
            Virtual_To_Physical_Address
              (Source_CR3, Source_Address + System.Address (i * PMM_PAGE_SIZE));
+         --  Logger.Log_Info (Integer (Source_Address + System.Address (i * PMM_PAGE_SIZE))'Image & " - " & User_Physical_Address'Image);
          Map_Physical_Page
            (To_Page_Directory (To_Address (Dest_CR3.Address)),
             Dest_Address.Directory,
@@ -492,7 +497,7 @@ package body x86.vmm is
       return Return_Address;
    end Process_To_Process_Map;
 
-   procedure Unmap (CR3 : CR3_register; Address : System.Address; Size : Storage_Count) is
+   procedure Unmap (CR3 : CR3_register; Address : System.Address; Size : Storage_Count; Free_Page : Boolean) is
       PD                : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
       Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
       PT_Count          : Natural := Natural ((size + 4_095) / 4_096);
@@ -507,7 +512,7 @@ package body x86.vmm is
       --     & PT_Count'Image
       --     & " pages.");
       for i in 0 .. PT_Count - 1 loop
-         Unmap_Page (PD, Address_Breakdown.Directory, Address_Breakdown.Table);
+         Unmap_Page (PD, Address_Breakdown.Directory, Address_Breakdown.Table, Free_Page);
          Next (Address_Breakdown.Directory, Address_Breakdown.Table);
       end loop;
       Enable_Paging;

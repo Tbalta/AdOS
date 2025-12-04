@@ -1,3 +1,4 @@
+with VGA;
 with x86.VMM;
 with Interfaces;              use Interfaces;
 with System;
@@ -9,6 +10,8 @@ package Syscall is
    SYSCALL_READ  : constant Unsigned_32 := 3;
    SYSCALL_WRITE : constant Unsigned_32 := 4;
    SYSCALL_OPEN  : constant Unsigned_32 := 5;
+   SYSCALL_CLOSE : constant Unsigned_32 := 6;
+   SYSCALL_LSEEK : constant Unsigned_32 := 19;
    SYSCALL_MMAP  : constant Unsigned_32 := 90;
 
    type Syscall_Result (signed : Boolean) is record
@@ -34,14 +37,14 @@ package Syscall is
 
 
 private
-   procedure Write_Syscall
+   procedure Read_Syscall
      (arg1    : in Unsigned_32;
       buffer  : in System.Address;
       count   : in Storage_Count;
       process : in x86.vmm.CR3_register;
       result  : out Syscall_Result);
 
-   procedure Read_Syscall
+   procedure Write_Syscall
      (arg1    : in Unsigned_32;
       buffer  : in System.Address;
       count   : in Storage_Count;
@@ -53,4 +56,28 @@ private
       flag      : in Unsigned_32;
       process   : in x86.vmm.CR3_register;
       result    : out Syscall_Result);
+   procedure Close_Syscall
+     (arg1      : in Unsigned_32;
+      process   : in x86.vmm.CR3_register;
+      result    : out Syscall_Result);
+
+
+   procedure Seek_Syscall (
+      arg1 : Unsigned_32;
+      arg2 : Unsigned_32;
+      arg3 : Unsigned_32;
+      process   : in x86.vmm.CR3_register;
+      result    : out Syscall_Result);
+   
+   procedure Mmap_Syscall
+   (
+      addr   : System.Address;
+      length : Storage_Count;
+      prot   : Unsigned_32;
+      flags  : Unsigned_32;
+      arg5   : Unsigned_32;
+      --  offset : Unsigned_32;
+      process   : in x86.vmm.CR3_register;
+      result    : out Syscall_Result);
+
 end Syscall;

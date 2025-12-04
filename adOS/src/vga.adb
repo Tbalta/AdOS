@@ -166,8 +166,8 @@ package body VGA is
         Compute_Needed_Memory_Map (Width, Height, Get_Pixel_Size (Color_Depth));
 
    begin
+      Logger.Log_Info ("Setting mode: " & Width'Image & "x" & Height'Image & "x" & Color_Depth'Image);
       Logger.Log_Info (Timing'Image);
-      ----------
       -- MISC --
       ----------
       Write_Miscellaneous_Output_Register

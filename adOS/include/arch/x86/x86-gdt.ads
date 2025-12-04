@@ -53,7 +53,7 @@ package x86.gdt is
    tss : TSS_Entry
    with Export => True, Convention => C, External_Name => "tss_entry";
 
-   stack : aliased array (1 .. 512) of Unsigned_8
+   stack : aliased array (1 .. 4096) of Unsigned_8
    with Export => True, Convention => C, External_Name => "tss_stack";
 
    GDT_ENTRY_COUNT         : constant Integer :=

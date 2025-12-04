@@ -28,12 +28,37 @@ is
    procedure init;
 
 private
-   VGA_FD : constant Driver_File_Descriptor := Driver_File_Descriptor'First;
+   FRAME_BUFFER_FD : constant Driver_File_Descriptor := Driver_File_Descriptor'First;
+   HEIGHT_FD       : constant Driver_File_Descriptor := FRAME_BUFFER_FD + 1;
+   WIDTH_FD        : constant Driver_File_Descriptor := FRAME_BUFFER_FD + 2;
+   GRAPHIC_FD      : constant Driver_File_Descriptor := FRAME_BUFFER_FD + 3;
+   ENABLE_FD      : constant Driver_File_Descriptor := FRAME_BUFFER_FD + 4;
+
+   --  generic
+   --     type Read_Type is private;
+   --  function read (fd : Driver_File_Descriptor; Buffer : out Read_Type) return Integer;
+   generic
+      type Write_Type is private;
+      function Frame_Buffer_Write (fd : Driver_File_Descriptor; Buffer : access Write_Type) return Integer;
+   generic
+      type Write_Type is private;
+      function Height_Write (fd : Driver_File_Descriptor; Height : access Write_Type) return Integer;
+   generic
+      type Write_Type is private;
+      function Width_Write (fd : Driver_File_Descriptor; Width : access Write_Type) return Integer;
+   generic
+      type Write_Type is private;
+      function Graphic_Write (fd : Driver_File_Descriptor; Mode : access Write_Type) return Integer;
+   generic
+      type Write_Type is private;
+      function Enable_Write (fd : Driver_File_Descriptor; Mode : access Write_Type) return Integer;
+
 
    type File_Information is record
       used : Boolean := False;
       Width : Standard.VGA.Pixel_Count := 0;
       Height : Standard.VGA.Scan_Line_Count := 0;
+      Color_Depth : Unsigned_32 := 0;
       Graphic_Mode : Boolean := False;
       offset : Storage_Offset := 0;
    end record;

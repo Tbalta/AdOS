@@ -140,7 +140,7 @@ private
    Signed_Zeros              : constant Boolean := True;
    Stack_Check_Default       : constant Boolean := False;
    Stack_Check_Probes        : constant Boolean := False;
-   Stack_Check_Limits        : constant Boolean := False;
+   Stack_Check_Limits        : constant Boolean := True;
    Support_Aggregates        : constant Boolean := True;
    Support_Atomic_Primitives : constant Boolean := True;
    Support_Composite_Assign  : constant Boolean := True;

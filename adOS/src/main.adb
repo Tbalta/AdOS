@@ -127,26 +127,26 @@ begin
    end;
 
    --  VGA.enable_320x200x256;
-   VGA.Set_Graphic_Mode (320, 200, 256);
-   declare
-      use File_System;
-      fd : File_System.File_Descriptor_With_Error := FD_ERROR;
+   --  VGA.Set_Graphic_Mode (320, 200, 256);
+   --  declare
+   --     use File_System;
+   --     fd : File_System.File_Descriptor_With_Error := FD_ERROR;
 
-      type vga_buffer is array (Integer range 0 .. 320 * 200) of Unsigned_8;
-      function VGA_Write is new File_System.write (vga_buffer);
+   --     type vga_buffer is array (Integer range 0 .. 320 * 200) of Unsigned_8;
+   --     function VGA_Write is new File_System.write (vga_buffer);
 
-      package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
+   --     package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
 
-      Buffer : access vga_buffer := null;
-   begin
-      fd := open ("vga", 0);
-      Buffer := Conversion.To_Pointer (mmap (fd, 320 * 200));
-      Buffer (0 .. 320 * 200) := (others => 5);
-      Buffer (0 .. 320 * 150) := (others => 70);
-      Buffer (0 .. 320 * 100) := (others => 90);
-      Buffer (0 .. 320 * 50)  := (others => 250);
-      close (fd);
-   end;
+   --     Buffer : access vga_buffer := null;
+   --  begin
+      --  fd := open ("vga_frame_buffer", 0);
+      --  Buffer := Conversion.To_Pointer (mmap (fd, 320 * 200));
+      --  Buffer (0 .. 320 * 200) := (others => 5);
+      --  Buffer (0 .. 320 * 150) := (others => 70);
+      --  Buffer (0 .. 320 * 100) := (others => 90);
+      --  Buffer (0 .. 320 * 50)  := (others => 250);
+      --  close (fd);
+   --  end;
 
    -----------------
    -- ELF Loading --

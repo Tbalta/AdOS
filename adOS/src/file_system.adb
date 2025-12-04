@@ -9,6 +9,11 @@ package body File_System is
       return fd in Integer (File_Descriptor'First) .. Integer (File_Descriptor'Last);
    end Is_File_Descriptor;
 
+   function Is_Valid_Whence (wh : Integer) return Boolean is
+   begin
+      return Integer'Pos (wh) in whence'Pos (SEEK_SET) .. whence'Pos (SEEK_END);
+   end Is_Valid_Whence;
+
    function Add_File
      (File_System : File_System_Type; File_System_Decriptor : Driver_File_Descriptor_With_Error)
       return File_Descriptor is
