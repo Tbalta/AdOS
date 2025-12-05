@@ -4,7 +4,7 @@ package File_System
   with Preelaborate
 is
 
-   type File_System_Type is (SERIAL_FS, ISO_FS, VGA_FS, INVALID_FS);
+   type File_System_Type is (SERIAL_FS, ISO_FS, VGA_FS, PIT_FS, INVALID_FS);
 
    type File_Descriptor_With_Error is new Integer range -1 .. 255;
    subtype File_Descriptor is File_Descriptor_With_Error range 0 .. 255;

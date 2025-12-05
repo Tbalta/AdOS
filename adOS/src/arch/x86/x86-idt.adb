@@ -8,6 +8,9 @@ with Ada.Interrupts.Names;    use Ada.Interrupts.Names;
 with Syscall;
 with x86.vmm;
 with Ada.Unchecked_Conversion;
+with x86.Port_IO;
+with Programmable_Interval_Timer;
+
 package body x86.idt is
    pragma Suppress (Index_Check);
    pragma Suppress (Overflow_Check);
@@ -93,7 +96,7 @@ package body x86.idt is
       for i in error_vector_t'Range loop
          add_entry (i, error_vector (i), 8, 0, trap_gate_32_bits);
       end loop;
-      add_entry (TIMER_INTERRUPT, timer_callback'Address, 8, 0, interrupt_32_bits);
+      add_entry (TIMER_INTERRUPT, timer_callback'Address, 8, 3, interrupt_32_bits);
       add_entry (SYSCALL_INTERRUPT, syscall'Address, 8, 3, interrupt_32_bits);
       idt_ptr.base := interrupt_vector'Address;
       idt_ptr.limit := interrupt_vector'Size / 8 - 1;
@@ -101,6 +104,14 @@ package body x86.idt is
       Logger.Log_Info ("idt = size: " & idt_ptr.limit'Image & " base: " & idt_ptr.base'Image);
       load_idt (idt_ptr);
    end init_idt;
+
+   procedure handle_timer is
+      procedure outb is new x86.Port_Io.Outb(Unsigned_8);
+   begin
+      outb (x86.Port_Io.Port_Address (16#20#), 16#20#);
+      Programmable_Interval_Timer.Handle_Systick;
+
+   end handle_timer;
 
    procedure handler (stf : access stack_frame) is
       interrupt_code : Unsigned_32 renames stf.interrupt_code;
@@ -116,25 +127,20 @@ package body x86.idt is
       process_CR3    : x86.vmm.CR3_register := x86.vmm.Get_Current_CR3;
       syscall_result : Syscall.Syscall_Result (signed => False);
    begin
-      --  SERIAL.send_line
-      --    ("error_code = "
-      --     & error_code'Image
-      --     & " interrupt_code = "
-      --     & interrupt_code'Image
-      --     & " eip = "
-      --     & eip'Image
-      --     & " cs = "
-      --     & cs'Image);
+      if interrupt_code = 128 then
+         Syscall.Handle_Syscall (eax, ebx, ecx, edx, esi, edi, process_CR3, syscall_result);
+         eax := syscall_result.Unsigned_Value;
+      end if;
 
       if interrupt_code = 14 then
          handle_page_fault (stf);
       end if;
 
-      if interrupt_code = 128 then
-         Syscall.Handle_Syscall (eax, ebx, ecx, edx, esi, edi, process_CR3, syscall_result);
+      if interrupt_code = 32 then
+         handle_timer;
       end if;
 
-      eax := syscall_result.Unsigned_Value;
+
 
       --  while True loop
       --     ASM ("hlt", Volatile => True);

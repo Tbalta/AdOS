@@ -27,6 +27,7 @@ with VGA;
 with VGA.GTF;
 with Interfaces;
 with VGA.CRTC;
+with Programmable_Interval_Timer;
 
 procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Address) is
    package MultiBoot_Conversion is new System.Address_To_Access_Conversions (multiboot_info);
@@ -178,6 +179,11 @@ begin
       Buffer (81 .. 80 * 2) := (others => (c => 'E', attribute => 16#F#));
       --  close (fd);
    end;
+   
+   Programmable_Interval_Timer.set_timer_period (10);
+   -- ?? sti here
+   System.Machine_Code.Asm (Template => "sti", Volatile => True);
+   PIC.Clear_Mask (0);
 
    -----------------
    -- ELF Loading --
@@ -187,7 +193,8 @@ begin
       FD             : File_Descriptor_With_Error := FD_ERROR;
       Program_Header : ELF.ELF_Header;
    begin
-      FD := open ("bin/test.elf", 0);
+      --  FD := open ("bin/test.elf", 0);
+      FD := open ("bin/snake.elf", 0);
       if FD = FD_ERROR then
          Logger.Log_Error ("Error opening file");
          goto Init_End;

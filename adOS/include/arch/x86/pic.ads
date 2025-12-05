@@ -14,10 +14,12 @@
 with System.Storage_Elements; use System.Storage_Elements;
 with System;                  use System;
 with x86.Port_IO;
+with Interfaces;             use Interfaces;
 
 package pic is
    pragma Preelaborate;
    procedure init;
+   procedure Clear_Mask (irq : Integer);
 
 private
    type PIT_PORT is (MASTER_CMD, MASTER_DATA, SLAVE_CMD, SLAVE_DATA);

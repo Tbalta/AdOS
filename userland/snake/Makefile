@@ -6,9 +6,9 @@ CFLAGS = -ffreestanding -O0 -nostdlib -fno-builtin -Wall -Wextra -m32  -ffunctio
 
 BIN_DIR = ../bin
 
-all: test
+all: snake
 
-test: $(OBJ)
+snake: $(OBJ)
 	$(CC) -o $(BIN_DIR)/$@.elf $(OBJ) $(CFLAGS)
 
 clean:

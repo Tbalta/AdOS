@@ -1,7 +1,7 @@
 
 BIN_DIR = bin
 
-PROJECTS = test
+PROJECTS = libc test snake
 
 PROJECTS_CLEAN = $(PROJECTS:%=%.clean)
 

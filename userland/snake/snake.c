@@ -13,35 +13,29 @@ bool set_vga_mode (int width, int height, int color_depth)
     int color = open("vga_color_depth", 0);
     int vga_mode = open("vga_mode", 0);
     bool success = true;
-    int tty = open("tty0", 0);
 
     if (vga_width == -1 || vga_height == -1 || color == -1 || vga_mode == -1){
         success = false;
-        write (tty, "Something went wrong1", 22);
         goto set_vga_mode_close;
     }
     
     if (write (vga_height, &height, sizeof (int)) == -1){
-        write (tty, "Something went wrong2", 22);
         success = false;
         goto set_vga_mode_close;
     }
 
     if (write (color, &color_depth, sizeof (int)) == -1){
-        write (tty, "Something went wrong3", 22);
         success = false;
         goto set_vga_mode_close;
     }
     
     if (write (vga_width, &width, sizeof (int)) == -1){
-        write (tty, "Something went wrong4", 22);
         success = false;
         goto set_vga_mode_close;
     }
 
     int vga_graphic = 1;
     if (write (vga_mode, &vga_graphic, sizeof (int)) == -1){
-        write (tty, "Something went wrong5", 22);
         success = false;
         goto set_vga_mode_close;
     }
@@ -66,34 +60,74 @@ set_vga_mode_close:
     return success;
 }
 
+void *memset(void *s, char c, size_t n)
+{
+	char *p = s;
+
+	for (size_t i = 0; i < n; ++i)
+		p[i] = c;
+
+	return s;
+}
+
+
+void draw_box (void *buffer, int x, int y, int w, int h)
+{
+    int start = (y * 320) + x;
+
+    for (int row = 0; row < h; row++)
+    {
+        int line_start = start + (row * 320);
+        memset (buffer + line_start, 70, w );
+    }
+}
+
 int _start() {
-    int tty = 0;
     if (!set_vga_mode (320, 200, 256))
     {
         while (true)
         {
+            /* code */
         }
     }
     int vga = open("vga_frame_buffer", 0);
-    
-    unsigned char vga_line[320] = {0};
-    char bmp_header[14];
-    char read_buffer[100];
-    
-    
-    int ados = open("ados.bmp", 0);
-    read (ados, bmp_header, sizeof (bmp_header));
-    
-    int start = *(int*)(bmp_header + 10);
-    int n = snprintf (read_buffer, sizeof(read_buffer), "bmp_start: %d\n", start);
-    write(tty, read_buffer, n);
-    lseek (ados, start, SEEK_SET);
-    
     char *vga_buff = mmap(NULL, 320*200, 0, 0, vga, 0);
-    for (int i = 0; i < 200; i++)
+
+    int systick_fd = open("systick", 0);
+    
+    int systick = 0;
+    int tick = 0;
+    int x = 0;
+    int y = 10;
+    int direction = 1;
+    while (1)
     {
-        int count = read(ados, vga_buff + (i * 320), sizeof(vga_line));
+        do
+        {
+            read(systick_fd, &systick, sizeof (systick));
+        } while (systick % 50 != 0);
+
+        memset (vga_buff, 30, 320 * 200);
+        draw_box (vga_buff, x, y, 30, 30);
+
+        if (direction < 0)
+        {
+            if (x <= 0)
+            {
+                direction = -direction;
+            }
+        } else
+        {
+            if (x + 30 > 320)
+            {
+                direction = -direction;
+            }
+        }
+        
+        x += direction;
+        tick++;
     }
+
 
     while (1)
     {
