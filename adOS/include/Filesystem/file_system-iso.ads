@@ -1,11 +1,3 @@
-------------------------------------------------------------------------------
---                                   AdOS                                   --
---                                                                          --
---  File    : iso.ads                                                       --
-------------------------------------------------------------------------------
-
---  This package provide basic ISO9660 filesystem support.
---  Only read-only access is supported.
 with Interfaces;   use Interfaces;
 with Interfaces.C; use Interfaces.C;
 with System;
@@ -25,7 +17,7 @@ is
 
    generic
       type Read_Type is private;
-     function read (fd : Driver_File_Descriptor; Buffer : out Read_Type) return Integer;
+   function read (fd : Driver_File_Descriptor; Buffer : access Read_Type) return Integer;
 
    function seek (fd : Driver_File_Descriptor; offset : off_t; wh : whence) return off_t;
    function close (fd : Driver_File_Descriptor) return Integer;

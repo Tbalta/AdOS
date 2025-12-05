@@ -65,6 +65,23 @@ package Interfaces is
    --  Note: we use Long_Long_Long_Integer instead of literal bounds to allow
    --  this unit to be compiled with compilers not supporting 128-bit integers.
    --  We do not put a confirming size clause of 128 bits for the same reason.
+   type Unsigned_2 is mod 2 ** 2;
+   for Unsigned_2'Size use 2;
+
+   type Unsigned_3 is mod 2 ** 3;
+   for Unsigned_3'Size use 3;
+
+   type Unsigned_4 is mod 2 ** 4;
+   for Unsigned_4'Size use 4;
+
+   type Unsigned_5 is mod 2 ** 5;
+   for Unsigned_5'Size use 5;
+
+   type Unsigned_6 is mod 2 ** 6;
+   for Unsigned_6'Size use 6;
+
+   type Unsigned_10 is mod 2 ** 10;
+   for Unsigned_10'Size use 10;
 
    type Unsigned_8 is mod 2 ** 8;
    for Unsigned_8'Size use  8;

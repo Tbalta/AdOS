@@ -1,9 +1,27 @@
+------------------------------------------------------------------------------
+--                                   PIC                                    --
+--                                                                          --
+--                                 B o d y                                  --
+-- (c) 2025 Tanguy Baltazart                                                --
+-- License : See LICENCE.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
+--  TODO: This unit needs to be revised to add PIC register records.
 with Interfaces; use Interfaces;
 
-with x86.Port_IO;
 
-package body pic is
+package body pic
+is
+   ---------
+   -- Rep --
+   ---------
+   function Rep (P : PIT_PORT) return x86.Port_IO.Port_Address
+   is (x86.Port_IO.Port_Address (PIT_PORT'Enum_Rep (P)));
 
+   ----------
+   -- Init --
+   ----------
    procedure init is
       ICW4    : constant Unsigned_8 := 16#01#;
       SINGLE  : constant Unsigned_8 := 16#02#;

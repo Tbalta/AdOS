@@ -1,12 +1,41 @@
 with File_System.ISO;
 with File_System.SERIAL;
-
+with File_System.VGA;
+with System.Storage_Elements; use System.Storage_Elements;
 package body File_System is
+
+   function To_Upper (str : String) return String is
+      result : String := str;
+   begin
+      for I in result'Range loop
+         if result (I) in 'a' .. 'z' then
+            result (I) := Character'Val (Character'Pos (result (I)) - 32);
+         end if;
+      end loop;
+      return result;
+   end To_Upper;
+
+   function IndexOfString (str : String; c : Character) return Positive is
+      i : Positive := str'First;
+   begin
+      while i in str'Range and then str (i) /= c and then str (i) /= Character'Val (0) loop
+         i := i + 1;
+      end loop;
+      return i;
+   end IndexOfString;
+
+   function Min (a, b : Integer) return Integer
+   is (if (a < b) then a else b);
 
    function Is_File_Descriptor (fd : Integer) return Boolean is
    begin
       return fd in Integer (File_Descriptor'First) .. Integer (File_Descriptor'Last);
    end Is_File_Descriptor;
+
+   function Is_Valid_Whence (wh : Integer) return Boolean is
+   begin
+      return Integer'Pos (wh) in whence'Pos (SEEK_SET) .. whence'Pos (SEEK_END);
+   end Is_Valid_Whence;
 
    function Add_File
      (File_System : File_System_Type; File_System_Decriptor : Driver_File_Descriptor_With_Error)
@@ -34,6 +63,9 @@ package body File_System is
          when ISO_FS =>
             return File_System.ISO.open (File_Path, flag);
 
+         when VGA_FS =>
+            return File_System.VGA.open (File_Path, flag);
+
          when others =>
             return DRIVER_FD_ERROR;
       end case;
@@ -44,7 +76,7 @@ package body File_System is
       FD        : File_Descriptor_With_Error := FD_ERROR;
    begin
 
-      for File_System in SERIAL_FS .. ISO_FS loop
+      for File_System in SERIAL_FS .. VGA_FS loop
          Driver_FD := Open (File_System, File_Path, Flag);
 
          if (Driver_FD /= DRIVER_FD_ERROR) then
@@ -58,7 +90,7 @@ package body File_System is
 
    end open;
 
-   function read (fd : File_Descriptor; Buffer : out Read_Type) return Integer is
+   function read (fd : File_Descriptor; Buffer : access Read_Type) return Integer is
       Result : Integer := -1;
       File   : VFS_File;
 
@@ -85,6 +117,7 @@ package body File_System is
 
    function write (fd : File_Descriptor; Buffer : access Write_Type) return Integer is
       function Serial_Write is new File_System.SERIAL.write (Write_Type);
+      function VGA_Write is new File_System.VGA.write (Write_Type);
 
       File : VFS_File := Descriptors (fd);
    begin
@@ -98,6 +131,9 @@ package body File_System is
 
          when ISO_FS =>
             return -1;
+
+         when VGA_FS =>
+            return VGA_Write (File.File_System_Decriptor, Buffer);
 
          when others =>
             return -1;
@@ -146,6 +182,10 @@ package body File_System is
 
          when ISO_FS =>
             Result := File_System.ISO.close (File.File_System_Decriptor);
+         
+         when VGA_FS =>
+            Result := File_System.VGA.close (File.File_System_Decriptor);
+
 
          when others =>
             Result := -1;
@@ -157,5 +197,37 @@ package body File_System is
 
       return Result;
    end close;
+
+   procedure close (fd : File_Descriptor) is 
+      Result : Integer;
+      pragma Unreferenced (Result);
+   begin
+      Result := close (fd);
+   end close;
+
+
+   function mmap (fd : File_Descriptor; size : Storage_Count) return System.Address is
+      File : VFS_File := Descriptors (fd);
+   begin
+      if not File.Valid then
+         return System.Null_Address;
+      end if;
+
+      case File.File_System is
+         when SERIAL_FS =>
+            return System.Null_Address;
+
+         when ISO_FS =>
+            return System.Null_Address;
+
+         when VGA_FS =>
+            return File_System.VGA.mmap (File.File_System_Decriptor, size);
+
+         when others =>
+            return System.Null_Address;
+      end case;
+
+   end mmap;
+
 
 end File_System;

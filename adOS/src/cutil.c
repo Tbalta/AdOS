@@ -57,6 +57,6 @@ void PANIC(const char *msg)
 void  handler(volatile struct stackframe_t frame)
 {
     extern void ada_interrupt_handler(volatile struct stackframe_t *frame);
-    LOG("Interrupt %d occurred at EIP: 0x%x", frame.int_no, frame.eip);
+    // LOG("Interrupt %d occurred at EIP: 0x%x", frame.int_no, frame.eip);
     ada_interrupt_handler(&frame);
 }

@@ -116,15 +116,15 @@ package body x86.idt is
       process_CR3    : x86.vmm.CR3_register := x86.vmm.Get_Current_CR3;
       syscall_result : Syscall.Syscall_Result (signed => False);
    begin
-      SERIAL.send_line
-        ("error_code = "
-         & error_code'Image
-         & " interrupt_code = "
-         & interrupt_code'Image
-         & " eip = "
-         & eip'Image
-         & " cs = "
-         & cs'Image);
+      --  SERIAL.send_line
+      --    ("error_code = "
+      --     & error_code'Image
+      --     & " interrupt_code = "
+      --     & interrupt_code'Image
+      --     & " eip = "
+      --     & eip'Image
+      --     & " cs = "
+      --     & cs'Image);
 
       if interrupt_code = 14 then
          handle_page_fault (stf);

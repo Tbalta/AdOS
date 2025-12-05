@@ -11,24 +11,30 @@ package body SERIAL is
    procedure outb is new x86.Port_IO.Outb (Unsigned_8);
    function inb is new x86.Port_IO.Inb (Unsigned_8);
 
+   procedure Write_COM1_Transmit_Buffer is new
+     x86.Port_IO.Write_Port_8 (COM1, Interfaces.Unsigned_8);
+
    procedure set_baud_rate (serial_divisor : Divisor) is
+      use all type x86.Port_IO.Port_Address;
+
       divisor_low  : Interfaces.Unsigned_8;
       divisor_high : Interfaces.Unsigned_8;
-      port         : constant System.Address := To_Address (16#3F8#);
+      port         : constant x86.Port_IO.Port_Address := 16#3F8#;
    begin
       divisor_low := Unsigned_8 (serial_divisor and 16#FF#);
       divisor_high := Unsigned_8 (Shift_Right (serial_divisor, 8) and 16#FF#);
-      outb (port + Storage_Offset (4), 16#80#);
-      outb (port + Storage_Offset (1), divisor_low);
-      outb (port + Storage_Offset (2), divisor_high);
-      outb (port + Storage_Offset (4), 16#03#);
-      outb (port + Storage_Offset (3), 16#47#);
+      outb (port + 4, 16#80#);
+      outb (port + 1, divisor_low);
+      outb (port + 2, divisor_high);
+      outb (port + 4, 16#03#);
+      outb (port + 3, 16#47#);
    end set_baud_rate;
 
    function can_send_byte return Standard.Boolean is
-      port : constant System.Address := To_Address (16#3F8#);
+      use all type x86.Port_IO.Port_Address;
+      port : constant x86.Port_IO.Port_Address := 16#3F8#;
    begin
-      return ((Inb (port + Storage_Offset (5)) and 16#20#) = 16#20#);
+      return ((Inb (port + 5) and 16#20#) = 16#20#);
    end can_send_byte;
 
    procedure send_string (data : String) is
@@ -58,17 +64,19 @@ package body SERIAL is
          send_char (hex_array (Integer (number mod 16) + 1));
       end recur;
    begin
+      send_string ("0x");
       if data = 0 then
          send_char ('0');
       end if;
       recur (data);
+      send_string (" ");
    end send_hex;
 
    procedure send_char (c : Character) is
-      port : constant System.Address := To_Address (16#3F8#);
    begin
-      Outb (port + Storage_Offset (0), Character'Pos (c));
+      Write_COM1_Transmit_Buffer (Character'Pos (c));
    end send_char;
+
    procedure serial_init (rate : Baudrate) is
    begin
       while not can_send_byte loop
@@ -78,9 +86,8 @@ package body SERIAL is
    end serial_init;
 
    procedure send_raw_byte (b : Interfaces.Unsigned_8) is
-      port : constant System.Address := To_Address (16#3F8#);
    begin
-      Outb (port + Storage_Offset (0), b);
+      Write_COM1_Transmit_Buffer (b);
    end send_raw_byte;
 
    procedure send_cchar (c : Interfaces.C.char) is

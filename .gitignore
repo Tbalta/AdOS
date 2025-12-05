@@ -20,3 +20,4 @@ dump.txt
 *.deps
 entry
 obj/*
+test.txt

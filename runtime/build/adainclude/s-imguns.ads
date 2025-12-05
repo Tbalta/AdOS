@@ -37,6 +37,7 @@ with System.Unsigned_Types;
 
 package System.Img_Uns is
    pragma Pure;
+   subtype Unsigned is Unsigned_Types.Unsigned;
 
    procedure Image_Unsigned
      (V : System.Unsigned_Types.Unsigned;

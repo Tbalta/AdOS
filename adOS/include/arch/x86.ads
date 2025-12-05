@@ -7,7 +7,7 @@
 with System;
 
 package x86 is
-   pragma Preelaborate (x86);
+   pragma Pure;
 
    subtype Physical_Address is System.Address;
    subtype Virtual_Address is System.Address;

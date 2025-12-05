@@ -20,7 +20,7 @@ package body x86.Userspace is
       Asm (
          "mov $10, %%eax"           & LF &  
          "push  $(4 * 8) | 3"       & LF &  -- New Data Segment
-         "push %0"               & LF &  -- New Stack Pointer
+         "push %0"                  & LF &  -- New Stack Pointer
          "pushf"                    & LF &  -- EFLAGS
          "push $(3 * 8) | 3"        & LF &  -- CS
          "push %1"                  & LF &  -- Entry_Point

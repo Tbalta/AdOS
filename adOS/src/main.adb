@@ -1,4 +1,5 @@
 with SERIAL;
+with VGA.GTF;
 with x86.gdt;
 with x86.idt;
 with x86.pmm;                 use x86.pmm;
@@ -23,6 +24,10 @@ with Log;
 with Ada.Assertions;
 with Util;
 with VGA;
+with VGA.GTF;
+with Interfaces;
+with VGA.CRTC;
+
 procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Address) is
    package MultiBoot_Conversion is new System.Address_To_Access_Conversions (multiboot_info);
    info : access multiboot_info := MultiBoot_Conversion.To_Pointer (multiboot_address);
@@ -101,7 +106,7 @@ begin
       FD : File_Descriptor_With_Error := FD_ERROR;
 
       subtype Read_Type is String (1 .. 512);
-      buffer : Read_Type;
+      buffer : aliased Read_Type;
       read   : Integer;
       function Read_Char is new File_System.read (Read_Type => Read_Type);
    begin
@@ -112,7 +117,7 @@ begin
          goto Init_End;
       end if;
 
-      read := Read_Char (FD, buffer);
+      read := Read_Char (FD, buffer'Access);
       SERIAL.send_line ("read:" & buffer (1 .. read));
       if close (FD) = 0 then
          Logger.Log_Ok ("File closed successfully");
@@ -121,10 +126,58 @@ begin
       end if;
    end;
 
-   VGA.test;
-   while True loop
-      null;
-   end loop;
+   declare
+      use File_System;
+      fd : File_System.File_Descriptor_With_Error := FD_ERROR;
+
+      type vga_buffer is array (Integer range 1 .. 320 * 200) of Unsigned_8
+         with Pack => True;
+      package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
+
+      Buffer : access vga_buffer := null;
+      count : Integer := 0;
+   begin
+      VGA.Set_Graphic_Mode (320, 200, 256);
+      VGA.load_palette ("vga-gui.hex");
+      VGA.Save_Frame_Buffer;
+      Buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
+      Buffer (1 .. 320 * 200) := (others => 5);
+      Buffer (1 .. 320 * 150) := (others => 70);
+      Buffer (1 .. 320 * 100) := (others => 90);
+      Buffer (1 .. 320 * 50)  := (others => 250);
+   end;
+
+   Logger.Log_Info ("Setting text mode");
+   declare
+      type VGA_CHAR is record
+         c : Character;
+         attribute : Unsigned_8;
+      end record;
+
+      for VGA_CHAR use record
+         c at 0 range 0 .. 7;
+         attribute at 1 range 0 .. 7;
+      end record;
+
+      use File_System;
+      type vga_buffer is array (Positive  range 1 .. 80 * 25) of aliased VGA_CHAR
+         with Pack => True;
+      package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
+      Buffer : access vga_buffer := null;
+
+      fd : File_System.File_Descriptor_With_Error := FD_ERROR;
+      count : Integer := 0;
+   begin
+      VGA.Restore_Frame_Buffer;
+      VGA.Set_Text_Mode (80, 25, 16);
+      --  VGA.test (80, 25);
+      VGA.load_palette ("vga-tui.hex");
+      --  fd := open ("vga_frame_buffer", 0);
+      Buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
+      Buffer (1 .. 80) := (others => (c => 'H', attribute => 16#F#));
+      Buffer (81 .. 80 * 2) := (others => (c => 'E', attribute => 16#F#));
+      --  close (fd);
+   end;
 
    -----------------
    -- ELF Loading --

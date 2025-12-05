@@ -69,8 +69,7 @@ package body x86.gdt is
       gdt_pointer.limit := (Global_Descriptor_Table'Size - 1) / 8;
       gdt_pointer.base := Global_Descriptor_Table'Address;
 
-      Logger.Log_Info
-        ("gdt_pointer =" & gdt_pointer'Image);
+      Logger.Log_Info ("gdt_pointer =" & gdt_pointer'Image);
 
       for i in Global_Descriptor_Table'Range loop
          -- !format off

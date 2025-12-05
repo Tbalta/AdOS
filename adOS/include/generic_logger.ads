@@ -1,7 +1,7 @@
 generic
    with procedure Print_Function (Message : in String);
 package Generic_Logger is
-   pragma Preelaborate;
+   pragma Pure;
 
    ESC    : constant Character := Character'Val (16#1B#);
    RED    : constant String := ESC & "[31m";

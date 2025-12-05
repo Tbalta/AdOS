@@ -1,6 +1,7 @@
 with Interfaces;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
+with x86.Port_IO;
 
 package Atapi is
    pragma Preelaborate;
@@ -21,8 +22,8 @@ private
    for ATA_CONTROLLER use (ATA_SECONDARY => 16#170#, ATA_PRIMARY => 16#1F0#);
    type ATA_DEVICE is (ATA_MASTER, ATA_SLAVE);
    for ATA_DEVICE use (ATA_MASTER => 0, ATA_SLAVE => 16#10#);
-   PRIMARY_DCR   : constant System.Address := To_Address (16#3F6#);
-   SECONDARY_DCR : constant System.Address := To_Address (16#376#);
+   PRIMARY_DCR   : constant x86.Port_IO.Port_Address := 16#3F6#;
+   SECONDARY_DCR : constant x86.Port_IO.Port_Address := 16#376#;
    CD_BLOCK_SIZE : constant Interfaces.Unsigned_16 := 2_048;
 
    sector_data : aliased SECTOR_BUFFER := (others => 0);
@@ -47,10 +48,10 @@ private
 
    procedure waitForDrive (Controller : ATA_CONTROLLER);
    procedure selectDevice (Controller : ATA_CONTROLLER; Device : ATA_DEVICE);
-   function getDcr (controller : ATA_CONTROLLER) return System.Address
+   function getDcr (controller : ATA_CONTROLLER) return x86.Port_IO.Port_Address
    is (if controller = ATA_PRIMARY then PRIMARY_DCR else SECONDARY_DCR);
-   function getReg (controller : ATA_CONTROLLER; reg : ATA_REG) return System.Address
-   is (To_Address (ATA_CONTROLLER'Enum_Rep (controller)) + Storage_Offset (reg));
+   function getReg (controller : ATA_CONTROLLER; reg : ATA_REG) return x86.Port_IO.Port_Address
+   is (x86.Port_IO.Port_Address (ATA_CONTROLLER'Enum_Rep (controller) +  reg));
    function isAtapiDevice (Controller : ATA_CONTROLLER; Device : ATA_DEVICE) return Boolean;
 
    type SCSI_PACKET is record

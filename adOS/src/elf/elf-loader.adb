@@ -3,10 +3,10 @@ with SERIAL;
 package body ELF.Loader is
 
    function Prepare (File : in File_System.File_Descriptor) return ELF_Header is
-      Header     : ELF_Header;
+      Header     : aliased ELF_Header;
       Read_Count : Integer;
    begin
-      Read_Count := Read_Elf_Header (File, Header);
+      Read_Count := Read_Elf_Header (File, Header'Access);
       pragma Assert (Read_Count = ELF_Header'Size / 8);
       return Header;
    end Prepare;
@@ -19,12 +19,12 @@ package body ELF.Loader is
       Read_Count : Integer;
       type Segment_Data is array (1 .. Program_Header.p_filesz) of Interfaces.Unsigned_8;
       function Read_Segment_Data is new File_System.read (Segment_Data);
-      Data       : Segment_Data;
+      Data       : aliased Segment_Data;
 
       function Map_Segment_Data is new x86.vmm.Map_Data (Segment_Data);
    begin
       File_System.Seek (File, Natural (Program_Header.p_offset), File_System.SEEK_SET);
-      Read_Count := Read_Segment_Data (File, Data);
+      Read_Count := Read_Segment_Data (File, Data'Access);
       SERIAL.send_line
         ("Read " & Read_Count'Image & " bytes for segment at " & Program_Header.p_vaddr'Image);
 
@@ -51,7 +51,7 @@ package body ELF.Loader is
       Header : in ELF_Header;
       CR3    : in out x86.vmm.CR3_register)
    is
-      Program_Header : ELF_Program_Header;
+      Program_Header : aliased ELF_Program_Header;
       Read_Count     : Integer;
       Seek_Result    : File_System.off_t;
    begin
@@ -59,7 +59,7 @@ package body ELF.Loader is
       pragma Assert (Seek_Result /= -1);
 
       for i in 1 .. Header.e_phnum loop
-         Read_Count := Read_Elf_Program_Header (File, Program_Header);
+         Read_Count := Read_Elf_Program_Header (File, Program_Header'Access);
          pragma Assert (Read_Count = ELF_Program_Header'Size / 8);
 
          SERIAL.send_line

@@ -4,8 +4,9 @@ with Interfaces.C;            use Interfaces.C;
 with System.Storage_Elements; use System.Storage_Elements;
 with Aligned_System_Address;
 with config;                  use config;
-
+with Log;
 package body x86.pmm is
+   package Logger renames Log.Serial_Logger;
 
    function check (cond : Boolean; msg : String) return Boolean is
    begin
@@ -49,6 +50,7 @@ package body x86.pmm is
          end if;
          Offset := Offset + Natural (Headers (Index).length) / PMM_PAGE_SIZE;
       end loop;
+      Logger.Log_Error ("Address_To_Offset_Unchecked - unable to find Index for " & addr'Image);
       return -1;
    end Address_To_Offset_Unchecked;
 
@@ -106,8 +108,8 @@ package body x86.pmm is
       Offset : Natural := Address_To_Offset (addr);
 
    begin
-      SERIAL.send_line
-        ("PMM: Freeing page at " & To_Address (addr)'Image & " with offset " & Offset'Image);
+      --  SERIAL.send_line
+      --    ("PMM: Freeing page at " & To_Address (addr)'Image & " with offset " & Offset'Image);
       if Offset = -1 then
          return;
       end if;

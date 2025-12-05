@@ -83,6 +83,15 @@ sudo cp bin/gnatformat /usr/local/bin
 ```
 
 # Additional resources used for development
+# Ada
+https://www.adaic.org/resources/add_content/standards/22rm/rm-bar.pdf <br />
+# Osdev
 https://github.com/cirosantilli/x86-bare-metal-examples <br />
 https://github.com/ajxs/cxos/ <br />
 https://wiki.osdev.org/Ada_Bare_bones <br />
+# VGA
+http://www.mcamafia.de/pdf/ibm_vgaxga_trm2.pdf
+http://www.osdever.net/FreeVGA/vga/crtcreg.htm
+https://www.worldradiohistory.com/Archive-Byte/80s/Byte-1988-11-IBM-Issue.pdf
+https://wiki.osdev.org/Video_Signals_And_Timing
+https://glenwing.github.io/docs/VESA-GTF-1.1.pdf

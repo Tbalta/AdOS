@@ -37,7 +37,7 @@ generic
    type Object (<>) is limited private;
 
 package System.Address_To_Access_Conversions is
-   pragma Preelaborate;
+   pragma Pure;
 
    pragma Compile_Time_Warning
      (Object'Unconstrained_Array,

@@ -1,11 +1,3 @@
-------------------------------------------------------------------------------
---                                   AdOS                                   --
---                                                                          --
---  File    : iso.ads                                                       --
-------------------------------------------------------------------------------
-
---  This package provide basic ISO9660 filesystem support.
---  Only read-only access is supported.
 with Interfaces;   use Interfaces;
 with Interfaces.C; use Interfaces.C;
 with System;
@@ -35,7 +27,7 @@ is
 
 
 private
-
+   
    type File_Information is record
       used : Boolean := False;
       tty  : Positive;
