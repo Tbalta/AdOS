@@ -14,9 +14,13 @@ with Interfaces;             use Interfaces;
 with System;
 with System.Machine_Code;
 with VGA.Graphic_Controller; use VGA.Graphic_Controller;
+with VGA.Graphic_Controller.Registers; use VGA.Graphic_Controller.Registers;
 with VGA.Sequencer;          use VGA.Sequencer;
+with VGA.Sequencer.Registers;          use VGA.Sequencer.Registers;
 with VGA.CRTC;               use VGA.CRTC;
+with VGA.CRTC.Registers;
 with VGA.Attribute;          use VGA.Attribute;
+with VGA.Attribute.Registers;          use VGA.Attribute;
 with VGA.DAC;                use VGA.DAC;
 with VGA.GTF;                use VGA.GTF;
 with Util;
@@ -38,9 +42,9 @@ package body VGA is
    begin
       Logger.Log_Info (To_U8 (Read_Miscellaneous_Output_Register)'Image);
       Dump_Sequencer_Registers;
-      Dump_CRTC_Register;
+      VGA.CRTC.Registers.Dump;
       Dump_Graphic_Controller_Registers;
-      Dump_Attribute_Registers;
+      VGA.Attribute.Registers.Dump_Attribute_Registers;
    end Dump_Registers;
 
    -----------------------
@@ -103,12 +107,12 @@ package body VGA is
    begin
       -- Disable IPAS to load color values to register
       Reset_Attribute_Register;
-      Select_Attribute_Register (16#0#);
+      VGA.Attribute.Registers.Select_Attribute_Register (16#0#);
       VGA.Dac.Load_File (p);
 
       -- Reenable IPAS for normal operations
       Reset_Attribute_Register;
-      Select_Attribute_Register (16#20#);
+      VGA.Attribute.Registers.Select_Attribute_Register (16#20#);
    end Load_Palette;
 
    ----------------------
@@ -193,23 +197,23 @@ package body VGA is
    ------------------------------------
    -- Prepare_CRTC_For_Configuration --
    ------------------------------------
-   procedure Prepare_CRTC_For_Configuration is
-   begin
-      Write_End_Horizontal_Blanking_Register ((Display_Enable_Skew => 0, others => <>));
-      Write_End_Horizontal_Retrace_Register ((HRD => 0, others => <>));
-      Write_Vertical_Retrace_End_Register
-        ((Clear_Vertical_Interrupt  => False,
-          Enable_Vertical_Interrupt => False,
-          Select_5_Refresh_Cycles   => False,
-          Protect_Register          => False,
-          others                    => 0));
-      Write_Maximum_Scan_Line_Register ((Double_Scanning => False, others => <>));
-      Write_Start_Address_High_Register (0);
-      Write_Start_Address_Low_Register (0);
+   --  procedure Prepare_CRTC_For_Configuration is
+   --  begin
+   --     Write_End_Horizontal_Blanking_Register ((Display_Enable_Skew => 0, others => <>));
+   --     Write_End_Horizontal_Retrace_Register ((HRD => 0, others => <>));
+   --     Write_Vertical_Retrace_End_Register
+   --       ((Clear_Vertical_Interrupt  => False,
+   --         Enable_Vertical_Interrupt => False,
+   --         Select_5_Refresh_Cycles   => False,
+   --         Protect_Register          => False,
+   --         others                    => 0));
+   --     Write_Maximum_Scan_Line_Register ((Double_Scanning => False, others => <>));
+   --     Write_Start_Address_High_Register (0);
+   --     Write_Start_Address_Low_Register (0);
 
-      Write_Cursor_Location_High_Register (0);
-      Write_Cursor_Location_Low_Register (0);
-   end Prepare_CRTC_For_Configuration;
+   --     Write_Cursor_Location_High_Register (0);
+   --     Write_Cursor_Location_Low_Register (0);
+   --  end Prepare_CRTC_For_Configuration;
 
    function Find_Mode (Width, Height, Color_Depth : Positive; graphic_mode : Mode_Type) return VGA_Mode
    is
@@ -300,12 +304,12 @@ package body VGA is
 
       -- Disable IPAS to load color values to register
       Reset_Attribute_Register;
-      Select_Attribute_Register (16#0#);
+      VGA.Attribute.Registers.Select_Attribute_Register (16#0#);
       load_default_palette;
 
       -- Reenable IPAS for normal operations
       Reset_Attribute_Register;
-      Select_Attribute_Register (16#20#);
+      VGA.Attribute.Registers.Select_Attribute_Register (16#20#);
 
       Logger.Log_Ok ("mode " & Width'Image & "x" & Height'Image &  "x" & Color_Depth'image & " set");
    end Set_Graphic_Mode;
@@ -331,12 +335,12 @@ package body VGA is
 
       -- Disable IPAS to load color values to register
       Reset_Attribute_Register;
-      Select_Attribute_Register (16#0#);
+      VGA.Attribute.Registers.Select_Attribute_Register (16#0#);
       load_default_palette;
 
       -- Reenable IPAS for normal operations
       Reset_Attribute_Register;
-      Select_Attribute_Register (16#20#);
+      VGA.Attribute.Registers.Select_Attribute_Register (16#20#);
 
       Logger.Log_Ok ("mode " & Width'Image & "x" & Height'Image &  "x" & Color_Depth'image & " set");
    end Set_Text_Mode;
