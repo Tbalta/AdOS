@@ -84,11 +84,11 @@ bool set_vga_mode (int width, int height, int color_depth)
 {
     int vga_width = open("vga_width", 0);
     int vga_height = open("vga_height", 0);
-    int vga_graphic_mode = open("vga_graphic_mode", 0);
-    int vga_enable = open("vga_enable", 0);
+    int color = open("vga_color_depth", 0);
+    int vga_mode = open("vga_mode", 0);
     bool success = true;
 
-    if (vga_width == -1 || vga_height == -1 || vga_graphic_mode == -1 || vga_enable == -1){
+    if (vga_width == -1 || vga_height == -1 || color == -1 || vga_mode == -1){
         success = false;
         goto set_vga_mode_close;
     }
@@ -98,7 +98,7 @@ bool set_vga_mode (int width, int height, int color_depth)
         goto set_vga_mode_close;
     }
 
-    if (write (vga_graphic_mode, &color_depth, sizeof (int)) == -1){
+    if (write (color, &color_depth, sizeof (int)) == -1){
         success = false;
         goto set_vga_mode_close;
     }
@@ -108,8 +108,8 @@ bool set_vga_mode (int width, int height, int color_depth)
         goto set_vga_mode_close;
     }
 
-    int enable = 1;
-    if (write (vga_enable, &enable, sizeof (int)) == -1){
+    int vga_graphic = 1;
+    if (write (vga_mode, &vga_graphic, sizeof (int)) == -1){
         success = false;
         goto set_vga_mode_close;
     }
@@ -123,12 +123,12 @@ set_vga_mode_close:
         close (vga_height);
     }
 
-    if (vga_graphic_mode != -1){
-        close (vga_graphic_mode);
+    if (color != -1){
+        close (color);
     }
 
-    if (vga_enable != -1){
-        close (vga_enable);
+    if (vga_mode != -1){
+        close (vga_mode);
     }
 
     return success;
@@ -142,6 +142,7 @@ int _start() {
             /* code */
         }
     }
+    int vga = open("vga_frame_buffer", 0);
     
     unsigned char vga_line[320] = {0};
     char bmp_header[14];
@@ -157,7 +158,6 @@ int _start() {
     write(tty, read_buffer, n);
     lseek (ados, start, SEEK_SET);
     
-    int vga = open("vga_frame_buffer", 0);
     char *vga_buff = mmap(NULL, 320*200, 0, 0, vga, 0);
     for (int i = 0; i < 200; i++)
     {

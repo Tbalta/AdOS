@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
---                             VGA-ATTRIBUTE                                --
+--                        VGA-ATTRIBUTE-REGISTERS                           --
 --                                                                          --
 --                                 B o d y                                  --
 -- (c) 2025 Tanguy Baltazart                                                --
@@ -14,6 +14,19 @@ with SERIAL;
 with Interfaces; use Interfaces;
 
 package body VGA.Attribute.Registers is
+
+   ------------------------------
+   -- Dump_Attribute_Registers --
+   ------------------------------
+   procedure Dump_Attribute_Registers is
+   begin
+      SERIAL.send_line ("");
+      for I in Register_Array'Range loop
+         SERIAL.send_string (I'image & "-> ");
+         SERIAL.send_hex (Unsigned_32 (Register_Array (I)));
+         SERIAL.send_line ("");
+      end loop;
+   end Dump_Attribute_Registers;
 
    -------------------------------
    -- Select_Attribute_Register --
@@ -51,16 +64,6 @@ package body VGA.Attribute.Registers is
       Write_Address (Index);
       return Read;
    end Read_Register;
-
-   procedure Dump_Attribute_Registers is
-   begin
-      SERIAL.send_line ("");
-      for I in Register_Array'Range loop
-         SERIAL.send_string (I'image & "-> ");
-         SERIAL.send_hex (Unsigned_32 (Register_Array (I)));
-         SERIAL.send_line ("");
-      end loop;
-   end Dump_Attribute_Registers;
 
 
    ----------------------------------

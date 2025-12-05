@@ -140,13 +140,11 @@ begin
       VGA.Set_Graphic_Mode (320, 200, 256);
       VGA.load_palette ("vga-gui.hex");
       VGA.Save_Frame_Buffer;
-      fd := open ("vga_frame_buffer", 0);
       Buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
       Buffer (1 .. 320 * 200) := (others => 5);
       Buffer (1 .. 320 * 150) := (others => 70);
       Buffer (1 .. 320 * 100) := (others => 90);
       Buffer (1 .. 320 * 50)  := (others => 250);
-      close (fd);
    end;
 
    Logger.Log_Info ("Setting text mode");

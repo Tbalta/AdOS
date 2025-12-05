@@ -6,35 +6,24 @@ with File_System.SERIAL;
 with Log;
 with Ada.Unchecked_Conversion;
 
+with VGA; use VGA;
+
 package body File_System.VGA is
    package Logger renames Log.Serial_Logger;
-
-   function To_Upper (str : String) return String is
-      result : String := str;
-   begin
-      for I in result'Range loop
-         if result (I) in 'a' .. 'z' then
-            result (I) := Character'Val (Character'Pos (result (I)) - 32);
-         end if;
-      end loop;
-      return result;
-   end To_Upper;
-
-   function IndexOfString (str : String; c : Character) return Positive is
-      i : Positive := str'First;
-   begin
-      while i in str'Range and then str (i) /= c and then str (i) /= Character'Val (0) loop
-         i := i + 1;
-      end loop;
-      return i;
-   end IndexOfString;
-
-   function Min (a, b : Integer) return Integer
-   is (if (a < b) then a else b);
 
    ----------
    -- Open --
    ----------
+   procedure Start_VGA (File : File_Information) is
+   begin
+      Logger.Log_Info ("Starting: " & File'Image);
+      if File.Graphic_Mode then
+         Set_Graphic_Mode (Width => Integer (File.Width), Height => Integer (File.Height), Color_Depth => Integer (File.Color_Depth));
+      else
+         Set_Text_Mode (Width => Integer (File.Width), Height => Integer (File.Height), Color_Depth => Integer (File.Color_Depth));
+      end if;
+   end Start_VGA;
+
    function open (File_Path : Path; flag : Integer) return Driver_File_Descriptor_With_Error is
       FD : Driver_File_Descriptor_With_Error := DRIVER_FD_ERROR;
    begin
@@ -42,36 +31,35 @@ package body File_System.VGA is
          if not Descriptors (FRAME_BUFFER_FD).used then
             Logger.Log_Info ("vga_file opened");
             Descriptors (FRAME_BUFFER_FD).used   := True;
-            Descriptors (FRAME_BUFFER_FD).Width  := 320;
-            Descriptors (FRAME_BUFFER_FD).Height := 200;
             Descriptors (FRAME_BUFFER_FD).offset := 0;
+            Start_VGA (Descriptors (FRAME_BUFFER_FD));
             return FRAME_BUFFER_FD;
          end if;
-      elsif File_Path = "vga_height" then
-            return HEIGHT_FD;
       elsif File_Path = "vga_width" then
             return WIDTH_FD;
-      elsif File_Path = "vga_graphic_mode" then
-            return GRAPHIC_FD;
-      elsif File_Path = "vga_enable" then
-            return ENABLE_FD;
+      elsif File_Path = "vga_height" then
+            return HEIGHT_FD;
+      elsif File_Path = "vga_color_depth" then
+            return COLORS_FD;
+      elsif File_Path = "vga_mode" then
+            return MODE_FD;
       end if;
 
       return DRIVER_FD_ERROR;
    end open;
 
-   -----------------
-   -- SERIAL Read --
-   -----------------
+
+   ----------
+   -- Read --
+   ----------
    function read (fd : Driver_File_Descriptor; Buffer : out Read_Type) return Integer is
    begin
       return -1;
    end read;
 
-   -----------
-   -- Write --
-   -----------
-
+   ------------------------
+   -- Frame_Buffer_Write --
+   ------------------------
    function Frame_Buffer_Write (fd : Driver_File_Descriptor; Buffer : access Write_Type) return Integer
       is
          count : constant Storage_Count := Write_Type'Size / Storage_Unit;
@@ -103,11 +91,14 @@ package body File_System.VGA is
          return Integer (Write_Size);
       end Frame_Buffer_Write;
    
-   function Height_Write (fd : Driver_File_Descriptor; Height : access Write_Type) return Integer
+   ---------------------
+   -- Attribute_Write --
+   ---------------------
+   function Attribute_Write (fd : Driver_File_Descriptor; Buffer : access Write_Type) return Integer
    is
    begin
       if Descriptors (FRAME_BUFFER_FD).used then
-         Logger.Log_Error ("Height cannot be written while frame_buffer is open");
+         Logger.Log_Error ("VGA attributes cannot be set while frame_buffer is open");
          return -1;
       end if;
 
@@ -120,113 +111,31 @@ package body File_System.VGA is
       declare
          function To_U32 is new Ada.Unchecked_Conversion(Source => Write_Type, Target => Unsigned_32);
       begin
-         Logger.Log_Info ("Height: " & To_U32 (Height.all)'Image);
-         Descriptors (FRAME_BUFFER_FD).Height := Standard.VGA.Scan_Line_Count (To_U32 (Height.all));
+         case fd is
+            when WIDTH_FD =>
+               Descriptors (FRAME_BUFFER_FD).Width := Pixel_Count (To_U32 (Buffer.all));
+            when HEIGHT_FD =>
+               Descriptors (FRAME_BUFFER_FD).Height := Scan_Line_Count (To_U32 (Buffer.all));
+            when COLORS_FD =>
+               Descriptors (FRAME_BUFFER_FD).Color_Depth := To_U32 (Buffer.all);
+            when MODE_FD =>
+               Descriptors (FRAME_BUFFER_FD).Graphic_Mode := To_U32 (Buffer.all) = 1;
+            when others =>
+               Logger.Log_Error ("Invalid fd " & fd'Image);
+         end case;
       end;
 
       return Write_Type'Size / Storage_Unit;
-   end Height_Write;
-   
-
-
-   function Width_Write (fd : Driver_File_Descriptor; Width : access Write_Type) return Integer
-   is
-   begin
-      if Descriptors (FRAME_BUFFER_FD).used then
-            Logger.Log_Error ("Width cannot be written while frame_buffer is open");
-         return -1;
-      end if;
-
-      if Write_Type'Size /= Unsigned_32'Size then
-         Logger.Log_Error ("Invalid write size expected: " & Integer (Unsigned_32'Size)'Image & "bits got: " & Integer (Write_Type'Size)'Image);
-         return -1;
-      end if;
-
-      pragma Assert (Write_Type'Size = Unsigned_32'Size);
-      declare
-         function To_U32 is new Ada.Unchecked_Conversion(Source => Write_Type, Target => Unsigned_32);
-      begin
-         Descriptors (FRAME_BUFFER_FD).Width := Standard.VGA.Character_Count (To_U32 (Width.all));
-      end;
-      return Write_Type'Size / Storage_Unit;
-   end Width_Write;
-   
-   
-   function Graphic_Write (fd : Driver_File_Descriptor; Mode : access Write_Type) return Integer
-   is
-   begin
-      if Descriptors (FRAME_BUFFER_FD).used then
-         Logger.Log_Error ("Graphic mode cannot be set while frame_buffer is open");
-         return -1;
-      end if;
-
-      if Write_Type'Size /= Unsigned_32'Size then
-         Logger.Log_Error ("Invalid write size expected: " & Integer (Unsigned_32'Size)'Image & "bits got: " & Integer (Write_Type'Size)'Image);
-         return -1;
-      end if;
-
-      pragma Assert (Write_Type'Size = Unsigned_32'Size);
-      declare
-         function To_U32 is new Ada.Unchecked_Conversion(Source => Write_Type, Target => Unsigned_32);
-      begin
-         if To_U32 (Mode.all) = 0 then
-            Descriptors (FRAME_BUFFER_FD).Graphic_Mode := False;
-         else
-            Descriptors (FRAME_BUFFER_FD).Graphic_Mode := True;
-            Descriptors (FRAME_BUFFER_FD).Color_Depth := To_U32 (Mode.all);
-            Logger.Log_Info ("Color: " & To_U32 (Mode.All)'image);
-         end if;
-      end;
-
-      return Write_Type'Size / Storage_Unit;
-   end Graphic_Write;
-
-
-   function Enable_Write (fd : Driver_File_Descriptor; Mode : access Write_Type) return Integer
-   is
-      VGA_FILE : File_Information renames Descriptors (FRAME_BUFFER_FD);
-   begin
-      if Descriptors (FRAME_BUFFER_FD).used then
-         Logger.Log_Error ("Enable cannot be set while frame_buffer is open");
-         return -1;
-      end if;
-
-      if Write_Type'Size /= Unsigned_32'Size then
-         Logger.Log_Error ("Invalid write size expected: " & Integer (Unsigned_32'Size)'Image & " bits got: " & Integer (Write_Type'Size)'Image);
-         return -1;
-      end if;
-
-      pragma Assert (Write_Type'Size = Unsigned_32'Size);
-      declare
-         function To_U32 is new Ada.Unchecked_Conversion(Source => Write_Type, Target => Unsigned_32);
-      begin
-         if To_U32 (Mode.all) = 1 and then VGA_FILE.Graphic_Mode then
-            Standard.VGA.Set_Graphic_Mode (VGA_FILE.Width, VGA_FILE.Height, Integer (VGA_FILE.Color_Depth));
-            Standard.VGA.load_palette ("vga-gui.hex");
-         end if;
-      end;
-
-      return Write_Type'Size / Storage_Unit;
-   end Enable_Write;
+   end Attribute_Write;
 
    function write (fd : Driver_File_Descriptor; Buffer : access Write_Type) return Integer is
       function FB_Write is new Frame_Buffer_Write (Write_Type);
-      function H_Write is new Height_Write (Write_Type);
-      function W_Write is new Width_Write (Write_Type);
-      function G_Write is new Graphic_Write (Write_Type);
-      function E_Write is new Enable_Write (Write_Type);
-
+      function E_Write is new Attribute_Write (Write_Type);
    begin
       case fd is
          when FRAME_BUFFER_FD =>
             return FB_Write (fd, Buffer);
-         when HEIGHT_FD =>
-            return H_Write (fd, Buffer);
-         when WIDTH_FD =>
-            return W_Write (fd, Buffer);
-         when GRAPHIC_FD =>
-            return G_Write (fd, Buffer);
-         when ENABLE_FD =>
+         when HEIGHT_FD | WIDTH_FD | COLORS_FD | MODE_FD =>
             return E_Write (fd, Buffer);
          when others =>
             return -1;

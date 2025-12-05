@@ -27,6 +27,10 @@ package body VGA.Attribute is
       Register := Read_ISR1 (x86.Port_IO.Port_Address (16#03DA#));
    end Reset_Attribute_Register;
 
+
+   ----------------------------
+   -- Set_Attribute_For_Mode --
+   ----------------------------
    procedure Set_Attribute_For_Mode (mode : VGA_Mode) is
    begin
       Reset_Attribute_Register;

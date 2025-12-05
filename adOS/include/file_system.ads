@@ -53,4 +53,8 @@ private
    type File_Descriptor_Array is array (File_Descriptor) of VFS_File;
    Descriptors : File_Descriptor_Array := (others => <>);
 
+   function To_Upper (str : String) return String;
+   function IndexOfString (str : String; c : Character) return Positive;
+   function Min (a, b : Integer) return Integer;
+
 end File_System;

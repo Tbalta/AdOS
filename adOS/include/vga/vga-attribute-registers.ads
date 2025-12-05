@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
---                             VGA-ATTRIBUTE                                --
+--                        VGA-ATTRIBUTE-REGISTERS                           --
 --                                                                          --
 --                                 S p e c                                  --
 -- (c) 2025 Tanguy Baltazart                                                --
@@ -17,6 +17,9 @@ with VGA;
 package VGA.Attribute.Registers is
    pragma Preelaborate;
 
+   ------------------------------
+   -- Dump_Attribute_Registers --
+   ------------------------------
    procedure Dump_Attribute_Registers;
 
    -------------------------------

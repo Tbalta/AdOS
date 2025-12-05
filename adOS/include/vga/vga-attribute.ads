@@ -17,7 +17,15 @@ with VGA;
 package VGA.Attribute is
    pragma Preelaborate;
 
+   ----------------------------
+   -- Set_Attribute_For_Mode --
+   ----------------------------
    procedure Set_Attribute_For_Mode (mode : VGA_Mode);
+
+
+   ------------------------------
+   -- Reset_Attribute_Register --
+   ------------------------------
    procedure Reset_Attribute_Register;
 
 private

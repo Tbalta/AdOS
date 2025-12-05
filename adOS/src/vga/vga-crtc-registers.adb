@@ -24,9 +24,6 @@ package body VGA.CRTC.Registers is
       Register_Array (Index) := To_U8 (Value);
       Write_Address (Index);
       Write (Value);
-      --  SERIAL.send_string (Value'Image & "| is ");
-      --  SERIAL.send_hex (Unsigned_32 (To_U8 (Value)));
-      --  SERIAL.send_line ("");
    end Write_Register;
 
    procedure Dump is

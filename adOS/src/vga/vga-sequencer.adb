@@ -7,13 +7,13 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with x86.Port_Io;
-with SERIAL;
 with Interfaces; use Interfaces;
-with Ada.Unchecked_Conversion;
 with VGA.Sequencer.Registers; use VGA.Sequencer.Registers;
 package body VGA.Sequencer is
 
+   ----------------------------
+   -- Set_Sequencer_For_Mode --
+   ----------------------------
    procedure Set_Sequencer_For_Mode (mode : VGA_mode)
    is
    begin

@@ -19,17 +19,19 @@ with VGA.CRTC.Registers;   use VGA.CRTC.Registers;
 package body VGA.CRTC is
    package Logger renames Log.Serial_Logger;
 
+
+   -- Prepare_CRTC_For_Configuration --
    procedure Prepare_CRTC_For_Configuration is
    begin
-      Write_End_Horizontal_Blanking_Register ((Display_Enable_Skew => 0, others => <>));
-      Write_End_Horizontal_Retrace_Register ((HRD => 0, others => <>));
+      Write_End_Horizontal_Blanking_Register ((others => <>));
+      Write_End_Horizontal_Retrace_Register ((others => <>));
       Write_Vertical_Retrace_End_Register
         ((Clear_Vertical_Interrupt  => False,
           Enable_Vertical_Interrupt => False,
           Select_5_Refresh_Cycles   => False,
           Protect_Register          => False,
           others                    => 0));
-      Write_Maximum_Scan_Line_Register ((Double_Scanning => False, others => <>));
+      Write_Maximum_Scan_Line_Register ((others => <>));
       Write_Start_Address_High_Register (0);
       Write_Start_Address_Low_Register (0);
 

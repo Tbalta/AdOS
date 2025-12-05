@@ -29,10 +29,10 @@ is
 
 private
    FRAME_BUFFER_FD : constant Driver_File_Descriptor := Driver_File_Descriptor'First;
-   HEIGHT_FD       : constant Driver_File_Descriptor := FRAME_BUFFER_FD + 1;
-   WIDTH_FD        : constant Driver_File_Descriptor := FRAME_BUFFER_FD + 2;
-   GRAPHIC_FD      : constant Driver_File_Descriptor := FRAME_BUFFER_FD + 3;
-   ENABLE_FD      : constant Driver_File_Descriptor := FRAME_BUFFER_FD + 4;
+   WIDTH_FD        : constant Driver_File_Descriptor := FRAME_BUFFER_FD + 1;
+   HEIGHT_FD       : constant Driver_File_Descriptor := FRAME_BUFFER_FD + 2;
+   COLORS_FD      : constant Driver_File_Descriptor := FRAME_BUFFER_FD + 3;
+   MODE_FD      : constant Driver_File_Descriptor := FRAME_BUFFER_FD + 4;
 
    --  generic
    --     type Read_Type is private;
@@ -42,16 +42,7 @@ private
       function Frame_Buffer_Write (fd : Driver_File_Descriptor; Buffer : access Write_Type) return Integer;
    generic
       type Write_Type is private;
-      function Height_Write (fd : Driver_File_Descriptor; Height : access Write_Type) return Integer;
-   generic
-      type Write_Type is private;
-      function Width_Write (fd : Driver_File_Descriptor; Width : access Write_Type) return Integer;
-   generic
-      type Write_Type is private;
-      function Graphic_Write (fd : Driver_File_Descriptor; Mode : access Write_Type) return Integer;
-   generic
-      type Write_Type is private;
-      function Enable_Write (fd : Driver_File_Descriptor; Mode : access Write_Type) return Integer;
+      function Attribute_Write (fd : Driver_File_Descriptor; Buffer : access Write_Type) return Integer;
 
 
    type File_Information is record

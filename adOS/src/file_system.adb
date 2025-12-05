@@ -4,6 +4,29 @@ with File_System.VGA;
 with System.Storage_Elements; use System.Storage_Elements;
 package body File_System is
 
+   function To_Upper (str : String) return String is
+      result : String := str;
+   begin
+      for I in result'Range loop
+         if result (I) in 'a' .. 'z' then
+            result (I) := Character'Val (Character'Pos (result (I)) - 32);
+         end if;
+      end loop;
+      return result;
+   end To_Upper;
+
+   function IndexOfString (str : String; c : Character) return Positive is
+      i : Positive := str'First;
+   begin
+      while i in str'Range and then str (i) /= c and then str (i) /= Character'Val (0) loop
+         i := i + 1;
+      end loop;
+      return i;
+   end IndexOfString;
+
+   function Min (a, b : Integer) return Integer
+   is (if (a < b) then a else b);
+
    function Is_File_Descriptor (fd : Integer) return Boolean is
    begin
       return fd in Integer (File_Descriptor'First) .. Integer (File_Descriptor'Last);

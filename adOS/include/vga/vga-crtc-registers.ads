@@ -17,7 +17,11 @@ with Interfaces; use Interfaces;
 package VGA.CRTC.Registers is
    pragma Preelaborate;
 
-      procedure Dump ;
+
+   ----------
+   -- Dump --
+   ----------
+   procedure Dump;
 
 
    -------------------------------
@@ -26,6 +30,7 @@ package VGA.CRTC.Registers is
    subtype Horizontal_Total_Register is Unsigned_8;
    procedure Write_Horizontal_Total_Register (Register : Horizontal_Total_Register);
    function Read_Horizontal_Total_Register return Horizontal_Total_Register;
+
 
    --------------------------------------------
    -- Horizontal_Display_Enable_End_Register --
@@ -37,6 +42,7 @@ package VGA.CRTC.Registers is
    function Read_Horizontal_Display_Enable_End_Register
       return Horizontal_Display_Enable_End_Register;
 
+
    ----------------------------------------
    -- Start_Horizontal_Blanking_Register --
    ----------------------------------------
@@ -45,12 +51,13 @@ package VGA.CRTC.Registers is
    procedure Write_Start_Horizontal_Blanking_Register (Register : Horizontal_Blanking_Start);
    function Read_Start_Horizontal_Blanking_Register return Horizontal_Blanking_Start;
 
+
    --------------------------------------
    -- End_Horizontal_Blanking_Register --
    --------------------------------------
    type Skew_Amount is range 0 .. 3;
    type End_Horizontal_Blanking_Register is record
-      End_Blanking        : End_Blanking_LSB;
+      End_Blanking        : End_Blanking_LSB := 0;
       Display_Enable_Skew : Skew_Amount := 0;
       one                 : bit := 1;
    end record
@@ -75,13 +82,14 @@ package VGA.CRTC.Registers is
    function Read_Start_Horizontal_Retrace_Pulse_Register
       return Start_Horizontal_Retrace_Pulse_Register;
 
+
    -------------------------------------
    -- End_Horizontal_Retrace_Register --
    -------------------------------------
    type End_Horizontal_Retrace_Register is record
-      EHR : Unsigned_5;
-      HRD : Unsigned_2;
-      EB5 : End_Blanking_MSB;
+      EHR : Unsigned_5 := 0;
+      HRD : Unsigned_2 := 0;
+      EB5 : End_Blanking_MSB := 0;
    end record
    with Size => 8;
    for End_Horizontal_Retrace_Register use
@@ -130,6 +138,7 @@ package VGA.CRTC.Registers is
    procedure Write_Overflow_Register (Register : Overflow_Register);
    function Read_Overflow_Register return Overflow_Register;
 
+
    ------------------------------
    -- Preset_Row_Scan_Register --
    ------------------------------
@@ -147,6 +156,7 @@ package VGA.CRTC.Registers is
      end record;
    procedure Write_Preset_Row_Scan_Register (Register : Preset_Row_Scan_Register);
    function Read_Preset_Row_Scan_Register return Preset_Row_Scan_Register;
+
 
    --------------------------------
    -- Maximum_Scan_Line_Register --
@@ -168,6 +178,7 @@ package VGA.CRTC.Registers is
    procedure Write_Maximum_Scan_Line_Register (Register : Maximum_Scan_Line_Register);
    function Read_Maximum_Scan_Line_Register return Maximum_Scan_Line_Register;
 
+
    ---------------------------
    -- Cursor_Start_Register --
    ---------------------------
@@ -183,6 +194,7 @@ package VGA.CRTC.Registers is
      end record;
    procedure Write_Cursor_Start_Register (Register : Cursor_Start_Register);
    function Read_Cursor_Start_Register return Cursor_Start_Register;
+
 
    -------------------------
    -- Cursor_End_Register --
@@ -208,12 +220,14 @@ package VGA.CRTC.Registers is
    procedure Write_Start_Address_High_Register (Register : Start_Address_High_Register);
    function Read_Start_Address_High_Register return Start_Address_High_Register;
 
+
    --------------------------------
    -- Start_Address_Low_Register --
    --------------------------------
    subtype Start_Address_Low_Register is Start_Address_MSB;
    procedure Write_Start_Address_Low_Register (Register : Start_Address_Low_Register);
    function Read_Start_Address_Low_Register return Start_Address_Low_Register;
+
 
    -----------------------------------
    -- Cursor_Location_High_Register --
@@ -223,6 +237,7 @@ package VGA.CRTC.Registers is
    procedure Write_Cursor_Location_High_Register (Register : Cursor_Location_High_Register);
    function Read_Cursor_Location_High_Register return Cursor_Location_High_Register;
 
+
    ----------------------------------
    -- Cursor_Location_Low_Register --
    ----------------------------------
@@ -231,12 +246,14 @@ package VGA.CRTC.Registers is
    procedure Write_Cursor_Location_Low_Register (Register : Cursor_Location_Low_Register);
    function Read_Cursor_Location_Low_Register return Cursor_Location_Low_Register;
 
+
    -------------------------------------
    -- Vertical_Retrace_Start_Register --
    -------------------------------------
    subtype Vertical_Retrace_Start_Register is Vertical_Retrace_Start_LSB;
    procedure Write_Vertical_Retrace_Start_Register (Register : Vertical_Retrace_Start_Register);
    function Read_Vertical_Retrace_Start_Register return Vertical_Retrace_Start_Register;
+
 
    -----------------------------------
    -- Vertical_Retrace_End_Register --
@@ -260,6 +277,7 @@ package VGA.CRTC.Registers is
    procedure Write_Vertical_Retrace_End_Register (Register : Vertical_Retrace_End_Register);
    function Read_Vertical_Retrace_End_Register return Vertical_Retrace_End_Register;
 
+
    ------------------------------------------
    -- Vertical_Display_Enable_End_Register --
    ------------------------------------------
@@ -268,6 +286,7 @@ package VGA.CRTC.Registers is
      (Register : Vertical_Display_Enable_End_Register);
    function Read_Vertical_Display_Enable_End_Register return Vertical_Display_Enable_End_Register;
 
+
    ---------------------
    -- Offset_Register --
    ---------------------
@@ -275,6 +294,7 @@ package VGA.CRTC.Registers is
    for Offset_Register'Size use 8;
    procedure Write_Offset_Register (Register : Offset_Register);
    function Read_Offset_Register return Offset_Register;
+
 
    ---------------------------------
    -- Underline_Location_Register --
@@ -304,6 +324,7 @@ package VGA.CRTC.Registers is
    procedure Write_Start_Vertical_Blanking_Register (Register : Start_Vertical_Blanking_Register);
    function Read_Start_Vertical_Blanking_Register return Start_Vertical_Blanking_Register;
 
+
    ------------------------------------
    -- End_Vertical_Blanking_Register --
    ------------------------------------
@@ -311,6 +332,7 @@ package VGA.CRTC.Registers is
    for End_Vertical_Blanking_Register'Size use 8;
    procedure Write_End_Vertical_Blanking_Register (Register : End_Vertical_Blanking_Register);
    function Read_End_Vertical_Blanking_Register return End_Vertical_Blanking_Register;
+
 
    -------------------------------
    -- CRT_Mode_Control_Register --
@@ -337,6 +359,7 @@ package VGA.CRTC.Registers is
      end record;
    procedure Write_CRT_Mode_Control_Register (Register : CRT_Mode_Control_Register);
    function Read_CRT_Mode_Control_Register return CRT_Mode_Control_Register;
+
 
    ---------------------------
    -- Line_Compare_register --
