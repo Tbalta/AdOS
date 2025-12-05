@@ -3,6 +3,7 @@ with x86.Port_IO;
 
 package VGA.Graphic_Controller is
    pragma Preelaborate;
+   procedure Dump_Graphic_Controller_Registers;
    ------------------------
    -- Set_Reset_Register --
    ------------------------
@@ -210,6 +211,8 @@ private
       Index : Graphic_Controller_Register;
    function Read_Data return Data_Type;
 
+   type Register_Value is array (Graphic_Controller_Register) of Unsigned_8;
+   Register_Array : Register_Value := (others => 0);
 
 
 end VGA.Graphic_Controller;

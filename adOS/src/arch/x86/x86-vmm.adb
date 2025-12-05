@@ -404,12 +404,16 @@ package body x86.vmm is
    is
       Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Start);
       PD        : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
+      Paging_Enabled : Boolean := Is_Paging_Enabled;
    begin
       Disable_Paging;
 
       for PD_Index in Breakdown.Directory .. Page_Directory'Last loop
          for PT_Index in Breakdown.Table .. Page_Table'Last loop
             if Can_Fit (CR3, From_Virtual_Address_Break (Breakdown), Size) then
+               if Paging_Enabled then
+                  Enable_Paging;
+               end if;
                return Breakdown;
             end if;
 
@@ -417,7 +421,9 @@ package body x86.vmm is
          end loop;
       end loop;
 
-      Enable_Paging;
+      if Paging_Enabled then
+         Enable_Paging;
+      end if;
       return To_Virtual_Address_Break (Null_Address);
    end;
 
@@ -428,6 +434,7 @@ package body x86.vmm is
       Is_Usermode : Boolean := False) return Virtual_Address
    is
       Address_Breakdown : Virtual_Address_Break := Find_Next_Space (CR3, Size, Null_Address);
+      Paging_Enabled : Boolean := Is_Paging_Enabled;
    begin
       if Address_Breakdown = Last_Virtual_Address_Break then
          Logger.Log_Error ("No more free space in the Page Directory");
@@ -440,6 +447,7 @@ package body x86.vmm is
          & " bytes at "
          & From_Virtual_Address_Break (Address_Breakdown)'Image);
 
+      Disable_Paging;
       if not Alloc
                (CR3,
                 From_Virtual_Address_Break (Address_Breakdown),
@@ -448,9 +456,15 @@ package body x86.vmm is
                 Is_Usermode => Is_Usermode)
       then
          Logger.Log_Error ("kmalloc: Could not allocate memory");
+         if Paging_Enabled then
+            Enable_Paging;
+         end if;
          return Null_Address;
       end if;
 
+      if Paging_Enabled then
+         Enable_Paging;
+      end if;
       return From_Virtual_Address_Break (Address_Breakdown);
    end kmalloc;
 

@@ -72,7 +72,7 @@ package body File_System.VGA is
    -- Write --
    -----------
 
-      function Frame_Buffer_Write (fd : Driver_File_Descriptor; Buffer : access Write_Type) return Integer
+   function Frame_Buffer_Write (fd : Driver_File_Descriptor; Buffer : access Write_Type) return Integer
       is
          count : constant Storage_Count := Write_Type'Size / Storage_Unit;
          package Conversion is new System.Address_To_Access_Conversions (Write_Type);
@@ -103,50 +103,57 @@ package body File_System.VGA is
          return Integer (Write_Size);
       end Frame_Buffer_Write;
    
-      function Height_Write (fd : Driver_File_Descriptor; Height : access Write_Type) return Integer
-      is
+   function Height_Write (fd : Driver_File_Descriptor; Height : access Write_Type) return Integer
+   is
+   begin
+      if Descriptors (FRAME_BUFFER_FD).used then
+         Logger.Log_Error ("Height cannot be written while frame_buffer is open");
+         return -1;
+      end if;
+
+      if Write_Type'Size /= Unsigned_32'Size then
+         Logger.Log_Error ("Invalid write size expected: " & Integer (Unsigned_32'Size)'Image & "bits got: " & Integer (Write_Type'Size)'Image);
+         return -1;
+      end if;
+
+      pragma Assert (Write_Type'Size = Unsigned_32'Size);
+      declare
          function To_U32 is new Ada.Unchecked_Conversion(Source => Write_Type, Target => Unsigned_32);
       begin
-         if Descriptors (FRAME_BUFFER_FD).used then
-            Logger.Log_Error ("Height cannot be written while frame_buffer is open");
-            return -1;
-         end if;
-
-         if Write_Type'Size /= Unsigned_32'Size then
-            Logger.Log_Error ("Invalid write size expected: " & Integer (Unsigned_32'Size)'Image & "bits got: " & Integer (Write_Type'Size)'Image);
-            return -1;
-         end if;
-
          Logger.Log_Info ("Height: " & To_U32 (Height.all)'Image);
          Descriptors (FRAME_BUFFER_FD).Height := Standard.VGA.Scan_Line_Count (To_U32 (Height.all));
+      end;
 
-         return Write_Type'Size / Storage_Unit;
-      end Height_Write;
+      return Write_Type'Size / Storage_Unit;
+   end Height_Write;
    
 
 
-      function Width_Write (fd : Driver_File_Descriptor; Width : access Write_Type) return Integer
-            is
+   function Width_Write (fd : Driver_File_Descriptor; Width : access Write_Type) return Integer
+   is
+   begin
+      if Descriptors (FRAME_BUFFER_FD).used then
+            Logger.Log_Error ("Width cannot be written while frame_buffer is open");
+         return -1;
+      end if;
+
+      if Write_Type'Size /= Unsigned_32'Size then
+         Logger.Log_Error ("Invalid write size expected: " & Integer (Unsigned_32'Size)'Image & "bits got: " & Integer (Write_Type'Size)'Image);
+         return -1;
+      end if;
+
+      pragma Assert (Write_Type'Size = Unsigned_32'Size);
+      declare
          function To_U32 is new Ada.Unchecked_Conversion(Source => Write_Type, Target => Unsigned_32);
       begin
-         if Descriptors (FRAME_BUFFER_FD).used then
-            Logger.Log_Error ("Width cannot be written while frame_buffer is open");
-            return -1;
-         end if;
-
-         if Write_Type'Size /= Unsigned_32'Size then
-            Logger.Log_Error ("Invalid write size expected: " & Integer (Unsigned_32'Size)'Image & "bits got: " & Integer (Write_Type'Size)'Image);
-            return -1;
-         end if;
-
          Descriptors (FRAME_BUFFER_FD).Width := Standard.VGA.Character_Count (To_U32 (Width.all));
-         return Write_Type'Size / Storage_Unit;
-      end Width_Write;
+      end;
+      return Write_Type'Size / Storage_Unit;
+   end Width_Write;
    
    
    function Graphic_Write (fd : Driver_File_Descriptor; Mode : access Write_Type) return Integer
-         is
-      function To_U32 is new Ada.Unchecked_Conversion(Source => Write_Type, Target => Unsigned_32);
+   is
    begin
       if Descriptors (FRAME_BUFFER_FD).used then
          Logger.Log_Error ("Graphic mode cannot be set while frame_buffer is open");
@@ -158,13 +165,19 @@ package body File_System.VGA is
          return -1;
       end if;
 
-      if To_U32 (Mode.all) = 0 then
-         Descriptors (FRAME_BUFFER_FD).Graphic_Mode := False;
-      else
-         Descriptors (FRAME_BUFFER_FD).Graphic_Mode := True;
-         Descriptors (FRAME_BUFFER_FD).Color_Depth := To_U32 (Mode.all);
-         Logger.Log_Info ("Color: " & To_U32 (Mode.All)'image);
-      end if;
+      pragma Assert (Write_Type'Size = Unsigned_32'Size);
+      declare
+         function To_U32 is new Ada.Unchecked_Conversion(Source => Write_Type, Target => Unsigned_32);
+      begin
+         if To_U32 (Mode.all) = 0 then
+            Descriptors (FRAME_BUFFER_FD).Graphic_Mode := False;
+         else
+            Descriptors (FRAME_BUFFER_FD).Graphic_Mode := True;
+            Descriptors (FRAME_BUFFER_FD).Color_Depth := To_U32 (Mode.all);
+            Logger.Log_Info ("Color: " & To_U32 (Mode.All)'image);
+         end if;
+      end;
+
       return Write_Type'Size / Storage_Unit;
    end Graphic_Write;
 
@@ -172,7 +185,6 @@ package body File_System.VGA is
    function Enable_Write (fd : Driver_File_Descriptor; Mode : access Write_Type) return Integer
    is
       VGA_FILE : File_Information renames Descriptors (FRAME_BUFFER_FD);
-      function To_U32 is new Ada.Unchecked_Conversion(Source => Write_Type, Target => Unsigned_32);
    begin
       if Descriptors (FRAME_BUFFER_FD).used then
          Logger.Log_Error ("Enable cannot be set while frame_buffer is open");
@@ -184,9 +196,15 @@ package body File_System.VGA is
          return -1;
       end if;
 
-      if To_U32 (Mode.all) = 1 and then VGA_FILE.Graphic_Mode then
-         Standard.VGA.Set_Graphic_Mode (VGA_FILE.Width, VGA_FILE.Height, Integer (VGA_FILE.Color_Depth));
-      end if;
+      pragma Assert (Write_Type'Size = Unsigned_32'Size);
+      declare
+         function To_U32 is new Ada.Unchecked_Conversion(Source => Write_Type, Target => Unsigned_32);
+      begin
+         if To_U32 (Mode.all) = 1 and then VGA_FILE.Graphic_Mode then
+            Standard.VGA.Set_Graphic_Mode (VGA_FILE.Width, VGA_FILE.Height, Integer (VGA_FILE.Color_Depth));
+            Standard.VGA.load_palette ("vga-gui.hex");
+         end if;
+      end;
 
       return Write_Type'Size / Storage_Unit;
    end Enable_Write;

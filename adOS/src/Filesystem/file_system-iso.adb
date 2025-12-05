@@ -168,47 +168,52 @@ package body File_System.ISO is
    --------------------
    -- ISO 9660 Read --
    --------------------
-   function read (fd : Driver_File_Descriptor; Buffer : out Read_Type) return Integer is
+   function read (fd : Driver_File_Descriptor; Buffer : access Read_Type) return Integer is
       f_lba    : Natural renames Descriptors (fd).lba;
       f_offset : Integer renames Descriptors (fd).offset;
       f_size   : Natural renames Descriptors (fd).size;
       f_used   : Boolean renames Descriptors (fd).used;
-
-      Atapi_Driver : Device_Driver.Driver_id renames Descriptors (fd).driver;
-      Atapi_Device : Atapi.Atapi_Device_id := Drivers (Atapi_Driver).Atapi_Device;
-
-      Temporary_Object : Read_Type;
-      out_buffer       : System.Address := Temporary_Object'Address;
-      read_buffer      : System.Address;
-      base_lba         : Natural := (f_offset / BLOCK_SIZE) + f_lba;
-      cnt              : Natural := Read_Type'Size / Storage_Unit;
-      Current_Offset   : Storage_Offset := Storage_offset (f_offset) mod BLOCK_SIZE;
-      read_size        : Natural := Min (cnt, f_size - f_offset);
-      sectors_count    : Natural := ((read_size + Natural (Current_Offset) + BLOCK_SIZE - 1) / BLOCK_SIZE);
-      count            : Natural;
-      procedure memcpy (dest : System.Address; src : System.Address; size : Natural);
-      pragma Import (C, memcpy, "memcpy");
    begin
-      if (not f_used) then
+      if not f_used then
          return -1;
       end if;
-      -- Adjust the offset of the lba
-      Logger.Log_Info ("Reading: " & base_lba'Image & " + " & Current_Offset'Image & " .. " & Integer (base_lba + sectors_count - 1)'Image);
-      for lba in base_lba .. (base_lba + sectors_count - 1) loop
-         read_buffer := Atapi_Buffer'Address;
-         count := Atapi.Read_Block (Atapi_Device, lba, Atapi_Buffer);
-         memcpy (out_buffer, read_buffer + Current_Offset, Min (cnt, BLOCK_SIZE - Integer (Current_Offset)));
-         out_buffer := out_buffer + Storage_Offset (Min (cnt, BLOCK_SIZE - Integer (Current_Offset)));
-         cnt := cnt - Min (cnt, BLOCK_SIZE - Integer (Current_Offset));
-         Current_Offset := 0;
-      end loop;
 
-      Buffer := Temporary_Object;
+      if f_offset = f_size then
+         return 0;
+      end if;
 
-      -- Update the offset
-      f_offset := f_offset + read_size;
+      declare
+         Atapi_Driver : Device_Driver.Driver_id renames Descriptors (fd).driver;
+         Atapi_Device : Atapi.Atapi_Device_id := Drivers (Atapi_Driver).Atapi_Device;
 
-      return read_size;
+         package Conversion is new System.Address_To_Access_Conversions (Read_Type);
+
+         out_buffer       : System.Address := Conversion.To_Address (Conversion.Object_Pointer (Buffer));
+         read_buffer      : System.Address;
+         base_lba         : Natural := (f_offset / BLOCK_SIZE) + f_lba;
+         cnt              : Natural := Read_Type'Size / Storage_Unit;
+         Current_Offset   : Storage_Offset := Storage_offset (f_offset) mod BLOCK_SIZE;
+         read_size        : Natural := Min (cnt, f_size - f_offset);
+         sectors_count    : Natural := ((read_size + Natural (Current_Offset) + BLOCK_SIZE - 1) / BLOCK_SIZE);
+         count            : Natural;
+         procedure memcpy (dest : System.Address; src : System.Address; size : Natural);
+         pragma Import (C, memcpy, "memcpy");
+      begin
+         -- Adjust the offset of the lba
+         Logger.Log_Info ("Reading: " & base_lba'Image & " + " & Current_Offset'Image & " .. " & Integer (base_lba + sectors_count - 1)'Image);
+         for lba in base_lba .. (base_lba + sectors_count - 1) loop
+            read_buffer := Atapi_Buffer'Address;
+            count := Atapi.Read_Block (Atapi_Device, lba, Atapi_Buffer);
+            memcpy (out_buffer, read_buffer + Current_Offset, Min (cnt, BLOCK_SIZE - Integer (Current_Offset)));
+            out_buffer := out_buffer + Storage_Offset (Min (cnt, BLOCK_SIZE - Integer (Current_Offset)));
+            cnt := cnt - Min (cnt, BLOCK_SIZE - Integer (Current_Offset));
+            Current_Offset := 0;
+         end loop;
+
+         -- Update the offset
+         f_offset := f_offset + read_size;
+         return read_size;
+         end;
    end read;
 
    -------------------

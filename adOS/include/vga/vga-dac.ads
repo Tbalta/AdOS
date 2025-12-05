@@ -1,11 +1,13 @@
 with System;
 with x86.Port_IO;
 with Interfaces; use Interfaces;
-
+with File_System;
 package VGA.DAC is
    pragma Preelaborate;
 
    procedure load_default_palette;
+   procedure load_palette (p : File_System.Path);
+
 private
    type Color is new Unsigned_6 range 0 .. 2 ** 6 - 1;
    for Color'Size use 8;

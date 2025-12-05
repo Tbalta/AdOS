@@ -67,7 +67,7 @@ package body File_System is
 
    end open;
 
-   function read (fd : File_Descriptor; Buffer : out Read_Type) return Integer is
+   function read (fd : File_Descriptor; Buffer : access Read_Type) return Integer is
       Result : Integer := -1;
       File   : VFS_File;
 

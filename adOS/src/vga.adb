@@ -7,6 +7,7 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
+with VGA;
 with x86.Port_IO;
 with Log;
 with Interfaces;             use Interfaces;
@@ -19,17 +20,90 @@ with VGA.Attribute;          use VGA.Attribute;
 with VGA.DAC;                use VGA.DAC;
 with VGA.GTF;                use VGA.GTF;
 with Util;
-
+with Ada.Unchecked_Conversion;
+with System.Address_To_Access_Conversions;
+with x86.vmm;
+with System.Storage_Elements;
+with File_System;
 package body VGA is
    use Standard.ASCII;
    package Logger renames Log.Serial_Logger;
 
+   procedure Dump_Registers
+   is
+      function To_U8 is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Miscellaneous_Output_Register);
+   begin
+      Logger.Log_Info (To_U8 (Read_Miscellaneous_Output_Register)'Image);
+      Dump_Sequencer_Registers;
+      Dump_CRTC_Register;
+      Dump_Graphic_Controller_Registers;
+      Dump_Attribute_Registers;
+   end Dump_Registers;
+
+   procedure save_buffer
+   is
+      use all type System.Address;
+      use all type System.Storage_Elements.Storage_Offset;
+      CR3 : x86.vmm.CR3_register := x86.vmm.Get_Kernel_CR3;
+      package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
+   begin
+      if save_buffer_address = System.Null_Address then
+         save_buffer_address := x86.vmm.kmalloc(Size => 320 * 200, CR3 => CR3);
+      end if;
+
+      if save_buffer_address = System.Null_Address then
+         Logger.Log_Error ("Unable to allocate vga save buffer");
+         return;
+      end if;
+
+      declare
+         buffer : access vga_buffer := Conversion.To_Pointer (save_buffer_address);
+         current_vga_buffer : access vga_buffer := Conversion.To_Pointer (Get_Frame_Buffer);
+      begin
+         buffer.all := current_vga_buffer.all;
+      end;
+
+      Logger.Log_Ok ("vga buffer saved at address: " & save_buffer_address'Image);
+   end save_buffer;
+
+   procedure restore_buffer
+   is
+      use all type System.Address;
+      package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
+   begin
+      if save_buffer_address = System.Null_Address then
+         Logger.Log_Error ("save buffer is not allocated");
+         return;
+      end if;
+
+      declare
+         buffer : access vga_buffer := Conversion.To_Pointer (save_buffer_address);
+         current_vga_buffer : access vga_buffer := Conversion.To_Pointer (Get_Frame_Buffer);
+      begin
+         current_vga_buffer.all := buffer.all;
+      end;
+
+      Logger.Log_Ok ("vga buffer restored from address: " & save_buffer_address'Image);
+   end restore_buffer;
+
+   procedure load_palette (p : File_System.Path)
+   is
+   begin
+      Reset_Attribute_Register;
+      Select_Attribute_Register (16#0#);
+      VGA.Dac.load_palette (p);
+
+      -- Reenable IPAS for normal operations
+      Reset_Attribute_Register;
+      Select_Attribute_Register (16#20#);
+   end load_palette;
    ----------------------
    -- Get_Frame_Buffer --
    ----------------------
    function Get_Frame_Buffer return System.Address is
       Miscellaneous : Miscellaneous_Register := Read_Miscellaneous_Register;
    begin
+      Logger.Log_Info (Miscellaneous.Memory_Map'Image);
       case Miscellaneous.Memory_Map is
          when A0000_128KB =>
             return System.Address (16#A0000#);
@@ -89,6 +163,8 @@ package body VGA is
    begin
       case Color_Depth is
          when 256 =>
+            return 8;
+         when 16 =>
             return 8;
 
          when others =>
@@ -171,7 +247,7 @@ package body VGA is
       -- MISC --
       ----------
       Write_Miscellaneous_Output_Register
-        ((IOS => True, ERAM => True, CS => Clock_25M_640_320_PELs, Size => Size_400_Lines));
+        ((IOS => True, OE => False, ERAM => True, CS => Clock_25M_640_320_PELs, Size => Size_400_Lines));
 
       ---------------
       -- Sequencer --
@@ -268,6 +344,132 @@ package body VGA is
       -- Reenable IPAS for normal operations
       Reset_Attribute_Register;
       Select_Attribute_Register (16#20#);
-
    end Set_Graphic_Mode;
+
+   procedure Set_Text_Mode (Width, Height : Positive) is
+      -- HW Properties --
+      CELL_GRAN_RND : constant := 9;
+      Line_Compare_Disable : constant := 16#3FF#;
+
+      Scan_Per_Character_Row : constant Integer := 1;
+      Dot_Per_Pixel          : constant Positive := 16;
+
+      Timing : VGA_Timing :=
+        Compute_Timing (Width * 8, Height * 8);
+
+      -- Other configuration --
+      Pixel_Per_Address : constant := 1; -- TODO compute this value
+      Memory_Address_Size : constant := 1; -- TODO compute this value
+      Offset     : Positive := Width / (Pixel_Per_Address * Memory_Address_Size * 2);
+      Memory_Map : Memory_Map_Addressing := B8000_32KB;
+      --    Compute_Needed_Memory_Map (Width, Height, 8);
+
+   begin
+      Logger.Log_Info ("Setting mode: " & Width'Image & "x" & Height'Image);
+      Logger.Log_Info (Timing'Image);
+      -- MISC --
+      ----------
+      Write_Miscellaneous_Output_Register
+        ((IOS => True, OE => True, ERAM => True, CS => Clock_28M_720_360_PELs, Size => Size_400_Lines));
+
+      ---------------
+      -- Sequencer --
+      ---------------
+      Write_Reset_Register ((ASR => True, SR => True));
+      Write_Clocking_Mode_Register
+        ((D89 => False, SL => False, DC => False, SH4 => False, SO => False));
+      Write_Map_Mask_Register ((Map_0_Enable => True, Map_1_Enable => True, others => False));
+      Write_Character_Map_Select_Register
+        (To_Character_Map_Select_Register (Map_2_1st_8KB, Map_2_1st_8KB));
+      Write_Memory_Mode_Register ((Extended_Memory => True, Odd_Even => False, Chain_4 => False));
+
+      --------------------
+      -- CRT Controller --
+      --------------------
+      Prepare_CRTC_For_Configuration;
+
+      Write_Horizontal_Total_Register (Horizontal_Total_Register (Timing.Total_H - 5));
+      Write_Horizontal_Display_Enable_End_Register
+        (Horizontal_Display_Enable_End_Register (Timing.Active_H_Chars - 1));
+      Set_Horizontal_Blanking (Timing.H_Blanking_Start, 18);
+      Set_Horizontal_Retrace (85, 8 + 4);
+
+      Set_Vertical_Total (449 - 2);
+      Set_Vertical_Display (144 - 1 + 256);
+      Set_Vertical_Blanking (150 + 256, 36);
+      Set_Vertical_Retrace (156 + 256, 18);
+
+      Write_Cursor_Start_Register ((Row_Scan_Cursor_Begins => 16#D#, Cursor_Off => False));
+      Write_Cursor_End_Register ((Row_Scan_Cursor_Ends => 16#E#, Cursor_Skew_Control => 0));
+
+      Write_Offset_Register (Offset_Register (Offset));
+      Write_Underline_Location_Register
+        ((Start_Under_Line => 16#1F#, Count_By_4 => False, Double_Word => False, others => <>));
+
+      Write_Maximum_Scan_Line_Register
+        ((MSL => Unsigned_5 (Dot_Per_Pixel) - 1, Double_Scanning => False, others => 0));
+      Set_Line_Compare (Line_Compare_Disable);
+
+      Write_CRT_Mode_Control_Register
+        ((CSM_0          => True,
+          SRC            => True,
+          HRS            => False,
+          Count_By_2     => False,
+          Address_Wrap   => True,
+          Word_Byte_Mode => False,
+          Hardware_Reset => True));
+      Write_Cursor_Location_Low_Register (16#50#);
+      --------------------
+      -- CRT Controller --
+      --------------------
+      Logger.Log_Info ("Setting GC");
+      Write_Set_Reset_Register ((SR0 => False, SR1 => False, SR2 => False, SR3 => False));
+      Write_Enable_Set_Reset_Register
+        ((ESR0 => False, ESR1 => False, ESR2 => False, ESR3 => False));
+      Write_Color_Compare_Register ((CC0 => False, CC1 => False, CC2 => False, CC3 => False));
+      Write_Data_Rotate_Register ((Rotate_Count => 0, Function_Select => No_Function));
+      Write_Read_Map_Select_Register (0);
+      Write_Graphics_Mode_Register
+        ((WM                  => Mode_0,
+          Read_Mode           => False,
+          Odd_Even            => True,
+          Shift_Register_Mode => False,
+          Color_Mode          => False));
+      Write_Miscellaneous_Register
+        ((Graphics_Mode => False, Odd_Even => True, Memory_Map => Memory_Map));
+      Write_Color_Dont_Care_Register ((M0X => False, M1X => False, M2X => False, M3X => False));
+      Write_Bit_Mask_Register ((others => True));
+
+      Logger.Log_Info ("Setting Attribute");
+      Reset_Attribute_Register;
+      for i in Internal_Palette_Register_Index range 0 .. 15 loop
+         Write_Internal_Palette_Register (i, Internal_Palette_Register (i));
+      end loop;
+
+      Write_Attribute_Mode_Control_Register
+        ((Graphic_Mode              => False,
+          Mono_Emulation            => False,
+          Enable_Line_Graphics      => True,
+          Enable_Blink              => True,
+          PEL_Panning_Compatibility => False,
+          PEL_Width                 => False,
+          P5_P4_Select              => False));
+      Write_Overscan_Color_Register (0);
+      Write_Color_Plane_Enable_Register (16#0F#);
+      Write_Horizontal_PEL_Panning_Register (16#08#);
+      Write_Color_Select_Register
+        ((Select_Color_4 => False,
+          Select_Color_5 => False,
+          Select_Color_6 => False,
+          Select_Color_7 => False));
+
+      -- Disable IPAS to load color values to register
+      Reset_Attribute_Register;
+      Select_Attribute_Register (16#0#);
+      load_default_palette;
+
+      -- Reenable IPAS for normal operations
+      Reset_Attribute_Register;
+      Select_Attribute_Register (16#20#);
+   end Set_Text_Mode;
 end VGA;

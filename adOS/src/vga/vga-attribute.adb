@@ -26,10 +26,20 @@ package body VGA.Attribute is
       procedure Write is new x86.Port_IO.Write_Port_8 (Write_Data_Register_Address, Data_Type);
       function To_U8 is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Data_Type);
    begin
+      Register_Array (Index) := To_U8 (Value);
       Write_Address (Index);
       Write (Value);
-      SERIAL.send_hex (Unsigned_32 (To_U8 (Value)));
    end Write_Register;
+
+   procedure Dump_Attribute_Registers is
+   begin
+      SERIAL.send_line ("");
+      for I in Register_Array'Range loop
+         SERIAL.send_string (I'image & "-> ");
+         SERIAL.send_hex (Unsigned_32 (Register_Array (I)));
+         SERIAL.send_line ("");
+      end loop;
+   end Dump_Attribute_Registers;
 
 
    ----------------------------------------
@@ -54,7 +64,9 @@ package body VGA.Attribute is
      (Index : Internal_Palette_Register_Index; Register : Internal_Palette_Register)
    is
       procedure Write is new Write_Register (Internal_Palette_Register, Index);
+      function To_U8 is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Internal_Palette_Register);
    begin
+      Register_Array (Index) := To_U8 (Register);
       Write (Register);
    end Write_Internal_Palette_Register;
 

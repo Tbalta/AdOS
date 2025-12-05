@@ -12,10 +12,19 @@ package body VGA.Graphic_Controller is
    begin
       Write_Address (Index);
       Write (Value);
-      SERIAL.send_string (Value'Image & "| is ");
-      SERIAL.send_hex (Unsigned_32 (To_U8 (Value)));
-      SERIAL.send_line ("");
+
+      Register_Array (Index) := To_U8 (Value);
    end Write_Data;
+
+   procedure Dump_Graphic_Controller_Registers is
+   begin
+      SERIAL.send_line ("");
+      for I in Register_Array'Range loop
+         SERIAL.send_string (I'image & "-> ");
+         SERIAL.send_hex (Unsigned_32 (Register_Array (I)));
+         SERIAL.send_line ("");
+      end loop;
+   end Dump_Graphic_Controller_Registers;
 
    function Read_Data return Data_Type is
       function Read is new x86.Port_IO.Read_Port_8 (Data_Register_Address, Data_Type);

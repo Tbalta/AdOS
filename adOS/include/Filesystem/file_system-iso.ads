@@ -17,7 +17,7 @@ is
 
    generic
       type Read_Type is private;
-   function read (fd : Driver_File_Descriptor; Buffer : out Read_Type) return Integer;
+   function read (fd : Driver_File_Descriptor; Buffer : access Read_Type) return Integer;
 
    function seek (fd : Driver_File_Descriptor; offset : off_t; wh : whence) return off_t;
    function close (fd : Driver_File_Descriptor) return Integer;

@@ -148,7 +148,7 @@ package body Syscall is
       kernel_buffer_access := Conversion.To_Pointer (Kernel_Buffer);
 
       -- read --
-      result.Signed_Value := Integer_32 (Read (fd, kernel_buffer_access.all));
+      result.Signed_Value := Integer_32 (Read (fd, kernel_buffer_access));
       --  Logger.Log_Info ("Read_Syscall'Result=" & result.Signed_Value'Image);
       x86.vmm.Unmap (Kernel_CR3, Kernel_Buffer, count, False);
    end Read_Syscall;

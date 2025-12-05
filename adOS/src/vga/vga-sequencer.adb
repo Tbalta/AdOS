@@ -11,9 +11,7 @@ package body VGA.Sequencer is
    begin
       Write_Address (Index);
       Write (Value);
-      SERIAL.send_string (Value'Image & "| is ");
-      SERIAL.send_hex (Unsigned_32 (To_U8 (Value)));
-      SERIAL.send_line ("");
+      Register_Array (Index) := To_U8 (Value);
    end Write_Data;
 
    function Read_Data return Data_Type is
@@ -22,6 +20,16 @@ package body VGA.Sequencer is
       Write_Address (Index);
       return Read;
    end Read_Data;
+
+   procedure Dump_Sequencer_Registers is
+   begin
+      SERIAL.send_line ("");
+      for I in Register_Array'Range loop
+         SERIAL.send_string (I'image & "-> ");
+         SERIAL.send_hex (Unsigned_32 (Register_Array (I)));
+         SERIAL.send_line ("");
+      end loop;
+   end Dump_Sequencer_Registers;
 
    -----------
    -- Reset --

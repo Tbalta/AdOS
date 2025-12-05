@@ -3,7 +3,7 @@ with x86.Port_IO;
 
 package VGA.Sequencer is
    pragma Preelaborate;
-
+   procedure Dump_Sequencer_Registers;
    --------------------
    -- Reset_Register --
    --------------------
@@ -149,6 +149,9 @@ private
       type Data_Type is private;
       Index : Sequencer_Registers;
    function Read_Data return Data_Type;
+
+   type Register_Value is array (Sequencer_Registers) of Unsigned_8;
+   Register_Array : Register_Value := (others => 0);
 
 
 

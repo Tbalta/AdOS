@@ -13,7 +13,7 @@
 with x86.Port_IO;
 with System;
 with Interfaces; use Interfaces;
-
+with File_System;
 package VGA is
    pragma Preelaborate;
 
@@ -25,8 +25,13 @@ package VGA is
    type Unsigned_10 is range 0 .. 2 ** 10 - 1;
 
    function Get_Frame_Buffer return System.Address;
+   procedure Dump_Registers;
 
    procedure Set_Graphic_Mode (Width, Height, Color_Depth : Positive);
+   procedure Set_Text_Mode (Width, Height : Positive);
+
+   procedure save_buffer;
+   procedure restore_buffer;
 
    type Register_Index is new Unsigned_8 range 0 .. 2 ** 8 - 1;
    for Register_Index'Size use 8;
@@ -34,7 +39,15 @@ package VGA is
    subtype Pixel_Count is Natural;
    subtype Scan_Line_Count is Natural;
 
+   type vga_buffer is array (Positive range 1 .. 320 * 200) of aliased Unsigned_8
+      with Pack => True;
+
+   save_buffer_address : System.Address := System.Address'First;
+
+   procedure load_palette (p : File_System.Path);
+
 private
+   procedure Reset_Attribute_Register;
    -----------------------------------
    -- Miscellaneous Output Register --
    -----------------------------------
@@ -54,6 +67,7 @@ private
       IOS  : Boolean;
       ERAM : Boolean;
       CS   : Clock_Select;
+      OE   : Boolean;
       Size : Vertical_Size;
    end record
    with Size => 8;
@@ -62,6 +76,7 @@ private
        IOS at 0 range 0 .. 0;
        ERAM at 0 range 1 .. 1;
        CS at 0 range 2 .. 3;
+       OE at 0 range 5 .. 5;
        Size at 0 range 6 .. 7;
      end record;
 

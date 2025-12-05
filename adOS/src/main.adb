@@ -106,7 +106,7 @@ begin
       FD : File_Descriptor_With_Error := FD_ERROR;
 
       subtype Read_Type is String (1 .. 512);
-      buffer : Read_Type;
+      buffer : aliased Read_Type;
       read   : Integer;
       function Read_Char is new File_System.read (Read_Type => Read_Type);
    begin
@@ -117,7 +117,7 @@ begin
          goto Init_End;
       end if;
 
-      read := Read_Char (FD, buffer);
+      read := Read_Char (FD, buffer'Access);
       SERIAL.send_line ("read:" & buffer (1 .. read));
       if close (FD) = 0 then
          Logger.Log_Ok ("File closed successfully");
@@ -126,27 +126,63 @@ begin
       end if;
    end;
 
-   --  VGA.enable_320x200x256;
    --  VGA.Set_Graphic_Mode (320, 200, 256);
-   --  declare
-   --     use File_System;
-   --     fd : File_System.File_Descriptor_With_Error := FD_ERROR;
+   declare
+      use File_System;
+      fd : File_System.File_Descriptor_With_Error := FD_ERROR;
 
-   --     type vga_buffer is array (Integer range 0 .. 320 * 200) of Unsigned_8;
-   --     function VGA_Write is new File_System.write (vga_buffer);
+      type vga_buffer is array (Integer range 1 .. 320 * 200) of Unsigned_8
+         with Pack => True;
+      package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
 
-   --     package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
+      Buffer : access vga_buffer := null;
+      count : Integer := 0;
+   begin
+      VGA.Set_Graphic_Mode (320, 200, 256);
+      VGA.load_palette ("vga-gui.hex");
+      --  libvga_switch_mode13h;
+      VGA.save_buffer;
+      fd := open ("vga_frame_buffer", 0);
+      Buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
+      Buffer (1 .. 320 * 200) := (others => 5);
+      Buffer (1 .. 320 * 150) := (others => 70);
+      Buffer (1 .. 320 * 100) := (others => 90);
+      Buffer (1 .. 320 * 50)  := (others => 250);
+      close (fd);
+   end;
 
-   --     Buffer : access vga_buffer := null;
-   --  begin
-      --  fd := open ("vga_frame_buffer", 0);
-      --  Buffer := Conversion.To_Pointer (mmap (fd, 320 * 200));
-      --  Buffer (0 .. 320 * 200) := (others => 5);
-      --  Buffer (0 .. 320 * 150) := (others => 70);
-      --  Buffer (0 .. 320 * 100) := (others => 90);
-      --  Buffer (0 .. 320 * 50)  := (others => 250);
-      --  close (fd);
-   --  end;
+   Logger.Log_Info ("Setting text mode");
+   --  VGA.Dump_Registers;
+   declare
+      type VGA_CHAR is record
+         c : Character;
+         attribute : Unsigned_8;
+      end record;
+
+      for VGA_CHAR use record
+         c at 0 range 0 .. 7;
+         attribute at 1 range 0 .. 7;
+      end record;
+
+      use File_System;
+      type vga_buffer is array (Positive  range 1 .. 80 * 25) of aliased VGA_CHAR
+         with Pack => True;
+      package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
+      Buffer : access vga_buffer := null;
+
+      fd : File_System.File_Descriptor_With_Error := FD_ERROR;
+      count : Integer := 0;
+   begin
+      VGA.restore_buffer;
+      --  restore_fb (VGA.save_buffer_address);
+      --  libvga_switch_mode3h;
+      VGA.Set_Text_Mode (80, 25);
+      VGA.load_palette ("vga-tui.hex");
+      fd := open ("vga_frame_buffer", 0);
+      Buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
+      Buffer.all := (others => (c => 'H', attribute => 16#F#));
+      close (fd);
+   end;
 
    -----------------
    -- ELF Loading --

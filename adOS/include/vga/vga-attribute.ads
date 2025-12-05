@@ -6,6 +6,8 @@ with VGA;
 package VGA.Attribute is
    pragma Preelaborate;
 
+   procedure Dump_Attribute_Registers;
+
    -------------------------------
    -- Attribute Controller Type --
    -------------------------------
@@ -131,5 +133,8 @@ private
       type Data_Type is private;
       Index : Attribute_Register_Index;
    function Read_Register return Data_Type;
+
+   type Register_Value is array (Attribute_Register_Index range 0 .. 20) of Unsigned_8;
+   Register_Array : Register_Value := (others => 0);
 
 end VGA.Attribute;

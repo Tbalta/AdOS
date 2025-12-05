@@ -27,7 +27,7 @@ is
 
    generic
       type Read_Type is private;
-   function read (fd : File_Descriptor; Buffer : out Read_Type) return Integer;
+   function read (fd : File_Descriptor; Buffer : access Read_Type) return Integer;
    generic
       type Write_Type is private;
    function write (fd : File_Descriptor; Buffer : access Write_Type) return Integer;
