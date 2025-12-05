@@ -200,7 +200,7 @@ package body File_System.ISO is
          pragma Import (C, memcpy, "memcpy");
       begin
          -- Adjust the offset of the lba
-         Logger.Log_Info ("Reading: " & base_lba'Image & " + " & Current_Offset'Image & " .. " & Integer (base_lba + sectors_count - 1)'Image);
+         --  Logger.Log_Info ("Reading: " & base_lba'Image & " + " & Current_Offset'Image & " .. " & Integer (base_lba + sectors_count - 1)'Image);
          for lba in base_lba .. (base_lba + sectors_count - 1) loop
             read_buffer := Atapi_Buffer'Address;
             count := Atapi.Read_Block (Atapi_Device, lba, Atapi_Buffer);

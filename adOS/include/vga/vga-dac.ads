@@ -1,3 +1,15 @@
+------------------------------------------------------------------------------
+--                                 VGA-DAC                                  --
+--                                                                          --
+--                                 S p e c                                  --
+-- (c) 2025 Tanguy Baltazart                                                --
+-- License : See LICENCE.txt in the root directory.                         --
+--                                                                          --
+--                                                                          --
+--  Description:                                                            --
+--    register definition for DAC registers                                 --
+------------------------------------------------------------------------------
+
 with System;
 with x86.Port_IO;
 with Interfaces; use Interfaces;
@@ -5,8 +17,8 @@ with File_System;
 package VGA.DAC is
    pragma Preelaborate;
 
-   procedure load_default_palette;
-   procedure load_palette (p : File_System.Path);
+   procedure Load_Default_Palette;
+   procedure Load_File (file : File_System.Path);
 
 private
    type Color is new Unsigned_6 range 0 .. 2 ** 6 - 1;

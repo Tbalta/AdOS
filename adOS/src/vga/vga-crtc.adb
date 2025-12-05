@@ -1,10 +1,22 @@
+------------------------------------------------------------------------------
+--                                 VGA-CRTC                                 --
+--                                                                          --
+--                                 B o d y                                  --
+-- (c) 2025 Tanguy Baltazart                                                --
+-- License : See LICENCE.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
 with VGA.CRTC;
 with x86.Port_Io;
 with Ada.Unchecked_Conversion;
 with SERIAL;
+with VGA.GTF; use VGA.GTF;
 with Interfaces; use Interfaces;
+with Log;
 
 package body VGA.CRTC is
+   package Logger renames Log.Serial_Logger;
 
    ----------------------------------------
    --           Write_Register           --
@@ -25,62 +37,6 @@ package body VGA.CRTC is
    end Write_Register;
 
    procedure Dump_CRTC_Register is
-      function To_U8_Horizontal_Total is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Horizontal_Total_Register);
-      function To_U8_Horizontal_Display_Enable_End is new
-        Ada.Unchecked_Conversion
-          (Target => Unsigned_8,
-           Source => Horizontal_Display_Enable_End_Register);
-      function To_U8_Start_Horizontal_Blanking is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Horizontal_Blanking_Start);
-      function To_U8_End_Horizontal_Blanking is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => End_Horizontal_Blanking_Register);
-      function To_U8_Start_Horizontal_Retrace_Pulse is new
-        Ada.Unchecked_Conversion
-          (Target => Unsigned_8,
-           Source => Start_Horizontal_Retrace_Pulse_Register);
-      function To_U8_End_Horizontal_Retrace is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => End_Horizontal_Retrace_Register);
-      function To_U8_Vertical_Total is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Vertical_Total_Register);
-      function To_U8_Overflow is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Overflow_Register);
-      function To_U8_Preset_Row_Scan is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Preset_Row_Scan_Register);
-      function To_U8_Maximum_Scan_Line is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Maximum_Scan_Line_Register);
-      function To_U8_Cursor_Start is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Cursor_Start_Register);
-      function To_U8_Cursor_End is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Cursor_End_Register);
-      function To_U8_Start_Address_High is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Start_Address_High_Register);
-      function To_U8_Start_Address_Low is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Start_Address_Low_Register);
-      function To_U8_Cursor_Location_High is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Cursor_Location_High_Register);
-      function To_U8_Cursor_Location_Low is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Cursor_Location_Low_Register);
-      function To_U8_Vertical_Retrace_Start is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Vertical_Retrace_Start_Register);
-      function To_U8_Vertical_Retrace_End is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Vertical_Retrace_End_Register);
-      function To_U8_Vertical_Display_Enable_End is new
-        Ada.Unchecked_Conversion
-          (Target => Unsigned_8,
-           Source => Vertical_Display_Enable_End_Register);
-      function To_U8_Offset is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Offset_Register);
-      function To_U8_Underline_Location is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Underline_Location_Register);
-      function To_U8_Start_Vertical_Blanking is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Start_Vertical_Blanking_Register);
-      function To_U8_End_Vertical_Blanking is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => End_Vertical_Blanking_Register);
-      function To_U8_CRT_Mode_Control is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => CRT_Mode_Control_Register);
-      function To_U8_Line_Compare is new
-        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Line_Compare_Register);
    begin
       SERIAL.send_line ("");
       for I in Register_Array'Range loop
@@ -88,49 +44,113 @@ package body VGA.CRTC is
          SERIAL.send_hex (Unsigned_32 (Register_Array (I)));
          SERIAL.send_line ("");
       end loop;
-      --  SERIAl.send_line (Read_Maximum_Scan_Line_Register'Image);
-      --  --  SERIAL.send_line (Register_Array'Image);
-      --  SERIAL.send_hex (Unsigned_32 (To_U8_Horizontal_Total (Read_Horizontal_Total_Register)));
-      --  SERIAL.send_hex
-      --    (Unsigned_32
-      --       (To_U8_Horizontal_Display_Enable_End (Read_Horizontal_Display_Enable_End_Register)));
-      --  SERIAL.send_hex
-      --    (Unsigned_32 (To_U8_Start_Horizontal_Blanking (Read_Start_Horizontal_Blanking_Register)));
-      --  SERIAL.send_hex
-      --    (Unsigned_32 (To_U8_End_Horizontal_Blanking (Read_End_Horizontal_Blanking_Register)));
-      --  SERIAL.send_hex
-      --    (Unsigned_32
-      --       (To_U8_Start_Horizontal_Retrace_Pulse (Read_Start_Horizontal_Retrace_Pulse_Register)));
-      --  SERIAL.send_hex
-      --    (Unsigned_32 (To_U8_End_Horizontal_Retrace (Read_End_Horizontal_Retrace_Register)));
-      --  SERIAL.send_hex (Unsigned_32 (To_U8_Vertical_Total (Read_Vertical_Total_Register)));
-      --  SERIAL.send_hex (Unsigned_32 (To_U8_Overflow (Read_Overflow_Register)));
-      --  SERIAL.send_hex (Unsigned_32 (To_U8_Preset_Row_Scan (Read_Preset_Row_Scan_Register)));
-      --  SERIAL.send_hex (Unsigned_32 (To_U8_Maximum_Scan_Line (Read_Maximum_Scan_Line_Register)));
-      --  SERIAL.send_hex (Unsigned_32 (To_U8_Cursor_Start (Read_Cursor_Start_Register)));
-      --  SERIAL.send_hex (Unsigned_32 (To_U8_Cursor_End (Read_Cursor_End_Register)));
-      --  SERIAL.send_hex (Unsigned_32 (To_U8_Start_Address_High (Read_Start_Address_High_Register)));
-      --  SERIAL.send_hex (Unsigned_32 (To_U8_Start_Address_Low (Read_Start_Address_Low_Register)));
-      --  SERIAL.send_hex
-      --    (Unsigned_32 (To_U8_Cursor_Location_High (Read_Cursor_Location_High_Register)));
-      --  SERIAL.send_hex (Unsigned_32 (To_U8_Cursor_Location_Low (Read_Cursor_Location_Low_Register)));
-      --  SERIAL.send_hex
-      --    (Unsigned_32 (To_U8_Vertical_Retrace_Start (Read_Vertical_Retrace_Start_Register)));
-      --  SERIAL.send_hex
-      --    (Unsigned_32 (To_U8_Vertical_Retrace_End (Read_Vertical_Retrace_End_Register)));
-      --  SERIAL.send_hex
-      --    (Unsigned_32
-      --       (To_U8_Vertical_Display_Enable_End (Read_Vertical_Display_Enable_End_Register)));
-      --  SERIAL.send_hex (Unsigned_32 (To_U8_Offset (Read_Offset_Register)));
-      --  SERIAL.send_hex (Unsigned_32 (To_U8_Underline_Location (Read_Underline_Location_Register)));
-      --  SERIAL.send_hex
-      --    (Unsigned_32 (To_U8_Start_Vertical_Blanking (Read_Start_Vertical_Blanking_Register)));
-      --  SERIAL.send_hex
-      --    (Unsigned_32 (To_U8_End_Vertical_Blanking (Read_End_Vertical_Blanking_Register)));
-      --  SERIAL.send_hex (Unsigned_32 (To_U8_CRT_Mode_Control (Read_CRT_Mode_Control_Register)));
-      --  SERIAL.send_hex (Unsigned_32 (To_U8_Line_Compare (Read_Line_Compare_Register)));
-      --  SERIAL.send_line ("");
    end Dump_CRTC_Register;
+
+   procedure Prepare_CRTC_For_Configuration is
+   begin
+      Write_End_Horizontal_Blanking_Register ((Display_Enable_Skew => 0, others => <>));
+      Write_End_Horizontal_Retrace_Register ((HRD => 0, others => <>));
+      Write_Vertical_Retrace_End_Register
+        ((Clear_Vertical_Interrupt  => False,
+          Enable_Vertical_Interrupt => False,
+          Select_5_Refresh_Cycles   => False,
+          Protect_Register          => False,
+          others                    => 0));
+      Write_Maximum_Scan_Line_Register ((Double_Scanning => False, others => <>));
+      Write_Start_Address_High_Register (0);
+      Write_Start_Address_Low_Register (0);
+
+      Write_Cursor_Location_High_Register (0);
+      Write_Cursor_Location_Low_Register (0);
+   end Prepare_CRTC_For_Configuration;
+
+   ------------------------
+   -- Get_MSL_Multiplier --
+   ------------------------
+   function Get_MSL_Multiplier (Height : Scan_Line_Count) return Integer is
+      HW_MAX_SUPPORTED_HEIGHT : constant Scan_Line_Count := 400;
+   begin
+      if HW_MAX_SUPPORTED_HEIGHT < Height then
+         return 1;
+   end if;
+
+      return HW_MAX_SUPPORTED_HEIGHT / Height;
+   end Get_MSL_Multiplier;
+
+   function Compute_Dot_Per_Pixel (Color_Depth : Positive) return Positive is
+   begin
+      if Color_Depth = 256 then
+         -- In 256 mode 4 pixels are outputed from memory each dot clock
+         -- Hence, 2 dot ticks are required for 1 pixel.
+         return 2;
+      else
+         return 1;
+      end if;
+   end Compute_Dot_Per_Pixel;
+
+
+   procedure Set_CRTC_For_Mode (mode : VGA_mode)
+   is
+      Timing : VGA_Timing;
+      Line_Compare_Disable : constant := 16#3FF#;
+      Offset     : Positive;
+   begin
+      if mode.vga_type = alphanumeric then
+         Offset := mode.AN_Format.Width / (1 * 2);
+         Timing := Compute_Timing (mode.Pixel_Width, mode.Pixel_Height);
+      else
+         Offset := mode.Pixel_Width / (2 * 2 * 2);
+         Timing := Compute_Timing (mode.Pixel_Width * Compute_Dot_Per_Pixel (mode.Colors), mode.Pixel_Height * Get_MSL_Multiplier (mode.Pixel_Height));
+      end if;
+      Logger.Log_Info ("Setting CRTC for mode" & mode'Image);
+      Logger.Log_Info (Timing'Image);
+      Prepare_CRTC_For_Configuration;
+
+      Write_Horizontal_Total_Register (Horizontal_Total_Register (Timing.Total_H - 5));
+      Write_Horizontal_Display_Enable_End_Register
+        (Horizontal_Display_Enable_End_Register (Timing.Active_H_Chars - 1));
+      Set_Horizontal_Blanking (Timing.H_Blanking_Start, Timing.H_Blanking_Duration);
+      Set_Horizontal_Retrace (Timing.H_Retrace_Start, Timing.H_Retrace_Duration);
+
+      Set_Vertical_Total (Timing.Total_V - 2);
+      Set_Vertical_Display (Timing.Active_V_Chars - 1);
+      Set_Vertical_Blanking (Timing.V_Blanking_Start, Timing.V_Blanking_Duration);
+      Set_Vertical_Retrace (Timing.V_Retrace_Start, Timing.V_Retrace_Duration);
+
+      Write_Cursor_Start_Register ((Row_Scan_Cursor_Begins => 16#D#, Cursor_Off => False));
+      Write_Cursor_End_Register ((Row_Scan_Cursor_Ends => 16#E#, Cursor_Skew_Control => 0));
+
+      Write_Offset_Register (Offset_Register (Offset));
+
+      if mode.vga_type = alphanumeric then
+         Write_Underline_Location_Register
+         ((Start_Under_Line => 16#1F#, Count_By_4 => False, Double_Word => False, others => <>));
+      else
+         Write_Underline_Location_Register
+         ((Start_Under_Line => 16#0#, Count_By_4 => False, Double_Word => True, others => <>));
+      end if;
+
+      if mode.vga_type = alphanumeric then
+         Write_Maximum_Scan_Line_Register
+         ((MSL => Unsigned_5 (mode.Box.Height * 2) - 1, Double_Scanning => False, others => 0));
+      else
+         Write_Maximum_Scan_Line_Register
+         ((MSL => Unsigned_5 (Get_MSL_Multiplier (mode.Pixel_Height) - 1), Double_Scanning => False, others => 0));
+      end if;
+      Set_Line_Compare (Line_Compare_Disable);
+
+         Write_CRT_Mode_Control_Register
+         ((CSM_0          => True,
+            SRC            => True,
+            HRS            => False,
+            Count_By_2     => False,
+            Address_Wrap   => True,
+            Word_Byte_Mode => False,
+            Hardware_Reset => True));
+
+      Write_Cursor_Location_Low_Register (16#50#);
+
+   end Set_CRTC_For_Mode;
 
    procedure Set_Horizontal_Blanking (start : Positive; duration : Positive) is
       --  To program Horizontal_Blanking_End for a signal width of W, the

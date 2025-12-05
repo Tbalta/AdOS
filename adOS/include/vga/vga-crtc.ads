@@ -1,3 +1,15 @@
+------------------------------------------------------------------------------
+--                                 VGA-CRTC                                 --
+--                                                                          --
+--                                 S p e c                                  --
+-- (c) 2025 Tanguy Baltazart                                                --
+-- License : See LICENCE.txt in the root directory.                         --
+--                                                                          --
+--                                                                          --
+--  Description:                                                            --
+--    register definition for CRTC registers                                --
+------------------------------------------------------------------------------
+
 with System;
 with x86.Port_IO;
 with Interfaces; use Interfaces;
@@ -13,6 +25,8 @@ package VGA.CRTC is
    procedure Set_Vertical_Total (total : Scan_Line_Count);
    procedure Set_Vertical_Display (display : Natural);
    procedure Set_Line_Compare (Line : Natural);
+   procedure Set_CRTC_For_Mode (mode : VGA_mode);
+
    -----------------
    -- CRTC Values --
    -----------------

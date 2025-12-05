@@ -126,7 +126,6 @@ begin
       end if;
    end;
 
-   --  VGA.Set_Graphic_Mode (320, 200, 256);
    declare
       use File_System;
       fd : File_System.File_Descriptor_With_Error := FD_ERROR;
@@ -140,8 +139,7 @@ begin
    begin
       VGA.Set_Graphic_Mode (320, 200, 256);
       VGA.load_palette ("vga-gui.hex");
-      --  libvga_switch_mode13h;
-      VGA.save_buffer;
+      VGA.Save_Frame_Buffer;
       fd := open ("vga_frame_buffer", 0);
       Buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
       Buffer (1 .. 320 * 200) := (others => 5);
@@ -152,7 +150,6 @@ begin
    end;
 
    Logger.Log_Info ("Setting text mode");
-   --  VGA.Dump_Registers;
    declare
       type VGA_CHAR is record
          c : Character;
@@ -173,15 +170,15 @@ begin
       fd : File_System.File_Descriptor_With_Error := FD_ERROR;
       count : Integer := 0;
    begin
-      VGA.restore_buffer;
-      --  restore_fb (VGA.save_buffer_address);
-      --  libvga_switch_mode3h;
-      VGA.Set_Text_Mode (80, 25);
+      VGA.Restore_Frame_Buffer;
+      VGA.Set_Text_Mode (80, 25, 16);
+      --  VGA.test (80, 25);
       VGA.load_palette ("vga-tui.hex");
-      fd := open ("vga_frame_buffer", 0);
+      --  fd := open ("vga_frame_buffer", 0);
       Buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
-      Buffer.all := (others => (c => 'H', attribute => 16#F#));
-      close (fd);
+      Buffer (1 .. 80) := (others => (c => 'H', attribute => 16#F#));
+      Buffer (81 .. 80 * 2) := (others => (c => 'E', attribute => 16#F#));
+      --  close (fd);
    end;
 
    -----------------
