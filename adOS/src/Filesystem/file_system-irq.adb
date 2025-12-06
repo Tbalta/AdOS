@@ -4,8 +4,9 @@ with File_System.SERIAL;
 with Log;
 with Ada.Unchecked_Conversion;
 with Programmable_Interval_Timer; use Programmable_Interval_Timer;
+with Keyboard;
 
-package body File_System.PIT is
+package body File_System.IRQ is
    package Logger renames Log.Serial_Logger;
 
    ----------
@@ -18,6 +19,10 @@ package body File_System.PIT is
          return SYSTICK_FD;
       end if;
    
+      if File_Path = "keyboard" then
+         return KEYBOARD_FD;
+      end if;
+   
       return DRIVER_FD_ERROR;
    end open;
 
@@ -27,7 +32,7 @@ package body File_System.PIT is
    ----------
    function read (fd : Driver_File_Descriptor; Buffer : access Read_Type) return Integer is
    begin
-      if fd /= SYSTICK_FD then
+      if fd /= SYSTICK_FD and then fd /= KEYBOARD_FD then
          Logger.Log_Error ("Invalid fd " & fd'Image);
          return -1;
       end if;
@@ -42,7 +47,16 @@ package body File_System.PIT is
       declare
          function To_U32 is new Ada.Unchecked_Conversion(Source => Integer, Target => Read_Type);
       begin
-         Buffer.all := To_U32 (Programmable_Interval_Timer.Get_Systick);
+         case fd is
+            when SYSTICK_FD =>
+               --  Logger.Log_Info ("Read_Systick " & Programmable_Interval_Timer.Get_Systick'Image);
+               Buffer.all := To_U32 (Programmable_Interval_Timer.Get_Systick);
+            when KEYBOARD_FD =>
+               Buffer.all := To_U32 (Keyboard.Get_Key_Code);
+            when others =>
+               Logger.Log_Info ("Invalid fd");
+               Buffer.all := To_U32 ((-1));
+         end case;
       end;
 
       return Read_Type'Size / Storage_Unit;
@@ -68,4 +82,4 @@ package body File_System.PIT is
       return 0;
    end close;
    
-end File_System.PIT;
+end File_System.IRQ;

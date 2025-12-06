@@ -95,8 +95,12 @@ package ELF is
       PT_LOPROC  => 16#70000000#,
       PT_HIPROC  => 16#7FFFFFFF#);
 
-   type Segment_Flags is (PF_X, PF_W, PF_R);
-   for Segment_Flags use (PF_X => 1, PF_W => 2, PF_R => 4);
+   type Segment_Flag is (PF_X, PF_W, PF_R);
+   for Segment_Flag use (PF_X => 0, PF_W => 1, PF_R => 2);
+
+   type Segment_Flags is array (Segment_Flag) of Boolean;
+   for Segment_Flags'Component_Size use 1;
+   for Segment_Flags'Size use 4;
 
    function Segment_Type_To_Integer is new Ada.Unchecked_Conversion (Segment_Type, Unsigned_32);
 

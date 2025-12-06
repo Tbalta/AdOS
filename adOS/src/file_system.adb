@@ -1,7 +1,7 @@
 with File_System.ISO;
 with File_System.SERIAL;
 with File_System.VGA;
-with File_System.PIT;
+with File_System.IRQ;
 with Log;
 with System.Storage_Elements; use System.Storage_Elements;
 package body File_System is
@@ -69,7 +69,7 @@ package body File_System is
             return File_System.VGA.open (File_Path, flag);
 
          when PIT_FS =>
-            return File_System.PIT.open (File_Path, flag);
+            return File_System.IRQ.open (File_Path, flag);
          when others =>
             return DRIVER_FD_ERROR;
       end case;
@@ -99,7 +99,7 @@ package body File_System is
       File   : VFS_File;
 
       function Iso_Read is new File_System.ISO.read (Read_Type);
-      function Pit_Read is new File_System.PIT.read (Read_Type);
+      function Pit_Read is new File_System.IRQ.read (Read_Type);
    begin
       File := Descriptors (fd);
       if not File.Valid then
@@ -196,7 +196,7 @@ package body File_System is
             Result := File_System.VGA.close (File.File_System_Decriptor);
 
          when PIT_FS =>
-            Result := File_System.PIT.close (File.File_System_Decriptor);
+            Result := File_System.IRQ.close (File.File_System_Decriptor);
 
          when others =>
             Result := -1;

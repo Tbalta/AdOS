@@ -10,6 +10,7 @@ with x86.vmm;
 with Ada.Unchecked_Conversion;
 with x86.Port_IO;
 with Programmable_Interval_Timer;
+with Keyboard;
 
 package body x86.idt is
    pragma Suppress (Index_Check);
@@ -88,8 +89,10 @@ package body x86.idt is
 
    procedure init_idt is
       procedure timer_callback;
+      procedure keyboard_callback;
       procedure syscall;
       pragma Import (C, timer_callback, "isr_stub_32");
+      pragma Import (C, keyboard_callback, "isr_stub_33");
       pragma Import (C, syscall, "isr_stub_128");
       idt_ptr : idt_ptr_t;
    begin
@@ -97,6 +100,7 @@ package body x86.idt is
          add_entry (i, error_vector (i), 8, 0, trap_gate_32_bits);
       end loop;
       add_entry (TIMER_INTERRUPT, timer_callback'Address, 8, 3, interrupt_32_bits);
+      add_entry (KEYBOARD_INTERRUPT, keyboard_callback'Address, 8, 3, interrupt_32_bits);
       add_entry (SYSCALL_INTERRUPT, syscall'Address, 8, 3, interrupt_32_bits);
       idt_ptr.base := interrupt_vector'Address;
       idt_ptr.limit := interrupt_vector'Size / 8 - 1;
@@ -108,10 +112,17 @@ package body x86.idt is
    procedure handle_timer is
       procedure outb is new x86.Port_Io.Outb(Unsigned_8);
    begin
-      outb (x86.Port_Io.Port_Address (16#20#), 16#20#);
       Programmable_Interval_Timer.Handle_Systick;
 
+      outb (x86.Port_Io.Port_Address (16#20#), 16#20#);
    end handle_timer;
+
+   procedure handle_keyboard is
+      procedure outb is new x86.Port_Io.Outb(Unsigned_8);
+   begin
+      Keyboard.Handle_Keyboard;
+      outb (x86.Port_Io.Port_Address (16#20#), 16#20#);
+   end handle_keyboard;
 
    procedure handler (stf : access stack_frame) is
       interrupt_code : Unsigned_32 renames stf.interrupt_code;
@@ -140,6 +151,9 @@ package body x86.idt is
          handle_timer;
       end if;
 
+      if interrupt_code = 33 then
+         handle_keyboard;
+      end if;
 
 
       --  while True loop

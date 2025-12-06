@@ -28,6 +28,7 @@ with VGA.GTF;
 with Interfaces;
 with VGA.CRTC;
 with Programmable_Interval_Timer;
+with Keyboard;
 
 procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Address) is
    package MultiBoot_Conversion is new System.Address_To_Access_Conversions (multiboot_info);
@@ -181,9 +182,11 @@ begin
    end;
    
    Programmable_Interval_Timer.set_timer_period (10);
+   --  Keyboard.Init;
    -- ?? sti here
    System.Machine_Code.Asm (Template => "sti", Volatile => True);
    PIC.Clear_Mask (0);
+   PIC.Clear_Mask (1);
 
    -----------------
    -- ELF Loading --

@@ -1,7 +1,7 @@
 with SERIAL;
-
+with Log;
 package body ELF.Loader is
-
+   package Logger renames Log.Serial_Logger;
    function Prepare (File : in File_System.File_Descriptor) return ELF_Header is
       Header     : aliased ELF_Header;
       Read_Count : Integer;
@@ -55,29 +55,27 @@ package body ELF.Loader is
       Read_Count     : Integer;
       Seek_Result    : File_System.off_t;
    begin
+
       Seek_Result := File_System.Seek (File, Integer (Header.e_phoff), File_System.SEEK_SET);
       pragma Assert (Seek_Result /= -1);
-
       for i in 1 .. Header.e_phnum loop
          Read_Count := Read_Elf_Program_Header (File, Program_Header'Access);
          pragma Assert (Read_Count = ELF_Program_Header'Size / 8);
 
-         SERIAL.send_line
-           ("Program Header "
-            & i'Image
-            & ": Type="
-            & Program_Header.p_type'Image
-            & " Vaddr="
-            & Program_Header.p_vaddr'Image
-            & " Memsz="
-            & Program_Header.p_memsz'Image
-            & " Filesz="
-            & Program_Header.p_filesz'Image);
+         if not Program_Header'Valid_Scalars then
+            Logger.Log_Error ("Program_Header (" & i'Image & ") is not valid" & Program_Header'Image);
+            pragma Assert (Program_Header'Valid_Scalars);
+         end if;
 
          if Program_Header.p_type = PT_LOAD then
             SERIAL.send_line ("Loading segment " & i'Image & " at " & Program_Header.p_vaddr'Image);
             Load_Segment (File, Program_Header, CR3);
          end if;
+
+         Seek_Result := File_System.Seek (File, Integer (Header.e_phoff), File_System.SEEK_SET);
+         pragma Assert (Seek_Result /= -1);
+         Seek_Result := File_System.Seek (File, Integer (i) * Read_Count, File_System.SEEK_CUR);
+         pragma Assert (Seek_Result /= -1);
       end loop;
    end Kernel_Load;
 
