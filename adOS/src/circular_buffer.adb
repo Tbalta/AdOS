@@ -9,7 +9,7 @@ package body Circular_Buffer is
 
       return Result : Dequeue_Result (True) do 
          Result.Value := Buffer.Buffer (Buffer.Tail);
-         Buffer.Tail := Buffer.Tail + 1 mod Max_Size;
+         Buffer.Tail := Integer (Buffer.Tail + 1) mod Max_Size;
       end return;
    end Pop;
 
@@ -22,7 +22,7 @@ package body Circular_Buffer is
       end if;
 
       Buffer.Buffer (Buffer.Head) := item;
-      Buffer.Head := Buffer.Head + 1 mod Max_Size;
+      Buffer.Head := Integer (Buffer.Head + 1) mod Max_Size;
    end Push;
 
    function Count (Buffer : Buffer_Type) return Integer

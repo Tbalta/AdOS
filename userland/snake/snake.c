@@ -230,8 +230,6 @@ int _start() {
 
     char buff[256];
 
-    
-    int systick = 0;
     int tick = 0;
     int x = 0;
     int y = 0;
@@ -281,148 +279,163 @@ int _start() {
                 break;
             }
         }
-        
-    copy_image (vga_buff, garden, garden_dims);    
-    while (1)
-    {
 
-        busy_wait_ms (systick_fd, 25);
-
-        int n = snprintf (buff, sizeof (buff), "tick: %d\n", tick);
-        write (tty, buff, n);
-
-        if (next_fruit <= 0 && !fruit_valid)
-        {
-            fruit = (point_t){
-                .x = (((rand() % (320 - step)) + step - 1) / step) * step,
-                .y = (((rand() % (200 - step)) + step - 1) / step) * step,
-            };
-            fruit_valid = true;
-        }
         
-        int key = -1;
-        while (read (keyboard_fd, &key, sizeof (int)) != -1 && key != -1)
-        {
-            switch (key)
-            {
-                case 17:
-                    direction = UP;
-                    break;
-                case 31:
-                    direction = DOWN;
-                    break;
-                case 30:
-                    direction = LEFT;
-                    break;
-                case 32:
-                    direction = RIGHT;
-                    break; 
-                default:
-                    break;
-            }
-        }
-
-        switch (direction)
-        {
-            case LEFT:
-                if (prev_direction != RIGHT)
-                {
-                    direction_x = -1;
-                    direction_y = 0;
-                    prev_direction = LEFT;
-                }
-                break;
-            case RIGHT:
-                if (prev_direction != LEFT)
-                {
-                    direction_x = 1;
-                    direction_y = 0;
-                    prev_direction = RIGHT;
-                }
-                break;
-            case UP:
-                if (prev_direction != DOWN)
-                {
-                    direction_x = 0;
-                    direction_y = -1;
-                    prev_direction = UP;
-                }
-                break;
-            case DOWN:
-                if (prev_direction != UP)
-                {
-                    direction_x = 0;
-                    direction_y = 1;
-                    prev_direction = DOWN;
-                }
-                break;
-            default:
-                break;
-        }
-        
-        x += (direction_x * step);
-        y += (direction_y * step);
-        if (x < 0 || y < 0)
-        {
-            break;
-        }
-        if (y >= 200 || x >= 320)
-        {
-            break;
-        }
-        
-        for (int i = tail; i != head; i = (i + 1) % MAX_BODY_PART)
-        {
-            
-            if (body[i].x == x && body[i].y == y)
-            {
-                goto lost;
-            }
-        }
-        
-        head = (head + 1) % MAX_BODY_PART;
+        // init
+        x = 0;
+        y = 10;
+        head = 0;
+        tail = 0;
+        fruit_valid = false;
+        next_fruit = 0;
+        tick = 0;
         body [head] = (point_t){
             .x = x,
             .y = y,
         };
-        if (fruit_valid)
+        prev_direction = RIGHT;
+        direction = RIGHT;
+        copy_image (vga_buff, garden, garden_dims);    
+        while (1)
         {
-            // draw_box (vga_buff, fruit.x, fruit.y, step, step, 210);
-            draw_image (vga_buff, apple_bmp, garden_dims, body_part_dims, fruit, (point_t){0, 0}, body_part_dims);
 
-        }
+            busy_wait_ms (systick_fd, 25);
 
-        // draw_image (vga_buff, snake_heads [prev_direction], body[head].x, body[head].y, step, step);
-        draw_image (vga_buff, snake_heads [prev_direction], garden_dims, body_part_dims, body[head], (point_t){0, 0}, body_part_dims);
+            int n = snprintf (buff, sizeof (buff), "tick: %d\n", tick);
+            write (tty, buff, n);
 
-        
-        if (next_mod (tail, MAX_BODY_PART) != head)
-        {
-            int body_position = prev_mod (head, MAX_BODY_PART);
-            draw_image (vga_buff, body_bmp, garden_dims, body_part_dims, body[body_position], (point_t){0, 0}, body_part_dims);
-        }
+            if (next_fruit <= 0 && !fruit_valid)
+            {
+                fruit = (point_t){
+                    .x = (((rand() % (320 - step)) + step - 1) / step) * step,
+                    .y = (((rand() % (200 - step)) + step - 1) / step) * step,
+                };
+                fruit_valid = true;
+            }
+            
+            int key = -1;
+            while (read (keyboard_fd, &key, sizeof (int)) != -1 && key != -1)
+            {
+                switch (key)
+                {
+                    case 17:
+                        direction = UP;
+                        break;
+                    case 31:
+                        direction = DOWN;
+                        break;
+                    case 30:
+                        direction = LEFT;
+                        break;
+                    case 32:
+                        direction = RIGHT;
+                        break; 
+                    default:
+                        break;
+                }
+            }
 
+            switch (direction)
+            {
+                case LEFT:
+                    if (prev_direction != RIGHT)
+                    {
+                        direction_x = -1;
+                        direction_y = 0;
+                        prev_direction = LEFT;
+                    }
+                    break;
+                case RIGHT:
+                    if (prev_direction != LEFT)
+                    {
+                        direction_x = 1;
+                        direction_y = 0;
+                        prev_direction = RIGHT;
+                    }
+                    break;
+                case UP:
+                    if (prev_direction != DOWN)
+                    {
+                        direction_x = 0;
+                        direction_y = -1;
+                        prev_direction = UP;
+                    }
+                    break;
+                case DOWN:
+                    if (prev_direction != UP)
+                    {
+                        direction_x = 0;
+                        direction_y = 1;
+                        prev_direction = DOWN;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            
+            x += (direction_x * step);
+            y += (direction_y * step);
+            if (x < 0 || y < 0)
+            {
+                break;
+            }
+            if (y >= 200 || x >= 320)
+            {
+                break;
+            }
+            
+            for (int i = tail; i != head; i = (i + 1) % MAX_BODY_PART)
+            {
+                
+                if (body[i].x == x && body[i].y == y)
+                {
+                    goto lost;
+                }
+            }
+            
+            head = (head + 1) % MAX_BODY_PART;
+            body [head] = (point_t){
+                .x = x,
+                .y = y,
+            };
+            if (fruit_valid)
+            {
+                // draw_box (vga_buff, fruit.x, fruit.y, step, step, 210);
+                draw_image (vga_buff, apple_bmp, garden_dims, body_part_dims, fruit, (point_t){0, 0}, body_part_dims);
 
-        if (fruit_valid && fruit.x == body[head].x && fruit.y == body [head].y)
-        {
-            fruit_valid = false;
-            next_fruit = (rand() % 10) + 1;
-        } else {
-            // draw_image (vga_buff, garden, (box_t){.x = body[tail].x, .y = body[tail].y, .width = 320, .height = 200}, (box_t){.x = body[tail].x, .y = body[tail].y, .width = 320, .height = 200} );
-            draw_image (vga_buff, garden, garden_dims, garden_dims, body[tail], body[tail], body_part_dims);
+            }
+
+            // draw_image (vga_buff, snake_heads [prev_direction], body[head].x, body[head].y, step, step);
+            draw_image (vga_buff, snake_heads [prev_direction], garden_dims, body_part_dims, body[head], (point_t){0, 0}, body_part_dims);
 
             
-            // draw_box (vga_buff, body[tail].x, body[tail].y, step, step, 215);
-            tail = (tail + 1) % MAX_BODY_PART;
-        }
+            if (next_mod (tail, MAX_BODY_PART) != head)
+            {
+                int body_position = prev_mod (head, MAX_BODY_PART);
+                draw_image (vga_buff, body_bmp, garden_dims, body_part_dims, body[body_position], (point_t){0, 0}, body_part_dims);
+            }
 
-        if (!fruit_valid)
-        {
-            next_fruit--;
-        }
-        tick++;
-        n = snprintf (buff, sizeof (buff), "%d : %d\n", (unsigned) body[head].x, (unsigned)body[head].y);
-        write (tty, buff, n);
+
+            if (fruit_valid && fruit.x == body[head].x && fruit.y == body [head].y)
+            {
+                fruit_valid = false;
+                next_fruit = (rand() % 10) + 1;
+            } else {
+                // draw_image (vga_buff, garden, (box_t){.x = body[tail].x, .y = body[tail].y, .width = 320, .height = 200}, (box_t){.x = body[tail].x, .y = body[tail].y, .width = 320, .height = 200} );
+                draw_image (vga_buff, garden, garden_dims, garden_dims, body[tail], body[tail], body_part_dims);
+
+                
+                // draw_box (vga_buff, body[tail].x, body[tail].y, step, step, 215);
+                tail = (tail + 1) % MAX_BODY_PART;
+            }
+
+            if (!fruit_valid)
+            {
+                next_fruit--;
+            }
+            tick++;
+            n = snprintf (buff, sizeof (buff), "%d : %d\n", (unsigned) body[head].x, (unsigned)body[head].y);
+            write (tty, buff, n);
     }
     
 lost:
