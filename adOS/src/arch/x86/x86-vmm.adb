@@ -470,9 +470,10 @@ package body x86.vmm is
 
    function Process_To_Process_Map
      (Source_CR3     : CR3_register;
-      Source_Address : System.Address;
+      Source_Address : Virtual_Address;
       Dest_CR3       : CR3_register;
-      Size           : Storage_Count) return System.Address
+      Size           : Storage_Count;
+      Hint           : Virtual_Address := System.Null_Address) return Virtual_Address
    is
       Paging_Enabled : Boolean := Is_Paging_Enabled;
       Offset_In_Page : Virtual_Address_Offset := To_Virtual_Address_Break (Source_Address).Offset;
@@ -480,10 +481,16 @@ package body x86.vmm is
       User_Physical_Address : Physical_Address;
       PT_Count              : Natural := Natural ((Size + 4_095 + Offset_In_Page) / 4_096);
       Return_Address        : System.Address;
-      Dest_Address          : Virtual_Address_Break :=
-        Find_Next_Space (Dest_CR3, Size + Offset_In_Page, Null_Address);
+      Dest_Address          : Virtual_Address_Break;
+
    begin
       Disable_Paging;
+      if Hint /= System.Null_Address then
+         Dest_Address := To_Virtual_Address_Break (Hint);
+         pragma Assert (Can_Fit (Dest_CR3, Hint, Size));
+      else 
+         Dest_Address := Find_Next_Space (Dest_CR3, Size + Offset_In_Page, Null_Address);
+      end if;
       --  !! TODO: Ensure [for page in Source_Address to Source_Address + Size that page is mapped in Source_CR3]
       Return_Address := From_Virtual_Address_Break (Dest_Address) + Offset_In_Page;
       Ada.Assertions.Assert

@@ -156,14 +156,22 @@ package x86.vmm is
       Size        : Storage_Count;
       Is_Writable : Boolean := False;
       Is_Usermode : Boolean := False) return Virtual_Address;
+   function Alloc
+     (CR3         : CR3_register;
+      Address     : Virtual_Address;
+      Data_Size   : Storage_count;
+      Is_Writable : Boolean := False;
+      Is_Usermode : Boolean := False) return Boolean;
+
 
    procedure Unmap (CR3 : CR3_register; Address : System.Address; Size : Storage_Count; Free_Page : Boolean);
 
    function Process_To_Process_Map
      (Source_CR3     : CR3_register;
-      Source_Address : System.Address;
+      Source_Address : Virtual_Address;
       Dest_CR3       : CR3_register;
-      Size           : Storage_Count) return System.Address;
+      Size           : Storage_Count;
+      Hint           : Virtual_Address := System.Null_Address) return Virtual_Address;
 
    function Get_Kernel_CR3 return CR3_register;
    procedure Set_Kernel_CR3 (CR3 : CR3_register);

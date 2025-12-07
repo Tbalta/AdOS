@@ -60,7 +60,7 @@ set_vga_mode_close:
     return -1;
 }
 
-void load_image (char* framebuffer, const char* path)
+void load_image (char* framebuffer, const char* path, int width, int height)
 {
     if (framebuffer == NULL)
     {
@@ -77,7 +77,13 @@ void load_image (char* framebuffer, const char* path)
     read (image, bmp_header, sizeof (bmp_header));
     int start = *(int*)(bmp_header + 10);
     lseek (image, start, SEEK_SET);
-    read(image, framebuffer, 320*200);
+
+    for (int i = 0; i < height; i++)
+    {
+        read(image, framebuffer + (i * width), width);
+        int padding = (((8 * width + 31) / 32) * 4) - width;
+        lseek (image, padding, SEEK_CUR);
+    }
 
     close (image);
 }

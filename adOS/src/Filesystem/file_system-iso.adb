@@ -239,7 +239,8 @@ package body File_System.ISO is
             if (off_t (f_offset) + offset) < 0 then
                return -1;
             end if;
-            f_offset := f_offset + Natural (offset);
+
+            f_offset := Natural'Min (f_offset + Natural (offset), f_size);
 
          when SEEK_END =>
             if (off_t (f_size) + offset) < 0 then
