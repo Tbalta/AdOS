@@ -11,8 +11,8 @@
 with Interfaces; use Interfaces;
 
 with Log;
-package body pic
-is
+
+package body pic is
    package Logger renames Log.Serial_Logger;
    ---------
    -- Rep --
@@ -48,10 +48,9 @@ is
       Outb (Rep (SLAVE_DATA), 16#FF#); -- ICW4
    end init;
 
-   procedure Clear_Mask (irq : Integer)
-   is
-      Port : PIT_PORT;
-      IRQ_V : Integer :=irq;
+   procedure Clear_Mask (irq : Integer) is
+      Port  : PIT_PORT;
+      IRQ_V : Integer := irq;
       Value : Unsigned_8;
       function Inb is new x86.Port_IO.Inb (Unsigned_8);
       procedure Outb is new x86.Port_IO.Outb (Unsigned_8);
@@ -63,8 +62,8 @@ is
          port := SLAVE_DATA;
       end if;
 
-      Value := Unsigned_8 (Inb (Rep(port)) and not Shift_Left(1, IRQ_V));
+      Value := Unsigned_8 (Inb (Rep (port)) and not Shift_Left (1, IRQ_V));
       Logger.Log_Info ("Value: " & Value'Image);
-      Outb (Rep(port), Value);
+      Outb (Rep (port), Value);
    end Clear_Mask;
 end pic;

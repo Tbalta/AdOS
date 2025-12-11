@@ -26,7 +26,7 @@ is
 
 
 private
-   BLOCK_SIZE   : constant := Atapi.SECTOR_BUFFER'Length;
+   BLOCK_SIZE : constant := Atapi.SECTOR_BUFFER'Length;
    Atapi_Buffer : Atapi.SECTOR_BUFFER;
 
    --  ISO9660 filesystem structures --

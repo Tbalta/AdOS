@@ -14,6 +14,7 @@ with SERIAL;
 with Interfaces; use Interfaces;
 
 with VGA.Attribute.Registers; use VGA.Attribute.Registers;
+
 package body VGA.Attribute is
 
    ------------------------------
@@ -40,22 +41,22 @@ package body VGA.Attribute is
 
       if mode.vga_type = alphanumeric then
          Write_Attribute_Mode_Control_Register
-         ((Graphic_Mode              => False,
-            Mono_Emulation            => False,
-            Enable_Line_Graphics      => mode.Box.Width = 9,
-            Enable_Blink              => True,
-            PEL_Panning_Compatibility => False,
-            PEL_Width                 => False,
-            P5_P4_Select              => False));
+           ((Graphic_Mode              => False,
+             Mono_Emulation            => False,
+             Enable_Line_Graphics      => mode.Box.Width = 9,
+             Enable_Blink              => True,
+             PEL_Panning_Compatibility => False,
+             PEL_Width                 => False,
+             P5_P4_Select              => False));
       else
          Write_Attribute_Mode_Control_Register
-               ((Graphic_Mode              => True,
-                  Mono_Emulation            => False,
-                  Enable_Line_Graphics      => False,
-                  Enable_Blink              => False,
-                  PEL_Panning_Compatibility => False,
-                  PEL_Width                 => mode.Colors = 256,
-                  P5_P4_Select              => False));
+           ((Graphic_Mode              => True,
+             Mono_Emulation            => False,
+             Enable_Line_Graphics      => False,
+             Enable_Blink              => False,
+             PEL_Panning_Compatibility => False,
+             PEL_Width                 => mode.Colors = 256,
+             P5_P4_Select              => False));
       end if;
       Write_Overscan_Color_Register (0);
       Write_Color_Plane_Enable_Register (16#0F#);

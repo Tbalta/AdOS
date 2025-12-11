@@ -1,7 +1,8 @@
 with x86.vmm;
 with x86.pmm;
 with Ada.Unchecked_Conversion;
-with Interfaces; use Interfaces;
+with Interfaces;              use Interfaces;
+with System.Storage_Elements; use System.Storage_Elements;
 
 package ELF is
    pragma Preelaborate;
@@ -50,7 +51,7 @@ package ELF is
       e_machine   : Unsigned_16;
       e_version   : Unsigned_32;
       e_entry     : x86.Virtual_Address;
-      e_phoff     : Unsigned_32;
+      e_phoff     : Storage_Offset;
       e_shoff     : Unsigned_32;
       e_flags     : Unsigned_32;
       e_ehsize    : Unsigned_16;
@@ -106,11 +107,11 @@ package ELF is
 
    type ELF_Program_Header is record
       p_type   : Segment_Type;
-      p_offset : Unsigned_32;
+      p_offset : Storage_Offset;
       p_vaddr  : x86.Virtual_Address;
       p_paddr  : x86.Physical_Address;
-      p_filesz : Unsigned_32;
-      p_memsz  : Unsigned_32;
+      p_filesz : Storage_Count;
+      p_memsz  : Storage_Count;
       p_flags  : Segment_Flags;
       p_align  : Unsigned_32;
    end record

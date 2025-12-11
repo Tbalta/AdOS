@@ -11,13 +11,12 @@
 ------------------------------------------------------------------------------
 
 with x86.Port_IO; use x86.Port_IO;
-with Interfaces; use Interfaces;
+with Interfaces;  use Interfaces;
 with Circular_Buffer;
 
 package Keyboard is
    pragma Preelaborate;
    generic package CB renames Circular_Buffer;
-
 
    procedure init;
    procedure Handle_Keyboard;
@@ -28,36 +27,37 @@ private
 
    type Status_Register_Format is record
       Output_Buffer_Status : Boolean;
-      Input_Buffer_Status : Boolean;
-      System_Flag : Boolean;
-      Command_data : Boolean;
-      Time_Out_Error : Boolean;
-      Parity_error : Boolean;
+      Input_Buffer_Status  : Boolean;
+      System_Flag          : Boolean;
+      Command_data         : Boolean;
+      Time_Out_Error       : Boolean;
+      Parity_error         : Boolean;
    end record
-      with Size => 8;
+   with Size => 8;
 
-   for Status_Register_Format use record
-      Output_Buffer_Status at 0 range 0 .. 0;
-      Input_Buffer_Status at 0 range 1 .. 1;
-      System_Flag at 0 range 2 .. 2;
-      Command_data at 0 range 3 .. 3;
-      Time_Out_Error at 0 range 6 .. 6;
-      Parity_error at 0 range 7 .. 7;
-   end record;
+   for Status_Register_Format use
+     record
+       Output_Buffer_Status at 0 range 0 .. 0;
+       Input_Buffer_Status at 0 range 1 .. 1;
+       System_Flag at 0 range 2 .. 2;
+       Command_data at 0 range 3 .. 3;
+       Time_Out_Error at 0 range 6 .. 6;
+       Parity_error at 0 range 7 .. 7;
+     end record;
 
    type Keycode is record
-      Key         :  Unsigned_7;
+      Key         : Unsigned_7;
       Is_Released : Boolean := False;
    end record;
 
-   for Keycode use record
-      Key at 0 range 0 .. 6;
-      Is_Released at 0 range 7 .. 7;
-   end record;
+   for Keycode use
+     record
+       Key at 0 range 0 .. 6;
+       Is_Released at 0 range 7 .. 7;
+     end record;
 
-
-   DATA_PORT : constant Port_Address := 16#60#;
-   STATUS_REGISTER_PORT : constant Port_Address := 16#64#;
+   DATA_PORT             : constant Port_Address := 16#60#;
+   STATUS_REGISTER_PORT  : constant Port_Address := 16#64#;
    COMMAND_REGISTER_PORT : constant Port_Address := 16#64#;
 
    Disable_Scanning_Command : constant Unsigned_8 := 16#F5#;
@@ -74,7 +74,7 @@ private
 
    Keycode_Buffer : aliased Keycode_Circular_Buffer.Buffer_Type;
 
-   
+
 
 
 end Keyboard;

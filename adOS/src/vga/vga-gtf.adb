@@ -18,14 +18,12 @@ package body VGA.GTF is
    --------------------
    -- Compute_Timing --
    --------------------
-   function Compute_Timing
-     (H_PIXELS : Pixel_Count; V_LINES : Scan_Line_Count) return VGA_Timing
-   is
+   function Compute_Timing (H_PIXELS : Pixel_Count; V_LINES : Scan_Line_Count) return VGA_Timing is
       -- Hardware specific --
-      M             : constant Float := 600.0;
-      C             : constant Float := 40.0;
-      K             : constant Float := 128.0;
-      J             : constant Float := 20.0;
+      M : constant Float := 600.0;
+      C : constant Float := 40.0;
+      K : constant Float := 128.0;
+      J : constant Float := 20.0;
 
       -- Default value --
       MIN_VSYNC_BP  : constant Float := 550.0;

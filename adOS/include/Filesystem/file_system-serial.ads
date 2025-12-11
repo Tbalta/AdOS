@@ -27,7 +27,7 @@ is
 
 
 private
-   
+
    type File_Information is record
       used : Boolean := False;
       tty  : Positive;

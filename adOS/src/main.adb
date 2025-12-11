@@ -89,7 +89,7 @@ begin
 
    Logger.Log_Info ("Initializing VMM");
    CR3 := Create_CR3;
-   Logger.Log_Info ("CR3 address: " & To_Address (CR3.Address)'Image);
+   Logger.Log_Info ("CR3 address: " & CR3'Image);
    Identity_Map (CR3);
    Load_CR3 (CR3);
    Set_Kernel_CR3 (CR3);
@@ -132,12 +132,11 @@ begin
       use File_System;
       fd : File_System.File_Descriptor_With_Error := FD_ERROR;
 
-      type vga_buffer is array (Integer range 1 .. 320 * 200) of Unsigned_8
-         with Pack => True;
+      type vga_buffer is array (Integer range 1 .. 320 * 200) of Unsigned_8 with Pack => True;
       package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
 
       Buffer : access vga_buffer := null;
-      count : Integer := 0;
+      count  : Integer := 0;
    begin
       VGA.Set_Graphic_Mode (320, 200, 256);
       VGA.load_palette ("vga-gui.hex");
@@ -146,28 +145,28 @@ begin
       Buffer (1 .. 320 * 200) := (others => 5);
       Buffer (1 .. 320 * 150) := (others => 70);
       Buffer (1 .. 320 * 100) := (others => 90);
-      Buffer (1 .. 320 * 50)  := (others => 250);
+      Buffer (1 .. 320 * 50) := (others => 250);
    end;
 
    Logger.Log_Info ("Setting text mode");
    declare
       type VGA_CHAR is record
-         c : Character;
+         c         : Character;
          attribute : Unsigned_8;
       end record;
 
-      for VGA_CHAR use record
-         c at 0 range 0 .. 7;
-         attribute at 1 range 0 .. 7;
-      end record;
+      for VGA_CHAR use
+        record
+          c at 0 range 0 .. 7;
+          attribute at 1 range 0 .. 7;
+        end record;
 
       use File_System;
-      type vga_buffer is array (Positive  range 1 .. 80 * 25) of aliased VGA_CHAR
-         with Pack => True;
+      type vga_buffer is array (Positive range 1 .. 80 * 25) of aliased VGA_CHAR with Pack => True;
       package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
       Buffer : access vga_buffer := null;
 
-      fd : File_System.File_Descriptor_With_Error := FD_ERROR;
+      fd    : File_System.File_Descriptor_With_Error := FD_ERROR;
       count : Integer := 0;
    begin
       VGA.Restore_Frame_Buffer;
@@ -180,7 +179,7 @@ begin
       Buffer (81 .. 80 * 2) := (others => (c => 'E', attribute => 16#F#));
       --  close (fd);
    end;
-   
+
    Programmable_Interval_Timer.set_timer_period (10);
    --  Keyboard.Init;
    -- ?? sti here
@@ -203,8 +202,8 @@ begin
          goto Init_End;
       end if;
 
-      Program_Header := ELF.Loader.Prepare (FD);
-      ELF.Loader.Kernel_Load (FD, Program_Header, CR3);
+      Program_Header := ELF.Loader.Get_Elf_Header (FD);
+      ELF.Loader.Load_Elf (FD, Program_Header, CR3);
       Logger.Log_Ok ("ELF file loaded in memory");
       if close (FD) /= 0 then
          Logger.Log_Error ("Error closing ELF file");

@@ -1,3 +1,12 @@
+------------------------------------------------------------------------------
+--                             CIRCULAR_BUFFER                              --
+--                                                                          --
+--                                 S p e c                                  --
+-- (c) 2025 Tanguy Baltazart                                                --
+-- License : See LICENCE.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
 generic
    Max_Size : Integer := 256;
    type Element_Type is private;
@@ -7,18 +16,17 @@ package Circular_Buffer is
    type Element_Array is array (Buffer_Index) of Element_Type;
 
    type Buffer_Type is record
-      Tail : Buffer_Index := 0;
-      Head : Buffer_Index := 0;
+      Tail   : Buffer_Index := 0;
+      Head   : Buffer_Index := 0;
       Buffer : Element_Array;
    end record;
    pragma Preelaborable_Initialization (Buffer_Type);
-
-
 
    type Dequeue_Result (valid : Boolean) is record
       case Valid is
          when True =>
             Value : Element_Type;
+
          when False =>
             null;
       end case;

@@ -2,56 +2,105 @@ with System.Machine_Code;     use System.Machine_Code;
 with System.Storage_Elements; use System.Storage_Elements;
 with config;                  use config;
 with Ada.Assertions;
-with System.Secondary_Stack;
+--  with System.Secondary_Stack;
 with Log;
+with x86.vmm;
+
 package body x86.vmm is
    use Standard.ASCII;
    package Logger renames Log.Serial_Logger;
 
-   function To_Address (Addr : Page_Address) return System.Address is
-   begin
-      return System.Address (Integer_Address (Addr) * 4_096);
-   end To_Address;
+   ----------------
+   -- To_Address --
+   ----------------
+   function To_Address (Addr : Page_Address) return System.Address is (System.Address (Integer_Address (Addr) * 4_096));
 
+   -------------------------
+   -- Get_Number_Of_Pages --
+   -------------------------
+   function Get_Number_Of_Pages (Size : Storage_Count; Offset : Storage_Offset := 0) return Positive
+   is (Positive (Size + 4_095 + Offset) / 4_096);
+
+   -------------------------------
+   -- Get_Number_Of_Page_Tables --
+   -------------------------------
+   function Get_Number_Of_Page_Tables (Size : Storage_Count; Offset : Storage_Offset := 0) return Positive
+   is  ((Get_Number_Of_Pages (Size, Offset) + Positive (Page_Table'Length) - 1) / Page_Table'Length);
+
+   ---------------------------
+   -- To_Page_Table_Address --
+   ---------------------------
    function To_Page_Table_Address (Addr : System.Address) return Page_Table_Address is
-   begin
-      return Page_Table_Address (Integer_Address (Addr) / 4_096);
-   end To_Page_Table_Address;
+    (Page_Table_Address (Integer_Address (Addr) / 4_096));
 
+   -------------------------------
+   -- To_Page_Directory_Address --
+   -------------------------------
    function To_Page_Directory_Address (Addr : System.Address) return Page_Directory_Address is
-   begin
-      return Page_Directory_Address (Integer_Address (Addr) / 4_096);
-   end To_Page_Directory_Address;
+   (Page_Directory_Address (Integer_Address (Addr) / 4_096));
 
+   ---------------------
+   -- To_Page_Address --
+   ---------------------
    function To_Page_Address (Addr : System.Address) return Page_Address is
-   begin
-      return Page_Address (Integer_Address (Addr) / 4_096);
-   end To_Page_Address;
+    (Page_Address (Integer_Address (Addr) / 4_096));
 
+   ------------------------
+   -- Get_Page_Directory --
+   ------------------------
+   function Get_Page_Directory (CR3 : CR3_Register) return Page_Directory_Access is (To_Page_Directory (To_Address (CR3.Address)));
+   
+   function Is_Paging_Enabled return Boolean
+   is
+   begin
+      return Paging_Enabled;
+   end Is_Paging_Enabled;
+
+   --------------------
+   -- Get_Page_Table --
+   --------------------
+   function Get_Page_Table
+     (CR3 : CR3_Register; Index : Page_Directory_Index) return Page_Table_Access is (To_Page_Table_Access (Get_Page_Directory (CR3) (Index).Address));
+
+   -------------------
+   -- Enable_Paging --
+   -------------------
    procedure Enable_Paging is
    begin
+      if Paging_Enabled then
+         Logger.Log_Warning ("Paging is already enabled!");
+         return;
+      end if;
       --  Logger.Log_Info ("Enabling paging");
       --!format off
-      Asm  ("movl %%cr0, %%eax"      & LF & HT & 
-            "or $0x80000001, %%eax"  & LF & HT &
-            "movl %%eax, %%cr0",
+      Asm
+        ("movl %%cr0, %%eax" & LF & HT & "or $0x80000001, %%eax" & LF & HT & "movl %%eax, %%cr0",
          Volatile => True);
       --!format off
-      Is_Paging_Enabled := True;
+      Paging_Enabled := True;
    end Enable_Paging;
 
+   --------------------
+   -- Disable_Paging --
+   --------------------
    procedure Disable_Paging is
    begin
+      if not Paging_Enabled then
+         Logger.Log_Warning ("Paging is already disabled!");
+         return;
+      end if;
       --  Logger.Log_Info ("Disabling paging");
       --!format off
-      Asm ("mov %%cr0, %%eax"        & LF &
-            "and $0x7FFFFFFF, %%eax" & LF &
-            "mov %%eax, %%cr0"       & LF,
-            Volatile => True);
+      Asm
+        ("mov %%cr0, %%eax" & LF & "and $0x7FFFFFFF, %%eax" & LF & "mov %%eax, %%cr0" & LF,
+         Volatile => True);
       --!format on
-      Is_Paging_Enabled := False;
+      Paging_Enabled := False;
    end Disable_Paging;
 
+   ----------------
+   -- Create_CR3 --
+   ----------------
    function Create_CR3 return CR3_register is
       CR3 : CR3_register;
    begin
@@ -70,22 +119,28 @@ package body x86.vmm is
       return CR3;
    end Create_CR3;
 
+   --------------
+   -- Load_CR3 --
+   --------------
    procedure Load_CR3 (CR3 : CR3_register) is
    begin
       --!format off
-      Asm ( "movl %0, %%eax"     & LF &
-            "movl %%eax, %%cr3"  & LF,
+      Asm
+        ("movl %0, %%eax" & LF & "movl %%eax, %%cr3" & LF,
          Inputs   => CR3_register'Asm_Input ("a", CR3),
          Volatile => True);
       --!format on
    end Load_CR3;
 
+   ---------------------
+   -- Get_Current_CR3 --
+   ---------------------
    function Get_Current_CR3 return CR3_register is
       CR3 : CR3_register;
    begin
       --!format off
-      Asm ( "movl %%cr3, %%eax"  & LF &
-            "movl %%eax, %0"     & LF,
+      Asm
+        ("movl %%cr3, %%eax" & LF & "movl %%eax, %0" & LF,
          Outputs  => CR3_register'Asm_Output ("=a", CR3),
          Volatile => True);
       --!format on
@@ -93,6 +148,35 @@ package body x86.vmm is
       return CR3;
    end Get_Current_CR3;
 
+   ---------------------------
+   -- Enable_Kernel_Mapping --
+   ---------------------------
+   procedure Enable_Kernel_Mapping is
+   begin
+      Disable_Paging;
+      Load_CR3 (Kernel_CR3);
+      Enable_Paging;
+   end Enable_Kernel_Mapping;
+
+   --------------------
+   -- Get_Kernel_CR3 --
+   --------------------
+   function Get_Kernel_CR3 return CR3_register is
+   begin
+      return Kernel_CR3;
+   end Get_Kernel_CR3;
+
+   --------------------
+   -- Set_Kernel_CR3 --
+   --------------------
+   procedure Set_Kernel_CR3 (CR3 : CR3_register) is
+   begin
+      Kernel_CR3 := CR3;
+   end Set_Kernel_CR3;
+
+   -----------------------
+   -- Create_Page_Table --
+   -----------------------
    procedure Create_Page_Table
      (PD          : Page_Directory_Access;
       PD_Index    : Page_Directory_Index;
@@ -125,6 +209,9 @@ package body x86.vmm is
       Create_Page_Table (PD, PD_Index, PT, Is_Writable => Is_Writable, Is_Usermode => Is_Usermode);
    end Create_Page_Table;
 
+   --------------------------
+   -- Map_Page_Table_Entry --
+   --------------------------
    procedure Map_Page_Table_Entry
      (Page_Table       : Page_Table_Access;
       Page_Table_Start : Page_Table_Index;
@@ -143,6 +230,9 @@ package body x86.vmm is
       Page_Table.all (Page_Table_Start).Address := Address;
    end Map_Page_Table_Entry;
 
+   ----------
+   -- Next --
+   ----------
    procedure Next
      (Page_Directory_Start : in out Page_Directory_Index;
       Page_Table_Start     : in out Page_Table_Index) is
@@ -155,6 +245,9 @@ package body x86.vmm is
       end if;
    end Next;
 
+   -----------------------
+   -- Map_Physical_Page --
+   -----------------------
    procedure Map_Physical_Page
      (Page_Directory       : Page_Directory_Access;
       Page_Directory_Start : Page_Directory_Index;
@@ -186,6 +279,9 @@ package body x86.vmm is
 
    end Map_Physical_Page;
 
+   ----------------
+   -- Unmap_Page --
+   ----------------
    procedure Unmap_Page
      (Page_Directory       : Page_Directory_Access;
       Page_Directory_Start : Page_Directory_Index;
@@ -205,6 +301,9 @@ package body x86.vmm is
       To_Page_Table (Page_Directory (PD_Index)) (PT_Index).Present := False;
    end Unmap_Page;
 
+   ---------------------------------
+   -- Virtual_To_Physical_Address --
+   ---------------------------------
    function Virtual_To_Physical_Address
      (CR3 : CR3_register; Address : Virtual_Address) return Physical_Address
    is
@@ -215,8 +314,7 @@ package body x86.vmm is
       if not PD (Address_Breakdown.Directory).Present then
          return Physical_Address'First;
       end if;
-
-      PT := To_Page_Table_Access (PD (Address_Breakdown.Directory).Address);
+      PT := Get_Page_Table (CR3, Address_Breakdown.Directory);
 
       if not PT (Address_Breakdown.Table).Present then
          return Physical_Address'First;
@@ -225,6 +323,9 @@ package body x86.vmm is
       return To_Address (PT (Address_Breakdown.Table).Address) + Address_Breakdown.Offset;
    end Virtual_To_Physical_Address;
 
+   ---------------
+   -- Map_Range --
+   ---------------
    procedure Map_Range
      (Page_Directory             : Page_Directory_Access;
       Page_Directory_Start       : Page_Directory_Index;
@@ -233,15 +334,15 @@ package body x86.vmm is
       Is_Writable                : Boolean := False;
       Is_Usermode                : Boolean := False)
    is
-      PT_Count : Natural := (Natural (To_Integer (End_Address - Start_Address)) + 4_095) / 4_096;
+      Page_Count : Positive := Get_Number_Of_Pages (End_Address - Start_Address);
 
       PD_Index       : Page_Directory_Index := Page_Directory_Start;
       PT_Index       : Page_Table_Index := Page_Table_Start;
       Address_To_Map : Physical_Address := Start_Address;
    begin
       Logger.Log_Info ("Mapping range " & Start_Address'Image & " - " & End_Address'Image);
-      Logger.Log_Info ("Number of pages to map: " & Natural'Image (PT_Count));
-      for i in 1 .. PT_Count loop
+      Logger.Log_Info ("Number of pages to map: " & Natural'Image (Page_Count));
+      for i in 1 .. Page_Count loop
          if not Page_Directory.all (PD_Index).Present then
             Create_Page_Table
               (Page_Directory, PD_Index, Is_Writable => Is_Writable, Is_Usermode => Is_Usermode);
@@ -259,8 +360,11 @@ package body x86.vmm is
 
    end Map_Range;
 
+   ------------------
+   -- Identity_Map --
+   ------------------
    procedure Identity_Map (CR3 : CR3_register) is
-      PD                  : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
+      PD                  : Page_Directory_Access := Get_Page_Directory (CR3);
       Address_Breakdown   : Virtual_Address_Break := To_Virtual_Address_Break (Null_Address);
       PMM_Start_Breakdown : Virtual_Address_Break :=
         To_Virtual_Address_Break (PMM.Get_Pmm_Start_Address);
@@ -286,10 +390,13 @@ package body x86.vmm is
          Is_Usermode => False);
    end Identity_Map;
 
+   -------------
+   -- Can_Fit --
+   -------------
    function Can_Fit
      (CR3 : CR3_register; Address : Virtual_Address; Size : Storage_Count) return Boolean
    is
-      PD                : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
+      PD                : Page_Directory_Access := Get_Page_Directory (CR3);
       PT                : Page_Table_Access;
       Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
       To_Fit            : Storage_Count := Size;
@@ -305,7 +412,7 @@ package body x86.vmm is
          if not PD (PD_Index).Present then
             To_Fit := To_Fit - Storage_Count'Min (To_Fit, Page_Table'Length * PMM_PAGE_SIZE);
          else
-            PT := To_Page_Table (To_Address (PD (PD_Index).Address));
+            PT := Get_Page_Table (CR3, PD_Index);
             for PT_Index in Address_Breakdown.Table .. Page_Table'Last loop
                if not PT (PT_Index).Present then
                   To_Fit := To_Fit - Storage_Count'Min (To_Fit, PMM_PAGE_SIZE);
@@ -316,10 +423,12 @@ package body x86.vmm is
             Address_Breakdown.Table := 0;
          end if;
       end loop;
-
       return To_Fit = 0;
    end Can_Fit;
 
+   -----------
+   -- Alloc --
+   -----------
    function Alloc
      (CR3         : CR3_register;
       Address     : Virtual_Address;
@@ -327,15 +436,10 @@ package body x86.vmm is
       Is_Writable : Boolean := False;
       Is_Usermode : Boolean := False) return Boolean
    is
-      --  Returns True if the mapping was successful and False otherwise
-
-      PD                : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
+      PD                : Page_Directory_Access := Get_Page_Directory (CR3);
       PT                : Page_Table_Access;
       Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
-
       To_Fit : Storage_Count := Data_Size;
-
-      PD_Entry : Page_Directory_Entry renames PD (Address_Breakdown.Directory);
    begin
       if not Can_Fit (CR3, Address, Data_Size) then
          return False;
@@ -350,7 +454,7 @@ package body x86.vmm is
                Is_Usermode => Is_Usermode);
          end if;
 
-         PT := To_Page_Table (To_Address (PD_Entry.Address));
+         PT := Get_Page_Table (CR3, Address_Breakdown.Directory);
 
          Map_Page_Table_Entry
            (PT,
@@ -368,52 +472,53 @@ package body x86.vmm is
       return True;
    end Alloc;
 
-   function Map_Data
-     (CR3         : in out CR3_register;
-      Address     : Virtual_Address;
-      Data        : in Data_Type;
-      Is_Writable : Boolean := False;
-      Is_Usermode : Boolean := False) return Boolean
+
+   ---------------------
+   -- Is_Range_Mapped --
+   ---------------------
+   function Is_Range_Mapped (CR3 : CR3_Register; Address : Virtual_Address; Size : Storage_Count) return Boolean
    is
-      --  Returns True if the mapping was successful and False otherwise
-      Data_Size : Storage_Count := Data'Size / Storage_Unit;
+      PD  : Page_Directory_Access := Get_Page_Directory (CR3);
+      Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
 
-      procedure memcpy (dest : System.Address; src : System.Address; size : Natural);
-      pragma Import (C, memcpy, "memcpy");
+      First_Page_Table : constant Page_Directory_Index := Address_Breakdown.Directory;
+      Last_Page_Table :  constant Page_Directory_Index := Page_Directory_Index (Get_Number_Of_Page_Tables (Size, Address_Breakdown.Offset) - 1);
 
-      Data_Buffer : System.Address := Data'Address;
-
+      Number_Of_Pages : Natural := Get_Number_Of_Pages (Size, Address_Breakdown.Offset);
+      First_Page : Page_Table_Index := Address_Breakdown.Table;
+      Last_Page  : Page_Table_Index := Page_Table_Index (Positive'Min (Number_Of_Pages - 1, Positive (Page_Table_Index'Last)));
    begin
-      Logger.Log_Info ("Map_Data: Mapping " & Data_Size'Image & " bytes at " & Address'Image);
-
-      Disable_Paging;
-      if not Alloc (CR3, Address, Data_Size, Is_Writable => Is_Writable, Is_Usermode => Is_Usermode)
-      then
-         Logger.Log_Error ("Map_Data: Could not allocate memory for data");
+      if (for some Page_Directory_Entry of PD (First_Page_Table .. Last_Page_Table) => not Page_Directory_Entry.Present) then
+         Logger.Log_Error ("One Page_Directory not present" & First_Page_Table'Image & ".." & Last_Page_Table'Image);
          return False;
       end if;
 
-      Enable_Paging;
-      memcpy (dest => Address, src => Data'Address, size => Natural (Data_Size));
+      for Index in First_Page_Table .. Last_Page_Table loop
+         if (for some Page of Get_Page_Table (CR3, Index).all (First_Page .. Last_Page) => not Page.Present) then
+            Logger.Log_Error ("Not mapped " & Index'Image);
+            return False;
+         end if;
+
+         Last_Page  := Page_Table_Index (Natural'Min (Number_Of_Pages - 1, Natural (Page_Table_Index'Last)));
+         Number_Of_Pages := Number_Of_Pages - Natural'Min (Number_Of_Pages, Page_Table'Length);
+         First_Page := 0;
+      end loop;
 
       return True;
-   end Map_Data;
+   end Is_Range_Mapped;
 
+   ---------------------
+   -- Find_Next_Space --
+   ---------------------
    function Find_Next_Space
      (CR3 : CR3_register; Size : Storage_Count; Start : System.Address) return Virtual_Address_Break
    is
-      Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Start);
-      PD        : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
-      Paging_Enabled : Boolean := Is_Paging_Enabled;
+      Breakdown      : Virtual_Address_Break := To_Virtual_Address_Break (Start);
+      PD             : Page_Directory_Access := Get_Page_Directory (CR3);
    begin
-      Disable_Paging;
-
       for PD_Index in Breakdown.Directory .. Page_Directory'Last loop
          for PT_Index in Breakdown.Table .. Page_Table'Last loop
             if Can_Fit (CR3, From_Virtual_Address_Break (Breakdown), Size) then
-               if Paging_Enabled then
-                  Enable_Paging;
-               end if;
                return Breakdown;
             end if;
 
@@ -421,53 +526,62 @@ package body x86.vmm is
          end loop;
       end loop;
 
-      if Paging_Enabled then
-         Enable_Paging;
-      end if;
       return To_Virtual_Address_Break (Null_Address);
    end;
 
-   function kmalloc
+   ------------------
+   -- Kernel_Alloc --
+   ------------------
+   function Kernel_Alloc
      (CR3         : CR3_register;
       Size        : Storage_Count;
       Is_Writable : Boolean := False;
       Is_Usermode : Boolean := False) return Virtual_Address
    is
-      Address_Breakdown : Virtual_Address_Break := Find_Next_Space (CR3, Size, Null_Address);
-      Paging_Enabled : Boolean := Is_Paging_Enabled;
+      Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Null_Address);
+      Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
+      Success : Boolean := True;
    begin
-      if Address_Breakdown = Last_Virtual_Address_Break then
+      if Paging_Currently_Enabled then
+         Disable_Paging;
+      end if;
+
+      Address_Breakdown := Find_Next_Space (CR3, Size, Null_Address);
+      if Address_Breakdown = To_Virtual_Address_Break (Null_Address) then
          Logger.Log_Error ("No more free space in the Page Directory");
-         return Null_Address;
+         Success := False;
       end if;
 
       Logger.Log_Info
-        ("kmalloc: Allocating "
+        ("Kernel_Alloc: Allocating "
          & Size'Image
          & " bytes at "
          & From_Virtual_Address_Break (Address_Breakdown)'Image);
 
-      Disable_Paging;
-      if not Alloc
+      if Success and then not Alloc
                (CR3,
                 From_Virtual_Address_Break (Address_Breakdown),
                 Size,
                 Is_Writable => Is_Writable,
                 Is_Usermode => Is_Usermode)
       then
-         Logger.Log_Error ("kmalloc: Could not allocate memory");
-         if Paging_Enabled then
-            Enable_Paging;
-         end if;
-         return Null_Address;
+         Success := False;
       end if;
 
-      if Paging_Enabled then
+      if Paging_Currently_Enabled then
          Enable_Paging;
       end if;
-      return From_Virtual_Address_Break (Address_Breakdown);
-   end kmalloc;
 
+      if Success then
+         return From_Virtual_Address_Break (Address_Breakdown);
+      end if; 
+
+      return Null_Address;
+   end Kernel_Alloc;
+
+   ----------------------------
+   -- Process_To_Process_Map --
+   ----------------------------
    function Process_To_Process_Map
      (Source_CR3     : CR3_register;
       Source_Address : Virtual_Address;
@@ -475,86 +589,104 @@ package body x86.vmm is
       Size           : Storage_Count;
       Hint           : Virtual_Address := System.Null_Address) return Virtual_Address
    is
-      Paging_Enabled : Boolean := Is_Paging_Enabled;
-      Offset_In_Page : Virtual_Address_Offset := To_Virtual_Address_Break (Source_Address).Offset;
+      Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
+      Offset_In_Page        : constant Virtual_Address_Offset := To_Virtual_Address_Break (Source_Address).Offset;
+      Page_Count              : constant Positive := Get_Number_Of_Pages (Size + Offset_In_Page);
 
-      User_Physical_Address : Physical_Address;
-      PT_Count              : Natural := Natural ((Size + 4_095 + Offset_In_Page) / 4_096);
       Return_Address        : System.Address;
       Dest_Address          : Virtual_Address_Break;
 
-   begin
-      Disable_Paging;
-      if Hint /= System.Null_Address then
-         Dest_Address := To_Virtual_Address_Break (Hint);
-         pragma Assert (Can_Fit (Dest_CR3, Hint, Size));
-      else 
-         Dest_Address := Find_Next_Space (Dest_CR3, Size + Offset_In_Page, Null_Address);
-      end if;
-      --  !! TODO: Ensure [for page in Source_Address to Source_Address + Size that page is mapped in Source_CR3]
-      Return_Address := From_Virtual_Address_Break (Dest_Address) + Offset_In_Page;
-      Ada.Assertions.Assert
-        (Return_Address /= Null_Address,
-         "Map_Process_Memory: Could not find space in destination process");
+      --------------------------
+      -- Compute_Dest_Address --
+      --------------------------
+      function Compute_Dest_Address return Virtual_Address_Break is
+         begin
+         if Hint /= System.Null_Address then
+            return  To_Virtual_Address_Break (Hint);
+         else
+           return Find_Next_Space (Dest_CR3, Size + Offset_In_Page, Null_Address);
+         end if;
+      end Compute_Dest_Address;
 
-      for i in 0 .. PT_Count - 1 loop
-         User_Physical_Address :=
-           Virtual_To_Physical_Address
-             (Source_CR3, Source_Address + System.Address (i * PMM_PAGE_SIZE));
-         --  Logger.Log_Info (Integer (Source_Address + System.Address (i * PMM_PAGE_SIZE))'Image & " - " & User_Physical_Address'Image);
-         Map_Physical_Page
-           (To_Page_Directory (To_Address (Dest_CR3.Address)),
-            Dest_Address.Directory,
-            Dest_Address.Table,
-            User_Physical_Address,
+      ------------------------------
+      -- Disable_Paging_If_Needed --
+      ------------------------------
+      procedure Disable_Paging_If_Needed is
+      begin
+         if Paging_Currently_Enabled then
+            Disable_Paging;
+         end if;
+      end Disable_Paging_If_Needed;
+
+      ------------------------------
+      -- Re_Enable_Paging_If_Needed --
+      ------------------------------
+      procedure Re_Enable_Paging_If_Needed is
+      begin
+         if Paging_Currently_Enabled then
+            Enable_Paging;
+         end if;
+      end Re_Enable_Paging_If_Needed;
+
+
+   begin
+      Disable_Paging_If_Needed;
+
+      if not Is_Range_Mapped (Source_CR3, Source_Address, Size) then
+         Logger.Log_Error ("Address is not mapped");
+         Re_Enable_Paging_If_Needed;
+         return Null_Address;
+      end if;
+
+      Dest_Address := Compute_Dest_Address;
+      if Dest_Address = Null_Address_Break or else not Can_Fit (Dest_CR3, From_Virtual_Address_Break (Dest_Address), Size) then
+         Logger.Log_Error ("Map_Process_Memory: Could not find space in destination process");
+         Re_Enable_Paging_If_Needed;
+         return Null_Address;
+      end if;
+      
+      Return_Address := From_Virtual_Address_Break (Dest_Address) + Offset_In_Page;
+
+      for i in 0 .. Page_Count - 1 loop
+         Map_Physical_Page (
+            Page_Directory => Get_Page_Directory (Dest_CR3),
+            Page_Directory_Start => Dest_Address.Directory,
+            Page_Table_Start => Dest_Address.Table,
+            Address_To_Map => Virtual_To_Physical_Address (Source_CR3, Source_Address + Storage_Count (i * Positive (PMM_PAGE_SIZE))),
             Is_Writable => True,
             Is_Usermode => True);
          Next (Dest_Address.Directory, Dest_Address.Table);
       end loop;
 
-      if Paging_Enabled then
-         Enable_Paging;
-      end if;
+      Re_Enable_Paging_If_Needed;
       return Return_Address;
    end Process_To_Process_Map;
 
-   procedure Unmap (CR3 : CR3_register; Address : System.Address; Size : Storage_Count; Free_Page : Boolean) is
-      PD                : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
+   ------------------
+   -- Memory_Unmap --
+   ------------------
+   procedure Memory_Unmap
+     (CR3 : CR3_register; Address : System.Address; Size : Storage_Count; Free_Page : Boolean)
+   is
+      Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
+      PD                       : constant Page_Directory_Access := Get_Page_Directory (CR3);
+   
       Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
-      PT_Count          : Natural := Natural ((size + 4_095) / 4_096);
+      Page_Count               : constant Natural := Get_Number_Of_Pages (size, Address_Breakdown.Offset);
+   
    begin
-      Disable_Paging;
-      --  Logger.Log_Info
-      --    ("Unmapping "
-      --     & Size'Image
-      --     & " bytes at "
-      --     & Address'Image
-      --     & " spanning "
-      --     & PT_Count'Image
-      --     & " pages.");
-      for i in 0 .. PT_Count - 1 loop
+      if Paging_Currently_Enabled then
+         Disable_Paging;
+      end if;
+
+      for i in 0 .. Page_Count loop
          Unmap_Page (PD, Address_Breakdown.Directory, Address_Breakdown.Table, Free_Page);
          Next (Address_Breakdown.Directory, Address_Breakdown.Table);
       end loop;
-      Enable_Paging;
-   end Unmap;
-
-   procedure Load_Kernel_Mapping is
-      procedure test is new System.Secondary_Stack.SS_Info (Logger.Log_Info);
-   begin
-      Disable_Paging;
-      Load_CR3 (Kernel_CR3);
-      Enable_Paging;
-   end Load_Kernel_Mapping;
-
-   function Get_Kernel_CR3 return CR3_register is
-   begin
-      return Kernel_CR3;
-   end Get_Kernel_CR3;
-
-   procedure Set_Kernel_CR3 (CR3 : CR3_register) is
-   begin
-      Kernel_CR3 := CR3;
-   end Set_Kernel_CR3;
+   
+      if Paging_Currently_Enabled then
+         Enable_Paging;
+      end if;
+   end Memory_Unmap;
 
 end x86.vmm;

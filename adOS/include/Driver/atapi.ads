@@ -51,7 +51,7 @@ private
    function getDcr (controller : ATA_CONTROLLER) return x86.Port_IO.Port_Address
    is (if controller = ATA_PRIMARY then PRIMARY_DCR else SECONDARY_DCR);
    function getReg (controller : ATA_CONTROLLER; reg : ATA_REG) return x86.Port_IO.Port_Address
-   is (x86.Port_IO.Port_Address (ATA_CONTROLLER'Enum_Rep (controller) +  reg));
+   is (x86.Port_IO.Port_Address (ATA_CONTROLLER'Enum_Rep (controller) + reg));
    function isAtapiDevice (Controller : ATA_CONTROLLER; Device : ATA_DEVICE) return Boolean;
 
    type SCSI_PACKET is record

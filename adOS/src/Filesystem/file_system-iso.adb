@@ -4,6 +4,7 @@ with System.Storage_Elements; use System.Storage_Elements;
 with File_System.ISO;
 with System.Address_To_Access_Conversions;
 with Log;
+
 package body File_System.ISO is
    package Logger renames Log.Serial_Logger;
    function To_Upper (str : String) return String is
@@ -52,8 +53,8 @@ package body File_System.ISO is
       count       : Natural;
 
       Atapi_Device : Atapi.Atapi_Device_id := Drivers (Driver_id).Atapi_Device;
-      root_lba     : Natural               := Drivers (Driver_id).root_lba;
-      root_dirsize : Unsigned_32           := Drivers (Driver_id).root_dirsize;
+      root_lba     : Natural := Drivers (Driver_id).root_lba;
+      root_dirsize : Unsigned_32 := Drivers (Driver_id).root_dirsize;
 
       function Next_File (current_file : iso_dir_ptr) return iso_dir_ptr is
       begin
@@ -136,10 +137,10 @@ package body File_System.ISO is
          return DRIVER_FD_ERROR;
       end if;
 
-      Descriptors (FD).lba    := Integer (file.data_blk.le);
+      Descriptors (FD).lba := Integer (file.data_blk.le);
       Descriptors (FD).driver := Driver_id;
-      Descriptors (FD).used   := True;
-      Descriptors (FD).size   := Integer (file.file_size.le);
+      Descriptors (FD).used := True;
+      Descriptors (FD).size := Integer (file.file_size.le);
       Descriptors (FD).offset := 0;
 
       SERIAL.send_line ("FD: " & FD'Image);
@@ -188,14 +189,16 @@ package body File_System.ISO is
 
          package Conversion is new System.Address_To_Access_Conversions (Read_Type);
 
-         out_buffer       : System.Address := Conversion.To_Address (Conversion.Object_Pointer (Buffer));
-         read_buffer      : System.Address;
-         base_lba         : Natural := (f_offset / BLOCK_SIZE) + f_lba;
-         cnt              : Natural := Read_Type'Size / Storage_Unit;
-         Current_Offset   : Storage_Offset := Storage_offset (f_offset) mod BLOCK_SIZE;
-         read_size        : Natural := Min (cnt, f_size - f_offset);
-         sectors_count    : Natural := ((read_size + Natural (Current_Offset) + BLOCK_SIZE - 1) / BLOCK_SIZE);
-         count            : Natural;
+         out_buffer     : System.Address :=
+           Conversion.To_Address (Conversion.Object_Pointer (Buffer));
+         read_buffer    : System.Address;
+         base_lba       : Natural := (f_offset / BLOCK_SIZE) + f_lba;
+         cnt            : Natural := Read_Type'Size / Storage_Unit;
+         Current_Offset : Storage_Offset := Storage_offset (f_offset) mod BLOCK_SIZE;
+         read_size      : Natural := Min (cnt, f_size - f_offset);
+         sectors_count  : Natural :=
+           ((read_size + Natural (Current_Offset) + BLOCK_SIZE - 1) / BLOCK_SIZE);
+         count          : Natural;
          procedure memcpy (dest : System.Address; src : System.Address; size : Natural);
          pragma Import (C, memcpy, "memcpy");
       begin
@@ -204,8 +207,12 @@ package body File_System.ISO is
          for lba in base_lba .. (base_lba + sectors_count - 1) loop
             read_buffer := Atapi_Buffer'Address;
             count := Atapi.Read_Block (Atapi_Device, lba, Atapi_Buffer);
-            memcpy (out_buffer, read_buffer + Current_Offset, Min (cnt, BLOCK_SIZE - Integer (Current_Offset)));
-            out_buffer := out_buffer + Storage_Offset (Min (cnt, BLOCK_SIZE - Integer (Current_Offset)));
+            memcpy
+              (out_buffer,
+               read_buffer + Current_Offset,
+               Min (cnt, BLOCK_SIZE - Integer (Current_Offset)));
+            out_buffer :=
+              out_buffer + Storage_Offset (Min (cnt, BLOCK_SIZE - Integer (Current_Offset)));
             cnt := cnt - Min (cnt, BLOCK_SIZE - Integer (Current_Offset));
             Current_Offset := 0;
          end loop;
@@ -213,7 +220,7 @@ package body File_System.ISO is
          -- Update the offset
          f_offset := f_offset + read_size;
          return read_size;
-         end;
+      end;
    end read;
 
    -------------------

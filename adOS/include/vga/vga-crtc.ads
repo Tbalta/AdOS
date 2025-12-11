@@ -200,7 +200,7 @@ package VGA.CRTC is
        Value at 0 range 0 .. 9;
      end record;
 
-  
+
 private
 
 

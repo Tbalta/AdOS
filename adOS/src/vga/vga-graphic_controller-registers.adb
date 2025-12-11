@@ -35,7 +35,6 @@ package body VGA.Graphic_Controller.Registers is
       end loop;
    end Dump_Graphic_Controller_Registers;
 
-
    function Read_Data return Data_Type is
       function Read is new x86.Port_IO.Read_Port_8 (Data_Register_Address, Data_Type);
    begin

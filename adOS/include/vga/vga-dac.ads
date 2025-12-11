@@ -14,6 +14,7 @@ with System;
 with x86.Port_IO;
 with Interfaces; use Interfaces;
 with File_System;
+
 package VGA.DAC is
    pragma Preelaborate;
 

@@ -1,5 +1,5 @@
-with System;                  use System;
-with System.Storage_Elements; use System.Storage_Elements;
+with System;                      use System;
+with System.Storage_Elements;     use System.Storage_Elements;
 with File_System.SERIAL;
 with Log;
 with Ada.Unchecked_Conversion;
@@ -18,11 +18,11 @@ package body File_System.IRQ is
       if File_Path = "systick" then
          return SYSTICK_FD;
       end if;
-   
+
       if File_Path = "keyboard" then
          return KEYBOARD_FD;
       end if;
-   
+
       return DRIVER_FD_ERROR;
    end open;
 
@@ -40,19 +40,25 @@ package body File_System.IRQ is
       --  Logger.Log_Info ("tick:" & Programmable_Interval_Timer.Get_Systick'Image);
 
       if Read_Type'Size /= Unsigned_32'Size then
-         Logger.Log_Error ("Invalid write size expected: " & Integer (Unsigned_32'Size)'Image & "bits got: " & Integer (Read_Type'Size)'Image);
+         Logger.Log_Error
+           ("Invalid write size expected: "
+            & Integer (Unsigned_32'Size)'Image
+            & "bits got: "
+            & Integer (Read_Type'Size)'Image);
          return -1;
       end if;
 
       declare
-         function To_U32 is new Ada.Unchecked_Conversion(Source => Integer, Target => Read_Type);
+         function To_U32 is new Ada.Unchecked_Conversion (Source => Integer, Target => Read_Type);
       begin
          case fd is
             when SYSTICK_FD =>
                --  Logger.Log_Info ("Read_Systick " & Programmable_Interval_Timer.Get_Systick'Image);
                Buffer.all := To_U32 (Programmable_Interval_Timer.Get_Systick);
+
             when KEYBOARD_FD =>
                Buffer.all := To_U32 (Keyboard.Get_Key_Code);
+
             when others =>
                Logger.Log_Info ("Invalid fd");
                Buffer.all := To_U32 ((-1));
@@ -81,5 +87,5 @@ package body File_System.IRQ is
 
       return 0;
    end close;
-   
+
 end File_System.IRQ;

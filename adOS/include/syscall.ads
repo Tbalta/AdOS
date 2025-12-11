@@ -1,3 +1,11 @@
+------------------------------------------------------------------------------
+--                                 SYSCALL                                  --
+--                                                                          --
+--                                 S p e c                                  --
+-- (c) 2025 Tanguy Baltazart                                                --
+-- License : See LICENCE.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
 with VGA;
 with x86.VMM;
 with Interfaces;              use Interfaces;
@@ -57,27 +65,23 @@ private
       process   : in x86.vmm.CR3_register;
       result    : out Syscall_Result);
    procedure Close_Syscall
-     (arg1      : in Unsigned_32;
-      process   : in x86.vmm.CR3_register;
-      result    : out Syscall_Result);
+     (arg1 : in Unsigned_32; process : in x86.vmm.CR3_register; result : out Syscall_Result);
 
+   procedure Seek_Syscall
+     (arg1    : Unsigned_32;
+      arg2    : Unsigned_32;
+      arg3    : Unsigned_32;
+      process : in x86.vmm.CR3_register;
+      result  : out Syscall_Result);
 
-   procedure Seek_Syscall (
-      arg1 : Unsigned_32;
-      arg2 : Unsigned_32;
-      arg3 : Unsigned_32;
-      process   : in x86.vmm.CR3_register;
-      result    : out Syscall_Result);
-   
    procedure Mmap_Syscall
-   (
-      addr   : System.Address;
-      length : Storage_Count;
-      prot   : Unsigned_32;
-      flags  : Unsigned_32;
-      arg5   : Unsigned_32;
+     (addr    : System.Address;
+      length  : Storage_Count;
+      prot    : Unsigned_32;
+      flags   : Unsigned_32;
+      arg5    : Unsigned_32;
       --  offset : Unsigned_32;
-      process   : in x86.vmm.CR3_register;
-      result    : out Syscall_Result);
+      process : in x86.vmm.CR3_register;
+      result  : out Syscall_Result);
 
 end Syscall;

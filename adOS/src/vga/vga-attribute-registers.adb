@@ -74,7 +74,8 @@ package body VGA.Attribute.Registers is
      (Index : Internal_Palette_Register_Index; Register : Internal_Palette_Register)
    is
       procedure Write is new Write_Register (Internal_Palette_Register, Index);
-      function To_U8 is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Internal_Palette_Register);
+      function To_U8 is new
+        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Internal_Palette_Register);
    begin
       Register_Array (Index) := To_U8 (Register);
       Write (Register);

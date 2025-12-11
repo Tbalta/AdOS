@@ -41,9 +41,7 @@ package body x86.idt is
    procedure load_idt (idt_ptr : idt_ptr_t) is
    begin
       ASM
-        ("lidt (%0)",
-         Inputs     => System.Address'Asm_Input ("r", idt_ptr'Address),
-         Volatile => True);
+        ("lidt (%0)", Inputs => System.Address'Asm_Input ("r", idt_ptr'Address), Volatile => True);
    end load_idt;
 
    procedure handle_page_fault (stf : access stack_frame) is
@@ -110,7 +108,7 @@ package body x86.idt is
    end init_idt;
 
    procedure handle_timer is
-      procedure outb is new x86.Port_Io.Outb(Unsigned_8);
+      procedure outb is new x86.Port_Io.Outb (Unsigned_8);
    begin
       Programmable_Interval_Timer.Handle_Systick;
 
@@ -118,7 +116,7 @@ package body x86.idt is
    end handle_timer;
 
    procedure handle_keyboard is
-      procedure outb is new x86.Port_Io.Outb(Unsigned_8);
+      procedure outb is new x86.Port_Io.Outb (Unsigned_8);
    begin
       Keyboard.Handle_Keyboard;
       outb (x86.Port_Io.Port_Address (16#20#), 16#20#);

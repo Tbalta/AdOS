@@ -1,13 +1,17 @@
+------------------------------------------------------------------------------
+--                                  SERIAL                                  --
+--                                                                          --
+--                                 B o d y                                  --
+-- (c) 2025 Tanguy Baltazart                                                --
+-- License : See LICENCE.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
 with x86.Port_IO;
 with System.Storage_Elements; use System.Storage_Elements;
 with System;
 with System.Address_To_Access_Conversions;
 
 package body SERIAL is
-   pragma Suppress (Index_Check);
-   pragma Suppress (Overflow_Check);
-   pragma Suppress (All_Checks);
-
    procedure outb is new x86.Port_IO.Outb (Unsigned_8);
    function inb is new x86.Port_IO.Inb (Unsigned_8);
 

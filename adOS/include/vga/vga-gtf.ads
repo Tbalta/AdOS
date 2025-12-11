@@ -33,10 +33,7 @@ package VGA.GTF is
       V_Retrace_Duration : Scan_Line_Count;
    end record;
 
-
-
-   function Compute_Timing
-     (H_PIXELS : Pixel_Count; V_LINES : Scan_Line_Count) return VGA_Timing;
+   function Compute_Timing (H_PIXELS : Pixel_Count; V_LINES : Scan_Line_Count) return VGA_Timing;
 private
 
 

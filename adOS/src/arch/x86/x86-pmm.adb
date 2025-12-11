@@ -5,6 +5,7 @@ with System.Storage_Elements; use System.Storage_Elements;
 with Aligned_System_Address;
 with config;                  use config;
 with Log;
+
 package body x86.pmm is
    package Logger renames Log.Serial_Logger;
 
@@ -38,6 +39,7 @@ package body x86.pmm is
    function Address_To_Offset_Unchecked (addr : Physical_Address) return Natural is
       package Util is new PMM_Utils (PMM_Header_Address);
       use Util;
+      use all type System.Address;
       Offset : Natural := 0;
    begin
       for Index in Util.Headers.all'Range loop
@@ -46,9 +48,9 @@ package body x86.pmm is
               .. Physical_Address
                    (Headers (Index).base_addr + Storage_Offset (Headers (Index).length))
          then
-            return Offset + Natural (To_Address (addr) - Headers (Index).base_addr) / PMM_PAGE_SIZE;
+            return Offset + Natural ((To_Address (addr) - Headers (Index).base_addr) / PMM_PAGE_SIZE);
          end if;
-         Offset := Offset + Natural (Headers (Index).length) / PMM_PAGE_SIZE;
+         Offset := Offset + Natural (Headers (Index).length / Unsigned_64 (PMM_PAGE_SIZE));
       end loop;
       Logger.Log_Error ("Address_To_Offset_Unchecked - unable to find Index for " & addr'Image);
       return -1;
@@ -63,12 +65,12 @@ package body x86.pmm is
       Offset : Natural := paroffset;
    begin
       for Index in Headers'Range loop
-         if Offset < Positive (Headers (Index).length) / PMM_PAGE_SIZE then
+         if Offset < Positive (Headers (Index).length / Unsigned_64 (PMM_PAGE_SIZE)) then
             return
               Physical_Address
-                (Headers (Index).base_addr + Storage_Offset (Offset * PMM_PAGE_SIZE));
+                (Headers (Index).base_addr + (Storage_Offset (Offset) * PMM_PAGE_SIZE));
          else
-            Offset := Offset - Positive (Headers (Index).length) / PMM_PAGE_SIZE;
+            Offset := Offset - Positive (Headers (Index).length / Unsigned_64 (PMM_PAGE_SIZE));
          end if;
       end loop;
       return Physical_Address (0);
@@ -116,7 +118,6 @@ package body x86.pmm is
       Util.Bitmap (Offset) := PMM_Bitmap_Entry_Free;
    end Free_Page;
 
-   --  pragma Suppress (All_Checks);
    procedure Init (MB : multiboot_mmap) is
       package ASA is new Aligned_System_Address (PMM_PAGE_SIZE);
       use ASA;
@@ -127,7 +128,7 @@ package body x86.pmm is
       subtype Positive_Aligned_Address is Aligned_Address
       with Dynamic_Predicate => (To_Integer (Positive_Aligned_Address) > 0);
       subtype Aligned_Storage_Offset is Storage_Offset
-      with Dynamic_Predicate => (Positive (Aligned_Storage_Offset) mod PMM_PAGE_SIZE = 0);
+      with Dynamic_Predicate => (Aligned_Storage_Offset mod PMM_PAGE_SIZE = 0);
 
       PMM_Bitmap_Address : Positive_Aligned_Address;
       PMM_Headers        : access PMM_Header_Info :=
@@ -142,7 +143,7 @@ package body x86.pmm is
                & Unsigned_32 (MB (Index).base_addr)'Image
                & " of size "
                & Unsigned_32 (MB (Index).length)'Image);
-            pmmEntryCount := pmmEntryCount + Positive (MB (Index).length) / PMM_PAGE_SIZE;
+            pmmEntryCount := pmmEntryCount + Positive (MB (Index).length / Unsigned_64 (PMM_PAGE_SIZE));
             pmmHeaderCount := pmmHeaderCount + 1;
          end if;
       end loop;

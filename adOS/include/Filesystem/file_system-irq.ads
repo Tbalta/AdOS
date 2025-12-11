@@ -1,5 +1,5 @@
-with Interfaces;   use Interfaces;
-with Interfaces.C; use Interfaces.C;
+with Interfaces;              use Interfaces;
+with Interfaces.C;            use Interfaces.C;
 with System;
 with System.Address_To_Access_Conversions;
 with Ados;

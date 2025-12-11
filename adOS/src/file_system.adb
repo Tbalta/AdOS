@@ -4,6 +4,7 @@ with File_System.VGA;
 with File_System.IRQ;
 with Log;
 with System.Storage_Elements; use System.Storage_Elements;
+
 package body File_System is
    package Logger renames Log.Serial_Logger;
    function To_Upper (str : String) return String is
@@ -70,6 +71,7 @@ package body File_System is
 
          when PIT_FS =>
             return File_System.IRQ.open (File_Path, flag);
+
          when others =>
             return DRIVER_FD_ERROR;
       end case;
@@ -113,7 +115,7 @@ package body File_System is
 
          when ISO_FS =>
             Result := Iso_Read (File.File_System_Decriptor, Buffer);
-         
+
          when PIT_FS =>
             Result := Pit_Read (File.File_System_Decriptor, Buffer);
 
@@ -191,7 +193,7 @@ package body File_System is
 
          when ISO_FS =>
             Result := File_System.ISO.close (File.File_System_Decriptor);
-         
+
          when VGA_FS =>
             Result := File_System.VGA.close (File.File_System_Decriptor);
 
@@ -209,13 +211,12 @@ package body File_System is
       return Result;
    end close;
 
-   procedure close (fd : File_Descriptor) is 
+   procedure close (fd : File_Descriptor) is
       Result : Integer;
       pragma Unreferenced (Result);
    begin
       Result := close (fd);
    end close;
-
 
    function mmap (fd : File_Descriptor; size : Storage_Count) return System.Address is
       File : VFS_File := Descriptors (fd);

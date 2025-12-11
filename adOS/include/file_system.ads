@@ -1,5 +1,6 @@
 with System;
 with System.Storage_Elements; use System.Storage_Elements;
+
 package File_System
   with Preelaborate
 is
@@ -16,12 +17,8 @@ is
    DRIVER_FD_ERROR : constant Driver_File_Descriptor_With_Error := -1;
 
    type whence is (SEEK_SET, SEEK_CUR, SEEK_END);
-   for whence use (
-      SEEK_SET => 0,
-      SEEK_CUR => 1,
-      SEEK_END => 2
-   );
-   subtype off_t is Integer;
+   for whence use (SEEK_SET => 0, SEEK_CUR => 1, SEEK_END => 2);
+   subtype off_t is Storage_Offset;
 
    type Path is new String;
 
@@ -40,7 +37,7 @@ is
    procedure close (fd : File_Descriptor);
 
    function Is_File_Descriptor (fd : Integer) return Boolean;
-   function Is_Valid_Whence    (wh : Integer) return Boolean;
+   function Is_Valid_Whence (wh : Integer) return Boolean;
 
 
 private

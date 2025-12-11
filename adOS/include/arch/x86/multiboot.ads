@@ -35,20 +35,20 @@ package MultiBoot is
    end record;
 
    for multiboot_header use
-      record
-         magic         at 0  range 0 .. 31;
-         flags         at 4  range 0 .. 31;
-         checksum      at 8  range 0 .. 31;
-         header_addr   at 12 range 0 .. 31;
-         load_addr     at 16 range 0 .. 31;
-         load_end_addr at 20 range 0 .. 31;
-         bss_end_addr  at 24 range 0 .. 31;
-         entry_addr    at 28 range 0 .. 31;
-         mode_type     at 32 range 0 .. 31;
-         width         at 36 range 0 .. 31;
-         height        at 40 range 0 .. 31;
-         depth         at 44 range 0 .. 31;
-      end record; 
+     record
+       magic at 0 range 0 .. 31;
+       flags at 4 range 0 .. 31;
+       checksum at 8 range 0 .. 31;
+       header_addr at 12 range 0 .. 31;
+       load_addr at 16 range 0 .. 31;
+       load_end_addr at 20 range 0 .. 31;
+       bss_end_addr at 24 range 0 .. 31;
+       entry_addr at 28 range 0 .. 31;
+       mode_type at 32 range 0 .. 31;
+       width at 36 range 0 .. 31;
+       height at 40 range 0 .. 31;
+       depth at 44 range 0 .. 31;
+     end record;
 
    type multiboot_info_flag is array (0 .. 31) of Boolean;
    for multiboot_info_flag'Size use 32;
@@ -96,34 +96,55 @@ package MultiBoot is
    with Convention => C, Pack => True;
 
    for multiboot_info use
-      record
-         flags             at 0   range 0 .. 31;
-         mem_lower         at 4   range 0 .. 31;
-         mem_upper         at 8   range 0 .. 31;
-         boot_device       at 12  range 0 .. 31;
-         cmdline           at 16  range 0 .. 31;
-         mods_count        at 20  range 0 .. 31;
-         mods_addr         at 24  range 0 .. 31;
-         tabsize           at 28  range 0 .. 31;
-         strsize           at 32  range 0 .. 31;
-         addr              at 36  range 0 .. 31;
-         reserved          at 40  range 0 .. 31;
-         mmap_length       at 44  range 0 .. 31;
-         mmap_addr         at 48  range 0 .. 31;
-         drives_length     at 52  range 0 .. 31;
-         drives_addr       at 56  range 0 .. 31;
-         config_table      at 60  range 0 .. 31;
-         boot_loader_name  at 64  range 0 .. 31;
-         apm_table         at 68  range 0 .. 31;
-      end record;
+     record
+       flags at 0 range 0 .. 31;
+       mem_lower at 4 range 0 .. 31;
+       mem_upper at 8 range 0 .. 31;
+       boot_device at 12 range 0 .. 31;
+       cmdline at 16 range 0 .. 31;
+       mods_count at 20 range 0 .. 31;
+       mods_addr at 24 range 0 .. 31;
+       tabsize at 28 range 0 .. 31;
+       strsize at 32 range 0 .. 31;
+       addr at 36 range 0 .. 31;
+       reserved at 40 range 0 .. 31;
+       mmap_length at 44 range 0 .. 31;
+       mmap_addr at 48 range 0 .. 31;
+       drives_length at 52 range 0 .. 31;
+       drives_addr at 56 range 0 .. 31;
+       config_table at 60 range 0 .. 31;
+       boot_loader_name at 64 range 0 .. 31;
+       apm_table at 68 range 0 .. 31;
+     end record;
+
+   type multiboot_entry_type is
+     (MULTIBOOT_MEMORY_AVAILABLE,
+      MULTIBOOT_MEMORY_RESERVED,
+      MULTIBOOT_MEMORY_ACPI_RECLAIMABLE,
+      MULTIBOOT_MEMORY_NVS,
+      MULTIBOOT_MEMORY_BADRAM);
+   for multiboot_entry_type use
+     (MULTIBOOT_MEMORY_AVAILABLE        => 1,
+      MULTIBOOT_MEMORY_RESERVED         => 2,
+      MULTIBOOT_MEMORY_ACPI_RECLAIMABLE => 3,
+      MULTIBOOT_MEMORY_NVS              => 4,
+      MULTIBOOT_MEMORY_BADRAM           => 5);
+   for multiboot_entry_type'Size use 32;
 
    type multiboot_mmap_entry is record
       size       : multiboot_uint32_t;
       base_addr  : multiboot_uint64_t;
       length     : multiboot_uint64_t;
-      entry_type : multiboot_uint32_t;
+      entry_type : multiboot_entry_type;
    end record
    with Convention => C, Pack => True;
+   for multiboot_mmap_entry use
+     record
+       size at 0 range 0 .. 31;
+       base_addr at 4 range 0 .. 63;
+       length at 12 range 0 .. 63;
+       entry_type at 20 range 0 .. 31;
+     end record;
 
 
 private

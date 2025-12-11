@@ -40,15 +40,13 @@ package body VGA.Graphic_Controller is
       raise Program_Error;
    end Compute_Needed_Memory_Map;
 
-
-   procedure Set_Graphic_Controller_For_Mode (mode : VGA_mode)
-   is
+   procedure Set_Graphic_Controller_For_Mode (mode : VGA_mode) is
       Memory_Map : Memory_Map_Addressing;
    begin
       if mode.vga_type = alphanumeric then
-        Memory_Map := B0000_32KB;
+         Memory_Map := B0000_32KB;
       else
-        Memory_Map := Compute_Needed_Memory_Map (mode.Pixel_Width, mode.Pixel_Height, 8);
+         Memory_Map := Compute_Needed_Memory_Map (mode.Pixel_Width, mode.Pixel_Height, 8);
       end if;
       Write_Set_Reset_Register ((others => False));
       Write_Enable_Set_Reset_Register ((others => False));
@@ -58,27 +56,27 @@ package body VGA.Graphic_Controller is
 
       if mode.vga_type = alphanumeric then
          Write_Graphics_Mode_Register
-         ((WM                   => Mode_0,
-            Read_Mode           => False,
-            Odd_Even            => True,
-            Shift_Register_Mode => False,
-            Color_Mode          => False));
+           ((WM                  => Mode_0,
+             Read_Mode           => False,
+             Odd_Even            => True,
+             Shift_Register_Mode => False,
+             Color_Mode          => False));
       else
          Write_Graphics_Mode_Register
-         ((WM                  => Mode_0,
-            Read_Mode           => False,
-            Odd_Even            => False,
-            Shift_Register_Mode => False,
-            Color_Mode          => mode.Colors = 256));
+           ((WM                  => Mode_0,
+             Read_Mode           => False,
+             Odd_Even            => False,
+             Shift_Register_Mode => False,
+             Color_Mode          => mode.Colors = 256));
       end if;
 
       if mode.vga_type = alphanumeric then
          -- in this mode map1 and map3 need to be chained
          Write_Miscellaneous_Register
-         ((Graphics_Mode => False, Odd_Even => True, Memory_Map => Memory_Map));
+           ((Graphics_Mode => False, Odd_Even => True, Memory_Map => Memory_Map));
       else
          Write_Miscellaneous_Register
-         ((Graphics_Mode => True, Odd_Even => False, Memory_Map => Memory_Map));
+           ((Graphics_Mode => True, Odd_Even => False, Memory_Map => Memory_Map));
       end if;
 
       Write_Color_Dont_Care_Register ((others => False));
