@@ -18,11 +18,11 @@ package body File_System.VGA is
    begin
       Logger.Log_Info ("Starting: " & File'Image);
       if File.Graphic_Mode then
-         Set_Graphic_Mode
-           (Width       => Integer (File.Width),
-            Height      => Integer (File.Height),
-            Color_Depth => Integer (File.Color_Depth));
-         load_palette ("vga-gui.hex");
+         --  Set_Graphic_Mode
+         --    (Width       => Integer (File.Width),
+         --     Height      => Integer (File.Height),
+         --     Color_Depth => Integer (File.Color_Depth));
+         load_palette ("vga_gui.hex");
       else
          Set_Text_Mode
            (Width       => Integer (File.Width),
@@ -79,8 +79,8 @@ package body File_System.VGA is
 
       VGA_FILE   : File_Information renames Descriptors (FRAME_BUFFER_FD);
       Vga_Size   : Storage_Count := Storage_Count (VGA_FILE.Height * VGA_FILE.Width);
-      Write_Size : Storage_Offset :=
-        Storage_Offset (Min (Integer (Vga_Size) - Integer (VGA_FILE.offset), Integer (count)));
+      Write_Size : Storage_Count :=
+        Storage_Count (Min (Integer (Vga_Size) - Integer (VGA_FILE.offset), Integer (count)));
 
       procedure memcpy (dst, src : System.Address; count : Storage_Count);
       pragma Import (C, memcpy, "memcpy");
@@ -192,7 +192,7 @@ package body File_System.VGA is
             if (off_t (f_size) + offset) < 0 then
                return -1;
             end if;
-            f_offset := f_size + Storage_Offset (offset);
+            f_offset := Storage_Offset (f_size) + Storage_Offset (offset);
       end case;
       return off_t (f_offset);
    end seek;

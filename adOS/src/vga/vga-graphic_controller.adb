@@ -79,7 +79,11 @@ package body VGA.Graphic_Controller is
            ((Graphics_Mode => True, Odd_Even => False, Memory_Map => Memory_Map));
       end if;
 
-      Write_Color_Dont_Care_Register ((others => False));
+      if mode.vga_type = alphanumeric then
+         Write_Color_Dont_Care_Register ((others => False));
+      else
+         Write_Color_Dont_Care_Register ((others => True));
+      end if;
       Write_Bit_Mask_Register ((others => True));
    end Set_Graphic_Controller_For_Mode;
 end VGA.Graphic_Controller;

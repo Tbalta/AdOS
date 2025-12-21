@@ -133,7 +133,7 @@ package MultiBoot is
 
    type multiboot_mmap_entry is record
       size       : multiboot_uint32_t;
-      base_addr  : multiboot_uint64_t;
+      base_addr  : System.Address;
       length     : multiboot_uint64_t;
       entry_type : multiboot_entry_type;
    end record

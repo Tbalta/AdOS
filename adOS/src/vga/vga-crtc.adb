@@ -18,20 +18,20 @@ with Log;
 with VGA.CRTC.Registers; use VGA.CRTC.Registers;
 
 package body VGA.CRTC is
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Log;
 
 
    -- Prepare_CRTC_For_Configuration --
    procedure Prepare_CRTC_For_Configuration is
    begin
-      Write_End_Horizontal_Blanking_Register ((others => <>));
-      Write_End_Horizontal_Retrace_Register ((others => <>));
       Write_Vertical_Retrace_End_Register
         ((Clear_Vertical_Interrupt  => False,
           Enable_Vertical_Interrupt => False,
           Select_5_Refresh_Cycles   => False,
           Protect_Register          => False,
           others                    => 0));
+      Write_End_Horizontal_Blanking_Register ((one => 1, others => <>));
+      Write_End_Horizontal_Retrace_Register ((others => <>));
       Write_Maximum_Scan_Line_Register ((others => <>));
       Write_Start_Address_High_Register (0);
       Write_Start_Address_Low_Register (0);
@@ -81,6 +81,7 @@ package body VGA.CRTC is
       end if;
       Logger.Log_Info ("Setting CRTC for mode" & mode'Image);
       Logger.Log_Info (Timing'Image);
+
       Prepare_CRTC_For_Configuration;
 
       Write_Horizontal_Total_Register (Horizontal_Total_Register (Timing.Total_H - 5));
@@ -94,8 +95,13 @@ package body VGA.CRTC is
       Set_Vertical_Blanking (Timing.V_Blanking_Start, Timing.V_Blanking_Duration);
       Set_Vertical_Retrace (Timing.V_Retrace_Start, Timing.V_Retrace_Duration);
 
-      Write_Cursor_Start_Register ((Row_Scan_Cursor_Begins => 16#D#, Cursor_Off => False));
-      Write_Cursor_End_Register ((Row_Scan_Cursor_Ends => 16#E#, Cursor_Skew_Control => 0));
+      if mode.vga_type = alphanumeric then
+         Write_Cursor_Start_Register ((Row_Scan_Cursor_Begins => 16#D#, Cursor_Off => False));
+         Write_Cursor_End_Register ((Row_Scan_Cursor_Ends => 16#E#, Cursor_Skew_Control => 0));
+      else
+         Write_Cursor_Start_Register ((Row_Scan_Cursor_Begins => 16#0#, Cursor_Off => False));
+         Write_Cursor_End_Register ((Row_Scan_Cursor_Ends => 16#0#, Cursor_Skew_Control => 0));
+      end if;
 
       Write_Offset_Register (Offset_Register (Offset));
 
@@ -127,7 +133,9 @@ package body VGA.CRTC is
           Word_Byte_Mode => False,
           Hardware_Reset => True));
 
-      Write_Cursor_Location_Low_Register (16#50#);
+      if mode.vga_type = alphanumeric then
+         Write_Cursor_Location_Low_Register (16#50#);
+      end if;
 
    end Set_CRTC_For_Mode;
 
@@ -172,7 +180,7 @@ package body VGA.CRTC is
 
    procedure Set_Vertical_Blanking (Start : Natural; Duration : Natural) is
       Start_Vertical_Blanking : Start_Vertical_Blanking_T :=
-        (Value => Unsigned_10 (Start), Bit_Access => False);
+        (Value => Unsigned_10 (Start - 1), Bit_Access => False);
       --  To program the End Blanking Register with a Ã¢ÂÂvertical blankingÃ¢ÂÂ signal of width W,
       --  the following algorithm is used: the width W, in horizontal scan
       --  line units, is added to the value in the Start Vertical Blanking

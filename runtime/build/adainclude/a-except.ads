@@ -68,6 +68,9 @@ package Ada.Exceptions is
    pragma Import (C, PANIC, "PANIC");
    pragma No_Return (PANIC);
 
+   procedure ADA_PANIC (msg : String);
+   pragma Import (Ada, ADA_PANIC, "ADA_PANIC");
+   pragma No_Return (ADA_PANIC);
    --  Note: In accordance with AI-466, CE is raised if E = Null_Id
 
    function Exception_Message (X : Exception_Occurrence) return String;

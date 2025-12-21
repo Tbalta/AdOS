@@ -13,7 +13,7 @@ with Interfaces; use Interfaces;
 with Log;
 
 package body pic is
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Log.VGA_Logger;
    ---------
    -- Rep --
    ---------
@@ -33,6 +33,7 @@ package body pic is
       pragma Unreferenced (SINGLE, EDGE, CASCADE);
       procedure Outb is new x86.Port_IO.Outb (Unsigned_8);
    begin
+      Logger.Log_Info ("Initializing PIC...");
       Outb (Rep (MASTER_CMD), INIT or ICW4); -- ICW1
       Outb (Rep (SLAVE_CMD), INIT or ICW4); -- ICW1
       Outb (Rep (MASTER_DATA), 32); -- ICW2
@@ -46,6 +47,7 @@ package body pic is
 
       Outb (Rep (MASTER_DATA), 16#FF# and not (Shift_Left (1, 2))); -- ICW4
       Outb (Rep (SLAVE_DATA), 16#FF#); -- ICW4
+      Logger.Log_Ok ("PIC initialized");
    end init;
 
    procedure Clear_Mask (irq : Integer) is

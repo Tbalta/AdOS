@@ -52,8 +52,8 @@ package System.Storage_Elements is
    --  objects, and it would be unsafe to treat such functions as pure.
 
    type Storage_Offset is range
-     -(2 ** (Integer'(Standard'Address_Size) - 1)) ..
-     +(2 ** (Integer'(Standard'Address_Size) - 1)) - Long_Long_Integer'(1);
+     -(2 ** (Integer'(Standard'Address_Size))) ..
+     +(2 ** (Integer'(Standard'Address_Size))) - Long_Long_Integer'(1);
    --  Note: the reason for the Long_Long_Integer qualification here is to
    --  avoid a bogus ambiguity when this unit is analyzed in an rtsfind
    --  context.
@@ -112,5 +112,9 @@ package System.Storage_Elements is
    pragma Convention (Intrinsic, To_Integer);
    pragma Inline_Always (To_Integer);
    pragma Pure_Function (To_Integer);
+
+private
+   function To_Address (Value : Storage_Offset) return Address;
+   function To_Offset (Value : Address) return Storage_Offset;
 
 end System.Storage_Elements;

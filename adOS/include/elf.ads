@@ -45,13 +45,14 @@ package ELF is
       LOPROC => 16#FF00#,
       HIPROC => 16#FFFF#);
 
+   subtype ELF_Offset is Storage_Offset range 0 .. Storage_Offset'Last;
    type ELF_Header is record
       e_ident     : ELF_Identifier;
       e_type      : Object_File_Type;
       e_machine   : Unsigned_16;
       e_version   : Unsigned_32;
       e_entry     : x86.Virtual_Address;
-      e_phoff     : Storage_Offset;
+      e_phoff     : ELF_Offset;
       e_shoff     : Unsigned_32;
       e_flags     : Unsigned_32;
       e_ehsize    : Unsigned_16;
@@ -107,7 +108,7 @@ package ELF is
 
    type ELF_Program_Header is record
       p_type   : Segment_Type;
-      p_offset : Storage_Offset;
+      p_offset : ELF_Offset;
       p_vaddr  : x86.Virtual_Address;
       p_paddr  : x86.Physical_Address;
       p_filesz : Storage_Count;

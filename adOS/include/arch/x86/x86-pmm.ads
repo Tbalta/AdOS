@@ -9,7 +9,7 @@ package x86.pmm is
 
    PMM_PAGE_SIZE : constant Storage_Count := 4_096;
 
-   type multiboot_mmap is array (Natural range <>) of multiboot_mmap_entry with Pack;
+   type multiboot_mmap is array (Natural range <>) of aliased multiboot_mmap_entry with Pack;
    type PMM_Bitmap_Entry is (PMM_Bitmap_Entry_Free, PMM_Bitmap_Entry_Used) with Size => 1;
 
 
@@ -44,7 +44,7 @@ package x86.pmm is
    with
      Post =>
        check
-         (Integer_Address ((Storage_Offset (addr) / PMM_PAGE_SIZE) * PMM_PAGE_SIZE)
+         (Integer_Address ((Storage_Count (addr) / PMM_PAGE_SIZE) * PMM_PAGE_SIZE)
           = To_Integer (Offset_To_Address_Unchecked (Address_To_Offset'Result)),
           To_Integer (addr)'Image
           & " /= "

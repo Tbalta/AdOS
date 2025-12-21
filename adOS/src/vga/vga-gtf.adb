@@ -30,6 +30,7 @@ package body VGA.GTF is
       MIN_PORCH_RND : constant Scan_Line_Count := 1;
       V_SYNC_RND : constant := 3;
       H_SYNC_P : constant := 8.0;
+      MARGIN_P : constant Float := 1.8;
 
       IDEAL_DUTY_CYCLE_SCALING : constant := 100;
       CELL_GRAN : constant Pixel_Count := 8;
@@ -50,10 +51,10 @@ package body VGA.GTF is
       PIXEL_FREQ : constant Float := I_P_FREQ_RQD;
 
       -- 4. Find number of lines in left margin:
-      LEFT_MARGIN : Pixel_Count := 0;
+      LEFT_MARGIN : Pixel_Count := Pixel_Count (Float'Rounding (Float (H_PIXELS_RND) * MARGIN_P / 100.0 / Float (CELL_GRAN))) * CELL_GRAN;
 
       -- 5. Find number of lines in rigth margin:
-      RIGHT_MARGIN : Pixel_Count := 0;
+      RIGHT_MARGIN : Pixel_Count := Pixel_Count (Float'Rounding (Float (H_PIXELS_RND) * MARGIN_P / 100.0 / Float (CELL_GRAN))) * CELL_GRAN;
 
       -- 6. Find total number of active pixels in image and left and right margins:
       TOTAL_ACTIVE_PIXELS : Pixel_Count := H_PIXELS_RND + RIGHT_MARGIN + LEFT_MARGIN;
@@ -87,10 +88,10 @@ package body VGA.GTF is
       H_PERIOD : Float := 1000.0 / H_FREQ;
 
       --    -- 13. Find number of lines in Top margin:
-      TOP_MARGIN : Scan_Line_Count := 0;
+      TOP_MARGIN : Scan_Line_Count := Scan_Line_Count (Float'Rounding (MARGIN_P / 100.0 * Float (V_LINES_RND)));
 
       --    -- 14. Find number of lines in Bottom margin:
-      BOT_MARGIN : Scan_Line_Count := 0;
+      BOT_MARGIN : Scan_Line_Count :=  Scan_Line_Count (Float'Rounding (MARGIN_P / 100.0 * Float (V_LINES_RND)));
 
       --    -- 15. If interlace is required, then set variable INTERLACE = 0.5:
       INTERLACE : Float := 0.0; -- TODO: 0.5 if INTERLACE_REQUIRED else 0
@@ -150,10 +151,10 @@ package body VGA.GTF is
 
       -- AdOS defined variable
       H_BLANK_START : Character_Count := H_ADDR_TIME_CHARS;
-      V_BLANK_START : Scan_Line_Count := ADDR_LINES_PER_FRAME;
+      V_BLANK_START : Scan_Line_Count := ADDR_LINES_PER_FRAME + BOT_MARGIN;
 
       H_SYNC_START : Character_Count := H_ADDR_TIME_CHARS + H_FRONT_PORCH_CHARS;
-      V_SYNC_START : Scan_Line_Count := ADDR_LINES_PER_FRAME + V_ODD_FRONT_PORCH_LINES;
+      V_SYNC_START : Scan_Line_Count := TOTAL_V_LINES - V_SYNC_BP;
    begin
       Logger.Log_Info ("V_LINES_RND " & V_LINES_RND'Image);
       Logger.Log_Info ("test " & test'Image);
@@ -169,7 +170,7 @@ package body VGA.GTF is
         (Total_H             => TOTAL_H_TIME,
          Active_H_Chars      => H_ADDR_TIME_CHARS,
 
-         Total_V             => TOTAL_V_LINES,
+         Total_V             => TOTAL_V_LINES + TOP_MARGIN,
          Active_V_Chars      => ADDR_LINES_PER_FRAME,
 
          H_Blanking_Start    => H_BLANK_START,
@@ -182,7 +183,7 @@ package body VGA.GTF is
          H_Retrace_Duration  => H_SYNC_CHARS,
 
          V_Retrace_Start     => V_SYNC_START,
-         V_Retrace_Duration  => V_SYNC_BP);
+         V_Retrace_Duration  => V_SYNC_RND);
    end Compute_Timing;
 
 

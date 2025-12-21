@@ -19,7 +19,7 @@ package body x86.vmm is
    -- Get_Number_Of_Pages --
    -------------------------
    function Get_Number_Of_Pages (Size : Storage_Count; Offset : Storage_Offset := 0) return Positive
-   is (Positive (Size + 4_095 + Offset) / 4_096);
+   is (Positive (Size + Storage_Count (4_095 + Offset)) / 4_096);
 
    -------------------------------
    -- Get_Number_Of_Page_Tables --
@@ -591,7 +591,7 @@ package body x86.vmm is
    is
       Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
       Offset_In_Page        : constant Virtual_Address_Offset := To_Virtual_Address_Break (Source_Address).Offset;
-      Page_Count              : constant Positive := Get_Number_Of_Pages (Size + Offset_In_Page);
+      Page_Count              : constant Positive := Get_Number_Of_Pages (Size + Storage_Count (Offset_In_Page));
 
       Return_Address        : System.Address;
       Dest_Address          : Virtual_Address_Break;
@@ -604,7 +604,7 @@ package body x86.vmm is
          if Hint /= System.Null_Address then
             return  To_Virtual_Address_Break (Hint);
          else
-           return Find_Next_Space (Dest_CR3, Size + Offset_In_Page, Null_Address);
+           return Find_Next_Space (Dest_CR3, Size + Storage_Count (Offset_In_Page), Null_Address);
          end if;
       end Compute_Dest_Address;
 

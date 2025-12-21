@@ -10,7 +10,7 @@ package body x86.gdt is
    pragma Suppress (Range_Check);
    pragma Suppress (Overflow_Check);
    pragma Suppress (All_Checks);
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Log.VGA_Logger;
 
    procedure set_gdt_entry
      (index       : Integer;

@@ -7,9 +7,8 @@ package Atapi is
    pragma Preelaborate;
 
    type Atapi_Device_id is new Integer range 0 .. 3;
-   subtype SECTOR_BUFFER_INDEX is Integer range 1 .. 2_048;
-   type SECTOR_BUFFER is array (SECTOR_BUFFER_INDEX) of Interfaces.Unsigned_8
-   with Convention => C, Size => 2_048 * 8;
+   subtype SECTOR_BUFFER_INDEX is Storage_Offset range 1 .. 2_048;
+   subtype SECTOR_BUFFER is Storage_Array (SECTOR_BUFFER_INDEX);
    type SECTOR_BUFFER_PTR is access all SECTOR_BUFFER;
    function read_block
      (Device_id : Atapi_Device_id; lba : Natural; buffer : out SECTOR_BUFFER) return Integer;
@@ -21,7 +20,7 @@ private
    type ATA_CONTROLLER is (ATA_SECONDARY, ATA_PRIMARY);
    for ATA_CONTROLLER use (ATA_SECONDARY => 16#170#, ATA_PRIMARY => 16#1F0#);
    type ATA_DEVICE is (ATA_MASTER, ATA_SLAVE);
-   for ATA_DEVICE use (ATA_MASTER => 0, ATA_SLAVE => 16#10#);
+   for ATA_DEVICE use (ATA_MASTER => 16#A0#, ATA_SLAVE => 16#B0#);
    PRIMARY_DCR   : constant x86.Port_IO.Port_Address := 16#3F6#;
    SECONDARY_DCR : constant x86.Port_IO.Port_Address := 16#376#;
    CD_BLOCK_SIZE : constant Interfaces.Unsigned_16 := 2_048;

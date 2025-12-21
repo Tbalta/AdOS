@@ -3,9 +3,9 @@ with Ada.Interrupts; use Ada.Interrupts;
 
 package x86.idt is
    pragma Preelaborate;
-   pragma Suppress (Index_Check);
-   pragma Suppress (Overflow_Check);
-   pragma Suppress (All_Checks);
+   --  pragma Suppress (Index_Check);
+   --  pragma Suppress (Overflow_Check);
+   --  pragma Suppress (All_Checks);
 
    type stack_frame (Privilege_Level_Change : Boolean := False) is record
       eax            : Unsigned_32;

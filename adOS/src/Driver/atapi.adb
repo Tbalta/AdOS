@@ -4,7 +4,7 @@ with Log;
 with Ada.Unchecked_Conversion;
 
 package body Atapi is
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Log;
 
    function Inb is new x86.Port_IO.Inb (Unsigned_8);
    procedure Outb is new x86.Port_IO.Outb (Unsigned_8);
@@ -39,10 +39,9 @@ package body Atapi is
    procedure waitForDrive (Controller : ATA_CONTROLLER) is
       dummy : Unsigned_8;
    begin
-      dummy := Inb (getReg (Controller, ATA_REG_STATUS));
-      dummy := Inb (getReg (Controller, ATA_REG_STATUS));
-      dummy := Inb (getReg (Controller, ATA_REG_STATUS));
-      dummy := Inb (getReg (Controller, ATA_REG_STATUS));
+      for i in 1 .. 15 loop
+         dummy := Inb (getReg (Controller, ATA_REG_STATUS));
+      end loop;
    end waitForDrive;
 
    procedure selectDevice (Controller : ATA_CONTROLLER; Device : ATA_DEVICE) is
@@ -116,6 +115,9 @@ package body Atapi is
             end if;
          end loop;
       end loop;
+      if (for all Device of Devices => not Device.Present) then
+         Logger.Log_Error ("No ATAPI devices found.");
+      end if;
    end discoverAtapiDevices;
 
    procedure send_packet (Device_id : ATAPI_Device_id; packet : SCSI_PACKET) is
@@ -176,8 +178,8 @@ package body Atapi is
          data := Inw (Data_Port);
          --  Logger.Log_Info ("Data read: " & Unsigned_16'Image (data mod 16#100#));
          --  Logger.Log_Info ("Storing at buffer index: " & Integer'Image (buffer'First + (i * 2)));
-         buffer (buffer'First + (i * 2)) := Unsigned_8 (data mod 16#100#);
-         buffer (buffer'First + (i * 2) + 1) := Unsigned_8 (Shift_Right (data, 8));
+         buffer (buffer'First + Storage_Offset (i * 2)) := Storage_Element (data mod 16#100#);
+         buffer (buffer'First + Storage_Offset ((i * 2) + 1)) := Storage_Element (Shift_Right (data, 8));
       end loop;
       return size_read;
    end read_block;

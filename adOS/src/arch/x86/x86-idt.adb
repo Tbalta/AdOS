@@ -13,11 +13,11 @@ with Programmable_Interval_Timer;
 with Keyboard;
 
 package body x86.idt is
-   pragma Suppress (Index_Check);
-   pragma Suppress (Overflow_Check);
-   pragma Suppress (All_Checks);
+   --  pragma Suppress (Index_Check);
+   --  pragma Suppress (Overflow_Check);
+   --  pragma Suppress (All_Checks);
 
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Log.VGA_Logger;
 
    procedure add_entry
      (index     : Interrupt_ID;
@@ -29,7 +29,7 @@ package body x86.idt is
       offset : Unsigned_32 := Unsigned_32 (To_Integer (ISR));
    begin
       interrupt_vector (index) :=
-        (offset      => Unsigned_16 (offset),
+        (offset      => Unsigned_16 (offset and 16#FFFF#),
          selector    => selector,
          DPL         => DPL and 2#11#,
          present     => True,
@@ -59,24 +59,24 @@ package body x86.idt is
       error_code       : Page_Fault_Error_Code := To_Error_Code (stf.error_code);
       faulting_address : constant Unsigned_32 := Get_CR2;
    begin
-      SERIAL.send_line ("Page Fault at address: " & faulting_address'Image);
+      Logger.Log_Error ("Page Fault at address: " & faulting_address'Image);
 
       if error_code.Present then
-         SERIAL.send_line (" - caused by a protection violation.");
+         Logger.Log_Error (" - caused by a protection violation.");
       else
-         SERIAL.send_line (" - caused by a non-present page.");
+         Logger.Log_Error (" - caused by a non-present page.");
       end if;
 
       if error_code.Write then
-         SERIAL.send_line (" - during a write operation.");
+         Logger.Log_Error (" - during a write operation.");
       else
-         SERIAL.send_line (" - during a read operation.");
+         Logger.Log_Error (" - during a read operation.");
       end if;
 
       if error_code.User_Mode then
-         SERIAL.send_line (" - while in user mode.");
+         Logger.Log_Error (" - while in user mode.");
       else
-         SERIAL.send_line (" - while in supervisor mode.");
+         Logger.Log_Error (" - while in supervisor mode.");
       end if;
 
       while True loop
@@ -105,6 +105,7 @@ package body x86.idt is
 
       Logger.Log_Info ("idt = size: " & idt_ptr.limit'Image & " base: " & idt_ptr.base'Image);
       load_idt (idt_ptr);
+      Logger.Log_Ok ("IDT initialized");
    end init_idt;
 
    procedure handle_timer is

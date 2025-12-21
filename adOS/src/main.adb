@@ -34,21 +34,23 @@ procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Addre
    package MultiBoot_Conversion is new System.Address_To_Access_Conversions (multiboot_info);
    info : access multiboot_info := MultiBoot_Conversion.To_Pointer (multiboot_address);
 
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Log.VGA_Logger;
+   package VGA_Logger renames Log.VGA_Logger;
    CR3 : CR3_register;
 begin
    SERIAL.serial_init (SERIAL.Baudrate'Last);
    Logger.Log_Info ("Starting adOS...");
+   VGA_Logger.Log_Info ("Starting adOS...");
 
    ------------------------------------
    --  Multiboot information display --
    ------------------------------------
-   SERIAL.send_line ("magic: " & magic'Image);
-   SERIAL.send_line ("multiboot_info: " & info.all'Image);
+   Logger.Log_Info ("magic: " & magic'Image);
+   Logger.Log_Info ("multiboot_info: " & info.all'Image);
    declare
       str : String := Util.Read_String_From_Address (info.cmdline);
    begin
-      SERIAL.send_line ("cmdline: " & str);
+      Logger.Log_Info ("cmdline: " & str);
    end;
 
    ----------------------------------
@@ -77,9 +79,10 @@ begin
       procedure print_mmap (s : System.Address);
       pragma Import (C, print_mmap, "print_mmap");
    begin
+      Logger.Log_Info ("mmap_count / size: " & entry_map_count'Image & " / " & entry_map_size'Image);
       print_mmap (multiboot_address);
       x86.pmm.Init (entry_map.all);
-      SERIAL.send_line
+      Logger.Log_Info
         ("Next free page: " & x86.pmm.Offset_To_Address (x86.pmm.Get_Next_Free_Page)'Image);
    end;
 
@@ -96,6 +99,7 @@ begin
    Logger.Log_Ok ("CR3 Loaded");
    Enable_Paging;
    Logger.Log_Ok ("Paging enabled");
+   VGA_Logger.Log_Ok ("Paging enabled");
 
    ---------------------
    -- Filesystem init --
@@ -115,18 +119,20 @@ begin
       Logger.Log_Info ("ISO filesystem initialized");
       FD := open ("test2.txt", 0);
       if FD = FD_ERROR then
-         Logger.Log_Error ("Error opening file");
+         Logger.Log_Error ("Error opening file test2.txt");
          goto Init_End;
       end if;
 
       read := Read_Char (FD, buffer'Access);
-      SERIAL.send_line ("read:" & buffer (1 .. read));
+      Logger.Log_Info ("read:" & buffer (1 .. read));
       if close (FD) = 0 then
          Logger.Log_Ok ("File closed successfully");
       else
          Logger.Log_Error ("Error closing file");
       end if;
    end;
+
+   VGA.load_palette ("vga_tui.hex");
 
    declare
       use File_System;
@@ -137,10 +143,18 @@ begin
 
       Buffer : access vga_buffer := null;
       count  : Integer := 0;
+
+      procedure test;
+      pragma Import (C, test, "libvga_switch_mode13h");
    begin
       VGA.Set_Graphic_Mode (320, 200, 256);
-      VGA.load_palette ("vga-gui.hex");
-      VGA.Save_Frame_Buffer;
+      --  VGA.Dump_Registers;
+      --  while True loop
+      --     System.Machine_Code.Asm (Template => "hlt", Volatile => True);
+      --  end loop;
+      --  test;
+      VGA.load_palette ("vga_gui.hex");
+      -- VGA.Save_Frame_Buffer;
       Buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
       Buffer (1 .. 320 * 200) := (others => 5);
       Buffer (1 .. 320 * 150) := (others => 70);
@@ -149,36 +163,24 @@ begin
    end;
 
    Logger.Log_Info ("Setting text mode");
-   declare
-      type VGA_CHAR is record
-         c         : Character;
-         attribute : Unsigned_8;
-      end record;
+   --  declare
 
-      for VGA_CHAR use
-        record
-          c at 0 range 0 .. 7;
-          attribute at 1 range 0 .. 7;
-        end record;
+    --  use File_System;
+      -- Buffer : access vga_buffer := null;
 
-      use File_System;
-      type vga_buffer is array (Positive range 1 .. 80 * 25) of aliased VGA_CHAR with Pack => True;
-      package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
-      Buffer : access vga_buffer := null;
-
-      fd    : File_System.File_Descriptor_With_Error := FD_ERROR;
-      count : Integer := 0;
-   begin
-      VGA.Restore_Frame_Buffer;
-      VGA.Set_Text_Mode (80, 25, 16);
-      --  VGA.test (80, 25);
-      VGA.load_palette ("vga-tui.hex");
-      --  fd := open ("vga_frame_buffer", 0);
-      Buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
-      Buffer (1 .. 80) := (others => (c => 'H', attribute => 16#F#));
-      Buffer (81 .. 80 * 2) := (others => (c => 'E', attribute => 16#F#));
+      -- fd    : File_System.File_Descriptor_With_Error := FD_ERROR;
+      -- count : Integer := 0;
+   --  begin
+      --  VGA.Restore_Frame_Buffer;
+      --  VGA.Set_Text_Mode (80, 25, 16);
+      --  --  VGA.test (80, 25);
+      --  VGA.load_palette ("vga-tui.hex");
+      --  --  fd := open ("vga_frame_buffer", 0);
+      --  Buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
+      --  Buffer (1 .. 80) := (others => (c => 'H', attribute => 16#F#));
+      --  Buffer (81 .. 80 * 2) := (others => (c => 'E', attribute => 16#F#));
       --  close (fd);
-   end;
+   --  end;
 
    Programmable_Interval_Timer.set_timer_period (10);
    --  Keyboard.Init;

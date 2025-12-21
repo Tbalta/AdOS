@@ -671,7 +671,7 @@ package body Ada.Exceptions is
 
       --  Go ahead and raise appropriate exception
 
-      PANIC (Interfaces.C.To_C (Exception_Name (E) & Message));
+      ADA_PANIC (Exception_Name (E) & Message);
    end Raise_Exception;
 
    ----------------------------

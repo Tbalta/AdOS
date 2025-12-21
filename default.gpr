@@ -8,7 +8,8 @@ project Default is
     for Create_Missing_Dirs use "True";
 
     External_Object_Files := (
-      Default'Project_Dir & Default'Object_Dir & "/cutil.o"
+      Default'Project_Dir & Default'Object_Dir & "/cutil.o",
+      Default'Project_Dir & Default'Object_Dir & "/ramdisk_content.o"
     );
 
     package Naming is
@@ -63,7 +64,7 @@ project Default is
         "-T" & Default'Project_Dir & "linker.ld",
         "-static", "-nostartfiles", "-nodefaultlibs",
         "-g", "-fno-exceptions", "-fno-rtti"
-        -- "-Lruntime/build/adalib",
+        -- "-Lruntime/build/adalib"
         -- "-lgnat", 
         -- "L.",
         -- "-lk"

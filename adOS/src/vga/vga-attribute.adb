@@ -60,7 +60,11 @@ package body VGA.Attribute is
       end if;
       Write_Overscan_Color_Register (0);
       Write_Color_Plane_Enable_Register (16#0F#);
-      Write_Horizontal_PEL_Panning_Register (16#08#);
+      if mode.vga_type = alphanumeric then
+         Write_Horizontal_PEL_Panning_Register (16#08#);
+      else
+         Write_Horizontal_PEL_Panning_Register (16#00#);
+      end if;
       Write_Color_Select_Register
         ((Select_Color_4 => False,
           Select_Color_5 => False,
