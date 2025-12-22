@@ -17,6 +17,11 @@ package body Keyboard is
          return;
       end if;
 
+      if Key.Key = 96 then
+         -- Ignore extended keycodes for now
+         return;
+      end if;
+
       Logger.Log_Info ("Received: " & key'Image & " from keyboard");
       Push (Keycode_Buffer'Access, Key);
 

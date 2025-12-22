@@ -37,31 +37,6 @@ void draw_box (void *buffer, int x, int y, int w, int h, int color)
     }
 }
 
-// void draw_image (void *buffer, const char *image, int x, int y, int w, int h)
-// {
-//     int start = (y * 320) + x;
-
-//     for (int row = 0; row < h; row++)
-//     {
-//         int line_start  = start + (row * 320);
-//         int image_start = (row * w);
-//         memcpy (buffer + line_start, image + image_start, h);
-//     }
-// }
-
-// void draw_image (void *buffer, const char *image, box_t dest_box, box_t src_box)
-// {
-//     int buffer_start = (dest_box.y * dest_box.width) + dest_box.x;
-//     int image_start =  (src_box.y * src_box.width) + src_box.x;
-
-//     for (int row = 0; row < src_box.height; row++)
-//     {
-//         int line_start  = buffer_start + (row * dest_box.width);
-//         int image_line_start = image_start + (row * src_box.width);
-//         memcpy (buffer + line_start, image + image_line_start, src_box.width);
-//     }
-// }
-
 void draw_image (void *buffer, const char *image, dimensions_t buffer_dims, dimensions_t image_dims, point_t buffer_position, point_t image_position, dimensions_t crop)
 {
     int buffer_start = (buffer_position.y * buffer_dims.width) + buffer_position.x;
@@ -253,8 +228,6 @@ int _start() {
     
     point_t fruit;
     bool fruit_valid = false;
-    
-    // memset (vga_buff, 215, 320 * 200);
     int step = 10;
 
     int key = -1;
@@ -318,16 +291,16 @@ int _start() {
             {
                 switch (key)
                 {
-                    case 17:
+                    case 72:
                         direction = UP;
                         break;
-                    case 31:
+                    case 80:
                         direction = DOWN;
                         break;
-                    case 30:
+                    case 75:
                         direction = LEFT;
                         break;
-                    case 32:
+                    case 77:
                         direction = RIGHT;
                         break; 
                     default:
@@ -400,12 +373,9 @@ int _start() {
             };
             if (fruit_valid)
             {
-                // draw_box (vga_buff, fruit.x, fruit.y, step, step, 210);
                 draw_image (vga_buff, apple_bmp, garden_dims, body_part_dims, fruit, (point_t){0, 0}, body_part_dims);
-
             }
 
-            // draw_image (vga_buff, snake_heads [prev_direction], body[head].x, body[head].y, step, step);
             draw_image (vga_buff, snake_heads [prev_direction], garden_dims, body_part_dims, body[head], (point_t){0, 0}, body_part_dims);
 
             
@@ -421,11 +391,7 @@ int _start() {
                 fruit_valid = false;
                 next_fruit = (rand() % 10) + 1;
             } else {
-                // draw_image (vga_buff, garden, (box_t){.x = body[tail].x, .y = body[tail].y, .width = 320, .height = 200}, (box_t){.x = body[tail].x, .y = body[tail].y, .width = 320, .height = 200} );
                 draw_image (vga_buff, garden, garden_dims, garden_dims, body[tail], body[tail], body_part_dims);
-
-                
-                // draw_box (vga_buff, body[tail].x, body[tail].y, step, step, 215);
                 tail = (tail + 1) % MAX_BODY_PART;
             }
 

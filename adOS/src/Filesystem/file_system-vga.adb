@@ -18,10 +18,10 @@ package body File_System.VGA is
    begin
       Logger.Log_Info ("Starting: " & File'Image);
       if File.Graphic_Mode then
-         --  Set_Graphic_Mode
-         --    (Width       => Integer (File.Width),
-         --     Height      => Integer (File.Height),
-         --     Color_Depth => Integer (File.Color_Depth));
+         Set_Graphic_Mode
+           (Width       => Integer (File.Width),
+            Height      => Integer (File.Height),
+            Color_Depth => Integer (File.Color_Depth));
          load_palette ("vga_gui.hex");
       else
          Set_Text_Mode

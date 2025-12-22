@@ -3,7 +3,7 @@
 
 OBJ = obj
 
-qemu_param = -no-reboot -boot d -D ./log.txt -d int,guest_errors,in_asm -serial mon:stdio -m 1G
+qemu_param = -no-reboot -boot d -D ./log.txt -serial mon:stdio -m 1G
 
 .PHONY: userland
 
@@ -22,7 +22,7 @@ userland: make_dir
 	cp userland/bin/* iso/bin/
 
 
-main.elf:
+main.elf: ramdisk_content.o
 	cd runtime && gprbuild
 	gprbuild
 
@@ -32,8 +32,8 @@ clean:
 	$(RM) -r iso/bin
 	gprclean
 
-run: main.iso
-	qemu-system-i386.exe -cdrom main.iso $(qemu_param)
+run:
+	qemu-system-i386 -cdrom main.iso $(qemu_param)
 
 debug:
 	qemu-system-i386.exe -cdrom '$<' $(qemu_param) -s -S
@@ -42,8 +42,8 @@ format:
 	gnatformat  -P default.gpr -w 100 $(shell find adOS/ -name '*.adb' -or -name '*.ads')
 
 docker-make:
-	docker-compose -f .docker/docker-compose.yml run --rm --remove-orphans ados make
-	qemu-system-i386.exe -cdrom main.iso $(qemu_param)
+	docker-compose -f .docker/docker-compose.yml run ados make
+	qemu-system-i386 -cdrom main.iso $(qemu_param)
 
 docker-build:
 	docker-compose -f .docker/docker-compose.yml build ados
@@ -57,3 +57,7 @@ docker-debug:
 
 gdb:
 	gdb -ex "target remote localhost:1234" main.elf
+
+ramdisk_content.o: userland
+	genisoimage -o ramdisk.iso iso/
+	objcopy --input binary --output elf32-i386 ramdisk.iso obj/ramdisk_content.o

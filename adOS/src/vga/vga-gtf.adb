@@ -154,7 +154,7 @@ package body VGA.GTF is
       V_BLANK_START : Scan_Line_Count := ADDR_LINES_PER_FRAME + BOT_MARGIN;
 
       H_SYNC_START : Character_Count := H_ADDR_TIME_CHARS + H_FRONT_PORCH_CHARS;
-      V_SYNC_START : Scan_Line_Count := TOTAL_V_LINES - V_SYNC_BP;
+      V_SYNC_START : Scan_Line_Count := ADDR_LINES_PER_FRAME + BOT_MARGIN + MIN_PORCH_RND;
    begin
       Logger.Log_Info ("V_LINES_RND " & V_LINES_RND'Image);
       Logger.Log_Info ("test " & test'Image);
@@ -170,7 +170,7 @@ package body VGA.GTF is
         (Total_H             => TOTAL_H_TIME,
          Active_H_Chars      => H_ADDR_TIME_CHARS,
 
-         Total_V             => TOTAL_V_LINES + TOP_MARGIN,
+         Total_V             => TOTAL_V_LINES,
          Active_V_Chars      => ADDR_LINES_PER_FRAME,
 
          H_Blanking_Start    => H_BLANK_START,

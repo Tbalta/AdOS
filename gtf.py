@@ -230,7 +230,6 @@ print (math.sqrt(((100-C)**2) + (0.4*M* (TOTAL_ACTIVE_PIXELS + RIGHT_MARGIN + LE
 print (IDEAL_DUTY_CYCLE)
 
 
-print ("Vertical Total: ", TOTAL_V_LINES + TOP_MARGIN)
 print ("Horizontal Total", TOTAL_H_TIME)
 
 print ("")
@@ -247,10 +246,19 @@ print ("")
 
 
 # I decided Horizontal Blanking start after active display (no border)
+# Vertical timing:
+# <--previous frame--><--------------------- Video frame --------------------->
+#       <-TOP_MARGIN-><--Addressable Video--><-BOT_MARGIN-><-VS-><-TOP_MARGIN->
+
+# VS:  |              <-FRONT_PORCH-><-SYNC-><-BACK_PORCH->
+#      |<-BOT_MARGIN-><-------------- V_BLANKING --------------><- TOP_MARGIN ->
+#      + Addressable video ends here 
+
+print ("Vertical Total: ", TOTAL_V_LINES)
+
 print ("Vertical Blanking Start (lines)", ADDR_LINES_PER_FRAME + BOT_MARGIN)
 print ("Vertical (even) Blanking Duration (lines)", V_EVEN_BLANKING_LINES )
 print ("Vertical (odd) Blanking Duration (lines)", V_ODD_BLANKING_LINES )
 
-# I decided Horizontal Retrace will start at V_LINES_RND + V_ODD_FRONT_PORCH_LINES
-print ("Vertical Sync Start", TOTAL_V_LINES - V_SYNC_BP)
+print ("Vertical Sync Start", ADDR_LINES_PER_FRAME + BOT_MARGIN + MIN_PORCH_RND)
 print ("Vertical Sync Duration", V_SYNC_RND)

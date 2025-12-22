@@ -198,7 +198,7 @@ begin
       Program_Header : ELF.ELF_Header;
    begin
       --  FD := open ("bin/test.elf", 0);
-      FD := open ("bin/snake.elf", 0);
+      FD := open (Path (Util.Read_String_From_Address (info.cmdline)), 0);
       if FD = FD_ERROR then
          Logger.Log_Error ("Error opening file");
          goto Init_End;
