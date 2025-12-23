@@ -226,26 +226,25 @@ V_ODD_BACK_PORCH=V_BACK_PORCH*H_PERIOD
 BOT_MARGIN_US=BOT_MARGIN*H_PERIOD
 
 
-print (math.sqrt(((100-C)**2) + (0.4*M* (TOTAL_ACTIVE_PIXELS + RIGHT_MARGIN + LEFT_MARGIN) / PIXEL_FREQ)))
-print (IDEAL_DUTY_CYCLE)
-
-
-print ("Horizontal Total", TOTAL_H_TIME)
-
 print ("")
 
-# I decided Horizontal Blanking start after active display (no border)
+# Horizontal timing:
+#<---prev. line----><---------------------- Video line ----------------------->
+#    <-LEFT_MARGIN-><--Addressable Line--><-HS-><-RIGHT_MARGIN-><-LEFT_MARGIN->
+
+# HS:  |<-FRONT_PORCH-><-SYNC-><-BACK_PORCH->
+#      |<-------------- H_BLANKING --------------><-RIGHT_MARGIN-><- LEFT_MARGIN ->
+#      + Addressable video ends here 
+print ("Horizontal Total", TOTAL_H_TIME)
 print ("Horizontal Blanking start (chars): ", H_ADDR_TIME_CHARS)
 print ("Horizontal Blanking duration: ", H_BLANK_CHAR)
 
-# I decided Horizontal Retrace will start at H_ADDR_TIME_CHARS + H_FRONT_PORCH_CHARS
 print ("Horizontal Sync Start (chars):", H_ADDR_TIME_CHARS + H_FRONT_PORCH_CHARS)
 print ("Horizontal Sync Duration", H_SYNC_CHARS)
 
 print ("")
 
 
-# I decided Horizontal Blanking start after active display (no border)
 # Vertical timing:
 # <--previous frame--><--------------------- Video frame --------------------->
 #       <-TOP_MARGIN-><--Addressable Video--><-BOT_MARGIN-><-VS-><-TOP_MARGIN->

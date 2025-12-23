@@ -3,7 +3,7 @@
 
 OBJ = obj
 
-qemu_param = -no-reboot -boot d -D ./log.txt -serial mon:stdio -m 1G
+qemu_param = -no-reboot -boot d -D ./log.txt -d int,guest_errors,in_asm -serial mon:stdio -m 1G
 
 .PHONY: userland
 
@@ -33,7 +33,7 @@ clean:
 	gprclean
 
 run:
-	qemu-system-i386 -cdrom main.iso $(qemu_param)
+	qemu-system-i386.exe -cdrom main.iso $(qemu_param)
 
 debug:
 	qemu-system-i386.exe -cdrom '$<' $(qemu_param) -s -S
@@ -42,8 +42,8 @@ format:
 	gnatformat  -P default.gpr -w 100 $(shell find adOS/ -name '*.adb' -or -name '*.ads')
 
 docker-make:
-	docker-compose -f .docker/docker-compose.yml run ados make
-	qemu-system-i386 -cdrom main.iso $(qemu_param)
+	docker-compose -f .docker/docker-compose.yml run --rm --remove-orphans ados make
+	qemu-system-i386.exe -cdrom main.iso $(qemu_param)
 
 docker-build:
 	docker-compose -f .docker/docker-compose.yml build ados

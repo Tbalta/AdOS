@@ -19,6 +19,8 @@ package body VGA.GTF is
    -- Compute_Timing --
    --------------------
    function Compute_Timing (H_PIXELS : Pixel_Count; V_LINES : Scan_Line_Count) return VGA_Timing is
+      -- Refer to gtf.py for calculations comments --
+
       -- Hardware specific --
       M : constant Float := 600.0;
       C : constant Float := 40.0;
