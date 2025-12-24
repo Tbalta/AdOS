@@ -37,20 +37,16 @@ package SERIAL is
    -------------
    -- Senders --
    -------------
-   procedure send_cchar (port : COM_Port; c : Interfaces.C.char)
-      with Export, Convention => C, External_Name => "send_cchar";
    procedure send_string (port : COM_Port; data : String);
    procedure send_hex (port : COM_Port; data : Interfaces.Unsigned_32);
-   procedure send_line (port : COM_Port; data : in String)
-      with Export, Convention => Ada, External_Name => "__gnat_debug_log";
+   procedure send_line (port : COM_Port; data : in String);
    procedure send_raw_buffer (port : COM_Port; buffer : System.Address; size : Storage_Count);
-
 
 private
    subtype Baudrate_Divisor is Unsigned_16;
-   procedure Set_Baud_Rate (port : COM_Port; serial_divisor : Baudrate_Divisor);
+   procedure Set_Baud_Rate (port : COM_Port; divisor : Baudrate_Divisor);
    function can_send_byte (port : COM_Port) return Boolean;
 
-   DLAB_Enabled : Boolean := False;
+   DLAB_Enabled : Boolean;
 
 end SERIAL;

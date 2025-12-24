@@ -63,22 +63,21 @@ package body SERIAL is
 
    procedure Write_COM1_Transmit_Buffer is new
      x86.Port_IO.Write_Port_8 (COM1, Interfaces.Unsigned_8);
-   
-   -------------------
-   -- Set Baud Rate --
-   -------------------
-   procedure Set_Baud_Rate (port : COM_Port; serial_divisor : Baudrate_Divisor) is
+
+   procedure Set_Baud_Rate (port : COM_Port; divisor : Baudrate_Divisor) is
    begin
-      Enable_DLAB (port);
-      Set_Divisor (port, serial_divisor);
+      Write_Interrupt_Enable_Register (port, (others => False));
       Disable_DLAB (port);
       Set_Line_Control (port, Eight_Bits, True, NONE, False);
+      Enable_DLAB (port);
+      Set_Divisor (port, divisor);
       Write_FIFO_Control_Register (port, (Enable_FIFO    => True,
                                           Clear_Receive  => True,
                                           Clear_Transmit => True,
                                           DMA_Mode       => False,
                                           Reserved       => 0,
                                           Trigger_Level  => Level_14_Bytes));
+      Disable_DLAB (port);
    end Set_Baud_Rate;
 
 

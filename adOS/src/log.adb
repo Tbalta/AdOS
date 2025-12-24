@@ -48,4 +48,9 @@ package body Log is
          null;
       end loop;
    end Panic;
+
+   procedure Log_C_Char (c : Interfaces.C.char) is
+   begin
+      Serial_Logger.Log_Message ((1 => Interfaces.C.To_Ada (c)));
+   end Log_C_Char;
 end Log;

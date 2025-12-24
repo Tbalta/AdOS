@@ -50,6 +50,17 @@ package body SERIAL.Registers is
       Write_DHR (Value);
    end Write_Divisor_High;
 
+   -------------------------------
+   -- Interrupt_Enable_Register --
+   -------------------------------
+   procedure Write_Interrupt_Enable_Register (COM : x86.Port_IO.Port_Address; IER : Interrupt_Enable_Register)
+   is
+      procedure Write_IER is new x86.Port_IO.Write_Port_8 (Get_Interrupt_Enable_Register_Port (COM), Interrupt_Enable_Register);
+   begin
+      Write_IER (IER);
+   end Write_Interrupt_Enable_Register;
+
+
    ---------------------------
    -- Line_Control_Register --
    ---------------------------

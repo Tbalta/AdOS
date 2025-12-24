@@ -55,6 +55,27 @@ package SERIAL.REGISTERS is
    procedure Write_Divisor_High (COM : x86.Port_IO.Port_Address; Value : Unsigned_8);
    function Get_Divisor_High_Port (COM : x86.Port_IO.Port_Address) return x86.Port_IO.Port_Address is (COM + DIVISOR_HIGH_REGISTER_OFFSET);
 
+   -------------------------------
+   -- Interrupt_Enable_Register --
+   -------------------------------
+   type Interrupt_Enable_Register is record
+      Enable_Received_Data_Available_Interrupt : Boolean;
+      Enable_Transmitter_Holding_Register_Empty_Interrupt : Boolean;
+      Enable_Receiver_Line_Status_Interrupt : Boolean;
+      Enable_Modem_Status_Interrupt : Boolean;
+   end record;
+   for Interrupt_Enable_Register use record
+      Enable_Received_Data_Available_Interrupt at 0 range 0 .. 0;
+      Enable_Transmitter_Holding_Register_Empty_Interrupt at 0 range 1 .. 1;
+      Enable_Receiver_Line_Status_Interrupt at 0 range 2 .. 2;
+      Enable_Modem_Status_Interrupt at 0 range 3 .. 3;
+   end record;
+   for Interrupt_Enable_Register'Size use 8;
+   for Interrupt_Enable_Register'Object_Size use 8;
+
+   function Get_Interrupt_Enable_Register_Port (COM : x86.Port_IO.Port_Address) return x86.Port_IO.Port_Address is (COM + INTERUPT_ENABLE_REGISTER_OFFSET);
+   procedure Write_Interrupt_Enable_Register (COM : x86.Port_IO.Port_Address; IER : Interrupt_Enable_Register);
+
    ---------------------------
    -- Line_Control_Register --
    ---------------------------
