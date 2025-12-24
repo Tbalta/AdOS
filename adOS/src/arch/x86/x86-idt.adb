@@ -13,10 +13,6 @@ with Programmable_Interval_Timer;
 with Keyboard;
 
 package body x86.idt is
-   --  pragma Suppress (Index_Check);
-   --  pragma Suppress (Overflow_Check);
-   --  pragma Suppress (All_Checks);
-
    package Logger renames Log.VGA_Logger;
 
    procedure add_entry

@@ -102,7 +102,7 @@ package body File_System.ISO is
                   --  SERIAL.send_line ("File: " & stripped_file_name & " Searched: " & searched_file);
                   if searched_file = stripped_file_name then
                      if current_file.flags (Directory) then
-                        SERIAL.send_line ("Directory found: " & stripped_file_name);
+                        Logger.Log_Info ("Directory found: " & stripped_file_name);
                         return
                           Locate_File
                             (str (path_sep_index + 1 .. str'Last),
@@ -144,7 +144,7 @@ package body File_System.ISO is
       Descriptors (FD).size := Integer (file.file_size.le);
       Descriptors (FD).offset := 0;
 
-      SERIAL.send_line ("FD: " & FD'Image);
+      Logger.Log_Info ("FD: " & FD'Image);
       return FD;
    end Open;
 
@@ -292,11 +292,11 @@ package body File_System.ISO is
       init_buffer : System.Address;
       Count       : Natural := 0;
    begin
-      SERIAL.send_line ("Checking for ISO filesystem on device " & Driver'Image);
+      Logger.Log_Info ("Checking for ISO filesystem on device " & Driver'Image);
       Count := Read_Iso_Block (Driver, 16, Atapi_Buffer);
       init_buffer := Atapi_Buffer'Address;
       primary_descriptor := iso_prim_voldesc_ptr (To_Pointer (init_buffer)).all;
-      SERIAL.send_line ("Identifier (should be CD001)" & To_Ada (primary_descriptor.vol_id, False));
+      Logger.Log_Info ("Identifier (should be CD001)" & To_Ada (primary_descriptor.vol_id, False));
       return To_Ada (primary_descriptor.vol_id, False) = "CD001";
    end Has_Iso_Filesystem;
 
@@ -337,16 +337,16 @@ package body File_System.ISO is
       Ramdisk_Start : System.Address;
       pragma Import (C, Ramdisk_Start, "_binary_ramdisk_iso_start");
    begin
-      SERIAL.send_line ("Initializing ISO filesystem");
-      --  for Atapi_Device in Atapi.Atapi_Device_id'range loop
-      --     if Atapi.Is_Present (Atapi_Device)
-      --       and then Has_Iso_Filesystem ((Driver_Type => Ados.ATAPI_DRIVER, Present => True,
-      --                                    Atapi_Device => Atapi_Device, others => <>),
-      --                                   Volume_Descriptor)
-      --     then
-      --        Add_Atapi_Driver (Atapi_Device, Volume_Descriptor);
-      --     end if;
-      --  end loop;
+      Logger.Log_Info ("Initializing ISO filesystem");
+      for Atapi_Device in Atapi.Atapi_Device_id'range loop
+         if Atapi.Is_Present (Atapi_Device)
+           and then Has_Iso_Filesystem ((Driver_Type => Ados.ATAPI_DRIVER, Present => True,
+                                        Atapi_Device => Atapi_Device, others => <>),
+                                       Volume_Descriptor)
+         then
+            Add_Atapi_Driver (Atapi_Device, Volume_Descriptor);
+         end if;
+      end loop;
 
       if Has_Iso_Filesystem (
            (Driver_Type => Ados.RAMDISK_DRIVER, Present => True, Address => Ramdisk_Start'Address, others => <>),
@@ -375,7 +375,7 @@ package body File_System.ISO is
          current_file :=
            To_Pointer (To_Address (current_file) + Storage_Offset (current_file.dir_size));
       end loop;
-      SERIAL.send_line ("Directory size: " & Integer'Image (dir_size));
+      Logger.Log_Info ("Directory size: " & Integer'Image (dir_size));
       while dir_size > 0 loop
          while current_file.dir_size /= 0 and current_file.idf_len >= 0 loop
             declare
@@ -386,7 +386,7 @@ package body File_System.ISO is
                  To_Ada_Conversions.To_Pointer
                    (current_file'Address + Storage_Offset (current_file'Size / 8));
             begin
-               SERIAL.send_line ("File: " & To_Ada (file_name.all, False));
+               Logger.Log_Info ("File: " & To_Ada (file_name.all, False));
                if current_file.flags (Directory) then
                   list_file
                     (Atapi_Device,

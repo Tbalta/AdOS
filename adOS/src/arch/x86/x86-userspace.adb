@@ -1,20 +1,17 @@
 with System.Machine_Code; use System.Machine_Code;
 with SERIAL;
-with System.Secondary_Stack;
-
+with Log;
 package body x86.Userspace is
    use Standard.ASCII;
+   package Logger renames Log;
 
    procedure Jump_To_Userspace (Entry_Point : Virtual_Address; CR3 : x86.vmm.CR3_register) is
       use System;
       New_Stack : constant Virtual_Address := x86.vmm.Kernel_Alloc (CR3, 4096, True, True) + 4096;
-      procedure Sec_Sta_Print is new System.Secondary_Stack.SS_Info (SERIAL.send_line);
    begin
-      SERIAL.send_line
+      Logger.Log_Info
         ("Jumping to userspace at " & Entry_Point'Image & " with stack at " & New_Stack'Image);
       x86.vmm.Enable_Paging;
-      Sec_Sta_Print;
-
 
       --!format off
       Asm
@@ -54,7 +51,7 @@ package body x86.Userspace is
          Clobber  => "eax");
       --!format on
 
-      SERIAL.send_line
+      Logger.Log_Info
         ("Jumped to userspace at " & Entry_Point'Image & " with stack at " & New_Stack'Image);
 
 

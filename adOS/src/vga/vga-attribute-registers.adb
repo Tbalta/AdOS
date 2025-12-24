@@ -20,11 +20,11 @@ package body VGA.Attribute.Registers is
    ------------------------------
    procedure Dump_Attribute_Registers is
    begin
-      SERIAL.send_line ("");
+      SERIAL.send_line (Serial.COM1, "");
       for I in Register_Array'Range loop
-         SERIAL.send_string (I'image & "-> ");
-         SERIAL.send_hex (Unsigned_32 (Register_Array (I)));
-         SERIAL.send_line ("");
+         SERIAL.send_string (Serial.COM1, I'image & "-> ");
+         SERIAL.send_hex (Serial.COM1, Unsigned_32 (Register_Array (I)));
+         SERIAL.send_line (Serial.COM1, "");
       end loop;
    end Dump_Attribute_Registers;
 

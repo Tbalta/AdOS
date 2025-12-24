@@ -1,3 +1,11 @@
+------------------------------------------------------------------------------
+--                                   ELF                                    --
+--                                                                          --
+--                                 S p e c                                  --
+-- (c) 2025 Tanguy Baltazart                                                --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
 with x86.vmm;
 with x86.pmm;
 with Ada.Unchecked_Conversion;
@@ -9,8 +17,6 @@ package ELF is
    ------------------------
    -- ELF Data Structure --
    ------------------------
-
-   --  ELF Header  --
    type ELF_Identifier is record
       EI_MAG        : String (1 .. 4);
       EI_CLASS      : Unsigned_8;
@@ -64,26 +70,28 @@ package ELF is
    end record
    with Pack => True, Size => 52 * 8;
 
+   -- !format off
    for ELF_Header use
      record
-       e_ident at 0 range 0 .. 127;
-       e_type at 16 range 0 .. 15;
-       e_machine at 18 range 0 .. 15;
-       e_version at 20 range 0 .. 31;
-       e_entry at 24 range 0 .. 31;
-       e_phoff at 28 range 0 .. 31;
-       e_shoff at 32 range 0 .. 31;
-       e_flags at 36 range 0 .. 31;
-       e_ehsize at 40 range 0 .. 15;
+       e_ident     at 0  range 0 .. 127;
+       e_type      at 16 range 0 .. 15;
+       e_machine   at 18 range 0 .. 15;
+       e_version   at 20 range 0 .. 31;
+       e_entry     at 24 range 0 .. 31;
+       e_phoff     at 28 range 0 .. 31;
+       e_shoff     at 32 range 0 .. 31;
+       e_flags     at 36 range 0 .. 31;
+       e_ehsize    at 40 range 0 .. 15;
        e_phentsize at 42 range 0 .. 15;
-       e_phnum at 44 range 0 .. 15;
+       e_phnum     at 44 range 0 .. 15;
        e_shentsize at 46 range 0 .. 15;
-       e_shnum at 48 range 0 .. 15;
-       e_shstrndx at 50 range 0 .. 15;
+       e_shnum     at 48 range 0 .. 15;
+       e_shstrndx  at 50 range 0 .. 15;
      end record;
+   -- !format on
    ------------------------
-
    -- ELF Program Header --
+   ------------------------
    type Segment_Type is
      (PT_NULL, PT_LOAD, PT_DYNAMIC, PT_INTERP, PT_NOTE, PT_SHLIB, PT_PHDR, PT_LOPROC, PT_HIPROC);
    for Segment_Type use
@@ -104,7 +112,6 @@ package ELF is
    for Segment_Flags'Component_Size use 1;
    for Segment_Flags'Size use 4;
 
-   function Segment_Type_To_Integer is new Ada.Unchecked_Conversion (Segment_Type, Unsigned_32);
 
    type ELF_Program_Header is record
       p_type   : Segment_Type;
@@ -118,15 +125,17 @@ package ELF is
    end record
    with Pack => True, Size => 32 * 8;
 
+   -- !format off
    for ELF_Program_Header use
      record
-       p_type at 0 range 0 .. 31;
-       p_offset at 4 range 0 .. 31;
-       p_vaddr at 8 range 0 .. 31;
-       p_paddr at 12 range 0 .. 31;
+       p_type   at 0  range 0 .. 31;
+       p_offset at 4  range 0 .. 31;
+       p_vaddr  at 8  range 0 .. 31;
+       p_paddr  at 12 range 0 .. 31;
        p_filesz at 16 range 0 .. 31;
-       p_memsz at 20 range 0 .. 31;
-       p_flags at 24 range 0 .. 31;
-       p_align at 28 range 0 .. 31;
+       p_memsz  at 20 range 0 .. 31;
+       p_flags  at 24 range 0 .. 3;
+       p_align  at 28 range 0 .. 31;
      end record;
+   -- !format on
 end ELF;

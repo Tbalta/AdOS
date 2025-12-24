@@ -1,7 +1,12 @@
 with VGA;
 package body Log is
+
+   procedure Serial_Send_Line (Message : in String) is
+   begin
+      SERIAL.send_line (Serial.COM1, Message);
+   end Serial_Send_Line;
+
    procedure Log_Message (Message : in String) is
-   
    begin
       Serial_Logger.Log_Message (Message);
       VGA_Logger.Log_Message (Message);
@@ -36,9 +41,9 @@ package body Log is
 
    procedure Panic (Panic_Message : in String) is
    begin
-      VGA.Set_Text_Mode (80, 25, 16);
+      -- VGA.Set_Text_Mode (80, 25, 16);
       Serial_Logger.Log_Error (Panic_Message);
-      VGA_Logger.Log_Error (Panic_Message);
+      -- VGA_Logger.Log_Error (Panic_Message);
       while True loop
          null;
       end loop;

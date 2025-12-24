@@ -1,3 +1,11 @@
+------------------------------------------------------------------------------
+--                                 X86.VMM                                  --
+--                                                                          --
+--                                 S p e c                                  --
+-- (c) 2025 Tanguy Baltazart                                                --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
 with Interfaces;              use Interfaces;
 with System;                  use System;
 with System.Address_To_Access_Conversions;
@@ -165,7 +173,9 @@ private
       Page_Size     : Boolean := False;
       Global        : Boolean := False;
       Address       : Page_Address;
-   end record;
+   end record
+      with Size => 32,
+           Object_Size => 32;
    --!format off
    for Page_Table_Entry use
      record
@@ -234,7 +244,7 @@ private
    type Page_Table is array (Page_Table_Index) of aliased Page_Table_Entry
       with Pack => True,
            Component_Size => 32,
-           Size => 1023  *32 * 8;
+           Size => 1024  * 32;
 
    type Page_Directory is
      array (Page_Directory_Index range 0 .. 1_023) of aliased Page_Directory_Entry

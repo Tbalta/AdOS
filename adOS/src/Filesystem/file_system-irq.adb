@@ -37,31 +37,33 @@ package body File_System.IRQ is
          return -1;
       end if;
 
-      --  Logger.Log_Info ("tick:" & Programmable_Interval_Timer.Get_Systick'Image);
-
-      if Read_Type'Size /= Unsigned_32'Size then
-         Logger.Log_Error
-           ("Invalid write size expected: "
-            & Integer (Unsigned_32'Size)'Image
-            & "bits got: "
-            & Integer (Read_Type'Size)'Image);
-         return -1;
-      end if;
+      --  if Read_Type'Size /= Integer'Size or else Read_Type'Object_Size /= Integer'Object_Size then
+      --     Logger.Log_Error
+      --       ("Invalid write size expected: "
+      --        & Integer (Integer'Size)'Image
+      --        & "bits got: "
+      --        & Integer (Read_Type'Size)'Image);
+      --     return -1;
+      --  end if;
 
       declare
-         function To_U32 is new Ada.Unchecked_Conversion (Source => Integer, Target => Read_Type);
-      begin
+         --  pragma Assert (Read_Type'Size = Integer'Size);
+
+         --  pragma Warnings (Off, "types for unchecked conversion have different sizes");
+         function To_Read_Type is new Ada.Unchecked_Conversion (Source => Integer, Target => Read_Type);
+         --  pragma Warnings (On, "types for unchecked conversion have different sizes");
+         begin
          case fd is
             when SYSTICK_FD =>
                --  Logger.Log_Info ("Read_Systick " & Programmable_Interval_Timer.Get_Systick'Image);
-               Buffer.all := To_U32 (Programmable_Interval_Timer.Get_Systick);
+               Buffer.all := To_Read_Type (Programmable_Interval_Timer.Get_Systick);
 
             when KEYBOARD_FD =>
-               Buffer.all := To_U32 (Keyboard.Get_Key_Code);
+               Buffer.all := To_Read_Type (Keyboard.Get_Key_Code);
 
             when others =>
                Logger.Log_Info ("Invalid fd");
-               Buffer.all := To_U32 ((-1));
+               Buffer.all := To_Read_Type ((-1));
          end case;
       end;
 

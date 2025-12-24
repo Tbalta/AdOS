@@ -38,9 +38,9 @@ procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Addre
    package VGA_Logger renames Log.VGA_Logger;
    CR3 : CR3_register;
 begin
-   SERIAL.serial_init (SERIAL.Baudrate'Last);
-   Logger.Log_Info ("Starting adOS...");
    VGA_Logger.Log_Info ("Starting adOS...");
+   SERIAL.Init_COM (SERIAL.COM1, SERIAL.Baudrate'Last);
+   Logger.Log_Info ("Starting adOS...");
 
    ------------------------------------
    --  Multiboot information display --
@@ -143,44 +143,16 @@ begin
 
       Buffer : access vga_buffer := null;
       count  : Integer := 0;
-
-      procedure test;
-      pragma Import (C, test, "libvga_switch_mode13h");
    begin
+      VGA.Save_Frame_Buffer;
       VGA.Set_Graphic_Mode (320, 200, 256);
-      --  VGA.Dump_Registers;
-      --  while True loop
-      --     System.Machine_Code.Asm (Template => "hlt", Volatile => True);
-      --  end loop;
-      --  test;
       VGA.load_palette ("vga_gui.hex");
-      -- VGA.Save_Frame_Buffer;
       Buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
       Buffer (1 .. 320 * 200) := (others => 5);
       Buffer (1 .. 320 * 150) := (others => 70);
       Buffer (1 .. 320 * 100) := (others => 90);
       Buffer (1 .. 320 * 50) := (others => 250);
    end;
-
-   Logger.Log_Info ("Setting text mode");
-   --  declare
-
-    --  use File_System;
-      -- Buffer : access vga_buffer := null;
-
-      -- fd    : File_System.File_Descriptor_With_Error := FD_ERROR;
-      -- count : Integer := 0;
-   --  begin
-      --  VGA.Restore_Frame_Buffer;
-      --  VGA.Set_Text_Mode (80, 25, 16);
-      --  --  VGA.test (80, 25);
-      --  VGA.load_palette ("vga-tui.hex");
-      --  --  fd := open ("vga_frame_buffer", 0);
-      --  Buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
-      --  Buffer (1 .. 80) := (others => (c => 'H', attribute => 16#F#));
-      --  Buffer (81 .. 80 * 2) := (others => (c => 'E', attribute => 16#F#));
-      --  close (fd);
-   --  end;
 
    Programmable_Interval_Timer.set_timer_period (10);
    --  Keyboard.Init;
@@ -196,11 +168,11 @@ begin
       use File_System;
       FD             : File_Descriptor_With_Error := FD_ERROR;
       Program_Header : ELF.ELF_Header;
+      File_To_Open : constant Path := Path (Util.Read_String_From_Address (info.cmdline));
    begin
-      --  FD := open ("bin/test.elf", 0);
-      FD := open (Path (Util.Read_String_From_Address (info.cmdline)), 0);
+      FD := open (File_To_Open, 0);
       if FD = FD_ERROR then
-         Logger.Log_Error ("Error opening file");
+         Logger.Log_Error ("Error opening ELF file: " & String (File_To_Open));
          goto Init_End;
       end if;
 
@@ -213,7 +185,7 @@ begin
          Logger.Log_Ok ("ELF file closed successfully");
       end if;
 
-      SERIAL.send_line ("Entry point: " & To_Integer (Program_Header.e_entry)'Image);
+      Logger.Log_Info ("Entry point: " & To_Integer (Program_Header.e_entry)'Image);
       Jump_To_Userspace (Program_Header.e_entry, CR3);
    end;
 

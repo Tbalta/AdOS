@@ -1,3 +1,11 @@
+------------------------------------------------------------------------------
+--                              X86.USERSPACE                               --
+--                                                                          --
+--                                 S p e c                                  --
+-- (c) 2025 Tanguy Baltazart                                                --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
 with x86.vmm;
 
 package x86.Userspace is

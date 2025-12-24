@@ -268,7 +268,6 @@ package body VGA is
          when others =>
             raise Program_Error;
       end case;
-      return Clock_External;
    end Get_Clock;
 
 

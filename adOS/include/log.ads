@@ -5,7 +5,8 @@ with VGA.Terminal;
 package Log is
    pragma Preelaborate;
 
-   package Serial_Logger is new Generic_Logger (Print_Function => SERIAL.send_line);
+   procedure Serial_Send_Line (Message : in String);
+   package Serial_Logger is new Generic_Logger (Print_Function => Serial_Send_Line);
    package VGA_Logger is new Generic_Logger (Print_Function => VGA.Terminal.Put_String);
 
    procedure Log_Message (Message : in String);

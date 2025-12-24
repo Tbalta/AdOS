@@ -2,30 +2,9 @@ with SERIAL;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
 with File_System.SERIAL;
-
+with Log;
 package body File_System.SERIAL is
-   function To_Upper (str : String) return String is
-      result : String := str;
-   begin
-      for I in result'Range loop
-         if result (I) in 'a' .. 'z' then
-            result (I) := Character'Val (Character'Pos (result (I)) - 32);
-         end if;
-      end loop;
-      return result;
-   end To_Upper;
-
-   function IndexOfString (str : String; c : Character) return Positive is
-      i : Positive := str'First;
-   begin
-      while i in str'Range and then str (i) /= c and then str (i) /= Character'Val (0) loop
-         i := i + 1;
-      end loop;
-      return i;
-   end IndexOfString;
-
-   function Min (a, b : Integer) return Integer
-   is (if (a < b) then a else b);
+   package Logger renames Log;
 
    -------------------
    -- SERIAL Open --
@@ -44,10 +23,15 @@ package body File_System.SERIAL is
       FD : Driver_File_Descriptor_With_Error := DRIVER_FD_ERROR;
    begin
       if File_Path = "tty0" then
-         return Find_Free_FD;
+         FD := Find_Free_FD;
       end if;
 
-      return DRIVER_FD_ERROR;
+      if FD /= DRIVER_FD_ERROR then
+         Descriptors (FD).used := True;
+         Descriptors (FD).COM  := Standard.Serial.COM1;
+      end if;
+
+      return FD;
    end open;
 
    -----------------
@@ -65,8 +49,13 @@ package body File_System.SERIAL is
       count : constant Storage_Count := Write_Type'Size / Storage_Unit;
       package Conversion is new System.Address_To_Access_Conversions (Write_Type);
    begin
+      if not Descriptors (fd).used then
+         Logger.Log_Error ("Unused SERIAL file descriptor: " & fd'Image);
+         return -1;
+      end if;
+
       Standard.SERIAL.send_raw_buffer
-        (Conversion.To_Address (Conversion.Object_Pointer (Buffer)), count);
+        (Descriptors (fd).COM, Conversion.To_Address (Conversion.Object_Pointer (Buffer)), count);
       return Integer (count);
    end write;
 

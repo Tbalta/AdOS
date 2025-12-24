@@ -1,3 +1,11 @@
+------------------------------------------------------------------------------
+--                                 X86.PMM                                  --
+--                                                                          --
+--                                 B o d y                                  --
+-- (c) 2025 Tanguy Baltazart                                                --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
 with SERIAL;
 with Interfaces;              use Interfaces;
 with Interfaces.C;            use Interfaces.C;
@@ -55,7 +63,7 @@ package body x86.pmm is
          Offset := Offset + Natural (Headers (Index).length / Unsigned_64 (PMM_PAGE_SIZE));
       end loop;
       Logger.Log_Error ("Address_To_Offset_Unchecked - unable to find Index for " & addr'Image);
-      return -1;
+      raise Constraint_Error;
    end Address_To_Offset_Unchecked;
 
    -----------------------
@@ -82,6 +90,8 @@ package body x86.pmm is
    is (Offset_To_Address_Unchecked (paroffset));
 
    function Get_Next_Free_Page return Natural is
+      use all type System.Address;
+      pragma Assert (PMM_Header_Address /= System.Null_Address, "PMM Bitmap not initialized.");
       package Util is new PMM_Utils (PMM_Header_Address);
       use Util;
    begin
@@ -90,7 +100,8 @@ package body x86.pmm is
             return Index;
          end if;
       end loop;
-      return -1;
+      Logger.Log_Error ("PMM: Out of memory !");
+      raise Storage_Error;
    end Get_Next_Free_Page;
 
    function Allocate_Page return Physical_Address is
