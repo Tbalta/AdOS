@@ -29,7 +29,8 @@ enum direction {
     DOWN,
     UP,
     LEFT,
-    RIGHT
+    RIGHT,
+    NONE,
 };
 typedef enum direction direction_t;
 

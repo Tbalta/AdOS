@@ -123,6 +123,56 @@ static char apple_bmp [10*10];
 static char garden[320*200];
 static char press_to_play_bmp[320 * 50];
 
+bool are_directions_opposite (direction_t dir1, direction_t dir2)
+{
+    if ((dir1 == LEFT && dir2 == RIGHT) || (dir1 == RIGHT && dir2 == LEFT))
+    {
+        return true;
+    }
+    if ((dir1 == UP && dir2 == DOWN) || (dir1 == DOWN && dir2 == UP))
+    {
+        return true;
+    }
+    return false;
+}
+
+bool is_direction_valid (direction_t new_direction, direction_t current_direction)
+{
+    return !are_directions_opposite (new_direction, current_direction) && new_direction != NONE;
+}
+
+direction_t get_next_direction (int keyboard_fd, direction_t prev_direction)
+{
+    int key = -1;
+    while (read (keyboard_fd, &key, sizeof (int)) != -1 && key != -1)
+    {
+        int direction = NONE;
+        switch (key)
+        {
+            case 72:
+                direction = UP;
+                break;
+            case 80:
+                direction = DOWN;
+                break;
+            case 75:
+                direction = LEFT;
+                break;
+            case 77:
+                direction = RIGHT;
+                break; 
+            default:
+                break;
+        }
+
+        if (is_direction_valid (direction, prev_direction) && direction != prev_direction)
+        {
+            return direction;
+        }
+    }
+    return prev_direction;
+}
+
 int _start() {
 
     char* snake_heads[] = {
@@ -286,27 +336,7 @@ int _start() {
                 fruit_valid = true;
             }
             
-            int key = -1;
-            while (read (keyboard_fd, &key, sizeof (int)) != -1 && key != -1)
-            {
-                switch (key)
-                {
-                    case 72:
-                        direction = UP;
-                        break;
-                    case 80:
-                        direction = DOWN;
-                        break;
-                    case 75:
-                        direction = LEFT;
-                        break;
-                    case 77:
-                        direction = RIGHT;
-                        break; 
-                    default:
-                        break;
-                }
-            }
+            direction = get_next_direction (keyboard_fd, prev_direction);
 
             switch (direction)
             {
