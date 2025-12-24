@@ -7,13 +7,13 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with Log;
+with Loggers;
 with System.Address_To_Access_Conversions;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
 
 package body ELF.Loader is
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Loggers.Serial_Logger;
 
    ----------------
    -- Get_Elf_Header --

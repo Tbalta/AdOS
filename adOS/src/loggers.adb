@@ -1,5 +1,13 @@
+------------------------------------------------------------------------------
+--                                 LOGGERS                                  --
+--                                                                          --
+--                                 S p e c                                  --
+-- (c) 2025 Tanguy Baltazart                                                --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
 with VGA;
-package body Log is
+package body Loggers is
 
    procedure Serial_Send_Line (Message : in String) is
    begin
@@ -41,9 +49,9 @@ package body Log is
 
    procedure Panic (Panic_Message : in String) is
    begin
-      -- VGA.Set_Text_Mode (80, 25, 16);
       Serial_Logger.Log_Error (Panic_Message);
-      -- VGA_Logger.Log_Error (Panic_Message);
+      VGA.Set_Text_Mode (80, 25, 16);
+      VGA_Logger.Log_Error (Panic_Message);
       while True loop
          null;
       end loop;
@@ -51,6 +59,6 @@ package body Log is
 
    procedure Log_C_Char (c : Interfaces.C.char) is
    begin
-      Serial_Logger.Log_Message ((1 => Interfaces.C.To_Ada (c)));
+      SERIAL.send_string (Serial.COM1, (1 => Interfaces.C.To_Ada (c)));
    end Log_C_Char;
-end Log;
+end Loggers;

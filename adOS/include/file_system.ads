@@ -49,6 +49,8 @@ private
 
    type File_Descriptor_Array is array (File_Descriptor) of VFS_File;
    Descriptors : File_Descriptor_Array := (others => <>);
+   function close (FS : File_System_Type; Driver_fd : Driver_File_Descriptor) return Integer;
+   procedure close (FS : File_System_Type; Driver_fd : Driver_File_Descriptor);
 
    function To_Upper (str : String) return String;
    function IndexOfString (str : String; c : Character) return Positive;

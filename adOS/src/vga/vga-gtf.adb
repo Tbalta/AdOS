@@ -8,10 +8,10 @@
 ------------------------------------------------------------------------------
 
 with Util;
-with Log;
+with Loggers;
 
 package body VGA.GTF is
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Loggers.Serial_Logger;
 
    use all type Pixel_Count;
 

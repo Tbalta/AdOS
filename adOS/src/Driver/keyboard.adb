@@ -1,7 +1,7 @@
-with Log;
+with Loggers;
 
 package body Keyboard is
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Loggers.Serial_Logger;
 
    procedure Handle_Keyboard is
       use Keycode_Circular_Buffer;

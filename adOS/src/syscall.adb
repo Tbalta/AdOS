@@ -7,7 +7,7 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 with File_System;
-with Log;
+with Loggers;
 with SERIAL;
 with System.Address_To_Access_Conversions;
 with Interfaces.C;
@@ -16,7 +16,7 @@ with System.Storage_Elements; use System.Storage_Elements;
 with VGA.Sequencer;
 
 package body Syscall is
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Loggers.Serial_Logger;
 
    --------------------
    -- Handle Syscall --

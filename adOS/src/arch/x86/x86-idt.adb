@@ -2,7 +2,7 @@ with SERIAL;
 with System;
 with System.Storage_Elements; use System.Storage_Elements;
 with System.Machine_Code;     use System.Machine_Code;
-with Log;
+with Loggers;
 with Ada.Interrupts;          use Ada.Interrupts;
 with Ada.Interrupts.Names;    use Ada.Interrupts.Names;
 with Syscall;
@@ -13,7 +13,7 @@ with Programmable_Interval_Timer;
 with Keyboard;
 
 package body x86.idt is
-   package Logger renames Log.VGA_Logger;
+   package Logger renames Loggers.VGA_Logger;
 
    procedure add_entry
      (index     : Interrupt_ID;

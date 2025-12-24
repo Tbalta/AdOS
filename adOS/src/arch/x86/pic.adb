@@ -10,10 +10,10 @@
 --  TODO: This unit needs to be revised to add PIC register records.
 with Interfaces; use Interfaces;
 
-with Log;
+with Loggers;
 
 package body pic is
-   package Logger renames Log.VGA_Logger;
+   package Logger renames Loggers.VGA_Logger;
    ---------
    -- Rep --
    ---------

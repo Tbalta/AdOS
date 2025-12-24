@@ -12,10 +12,10 @@ with Interfaces.C;            use Interfaces.C;
 with System.Storage_Elements; use System.Storage_Elements;
 with Aligned_System_Address;
 with config;                  use config;
-with Log;
+with Loggers;
 
 package body x86.pmm is
-   package Logger renames Log;
+   package Logger renames Loggers;
 
    function check (cond : Boolean; msg : String) return Boolean is
    begin

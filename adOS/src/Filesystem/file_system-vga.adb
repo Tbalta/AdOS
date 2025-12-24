@@ -3,13 +3,13 @@ with VGA;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
 with File_System.SERIAL;
-with Log;
+with Loggers;
 with Ada.Unchecked_Conversion;
 
 with VGA; use VGA;
 
 package body File_System.VGA is
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Loggers.Serial_Logger;
 
    ----------
    -- Open --

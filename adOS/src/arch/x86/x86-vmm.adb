@@ -3,12 +3,12 @@ with System.Storage_Elements; use System.Storage_Elements;
 with config;                  use config;
 with Ada.Assertions;
 --  with System.Secondary_Stack;
-with Log;
+with Loggers;
 with x86.vmm;
 
 package body x86.vmm is
    use Standard.ASCII;
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Loggers.Serial_Logger;
 
    ----------------
    -- To_Address --

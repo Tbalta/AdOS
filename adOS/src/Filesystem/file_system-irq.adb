@@ -1,13 +1,13 @@
 with System;                      use System;
 with System.Storage_Elements;     use System.Storage_Elements;
 with File_System.SERIAL;
-with Log;
+with Loggers;
 with Ada.Unchecked_Conversion;
 with Programmable_Interval_Timer; use Programmable_Interval_Timer;
 with Keyboard;
 
 package body File_System.IRQ is
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Loggers.Serial_Logger;
 
    ----------
    -- Open --
@@ -37,21 +37,21 @@ package body File_System.IRQ is
          return -1;
       end if;
 
-      --  if Read_Type'Size /= Integer'Size or else Read_Type'Object_Size /= Integer'Object_Size then
-      --     Logger.Log_Error
-      --       ("Invalid write size expected: "
-      --        & Integer (Integer'Size)'Image
-      --        & "bits got: "
-      --        & Integer (Read_Type'Size)'Image);
-      --     return -1;
-      --  end if;
+      if Read_Type'Size /= Integer'Size or else Read_Type'Object_Size /= Integer'Object_Size then
+         Logger.Log_Error
+           ("Invalid write size expected: "
+            & Integer (Integer'Size)'Image
+            & "bits got: "
+            & Integer (Read_Type'Size)'Image);
+         return -1;
+      end if;
 
       declare
-         --  pragma Assert (Read_Type'Size = Integer'Size);
+         pragma Assert (Read_Type'Size = Integer'Size);
 
-         --  pragma Warnings (Off, "types for unchecked conversion have different sizes");
+         pragma Warnings (Off, "types for unchecked conversion have different sizes");
          function To_Read_Type is new Ada.Unchecked_Conversion (Source => Integer, Target => Read_Type);
-         --  pragma Warnings (On, "types for unchecked conversion have different sizes");
+         pragma Warnings (On, "types for unchecked conversion have different sizes");
          begin
          case fd is
             when SYSTICK_FD =>

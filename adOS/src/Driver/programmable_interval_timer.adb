@@ -7,10 +7,10 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with Log;
+with Loggers;
 
 package body Programmable_Interval_Timer is
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Loggers.Serial_Logger;
 
    procedure Set_Timer_Period (ms : Positive) is
       PIT_Frequency_Hz : constant Float := 1193182.0;

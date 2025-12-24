@@ -5,7 +5,7 @@ with VGA.Terminal;
 
 with Interfaces;
 with Interfaces.C;
-package Log is
+package Loggers is
    pragma Preelaborate;
 
    procedure Serial_Send_Line (Message : in String);
@@ -22,4 +22,4 @@ package Log is
    pragma Export (Ada, Panic, "ADA_PANIC");
    procedure Log_C_Char (c : Interfaces.C.char)
       with Export, Convention => C, External_Name => "send_cchar";
-end Log;
+end Loggers;

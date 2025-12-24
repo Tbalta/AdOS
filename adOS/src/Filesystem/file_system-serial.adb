@@ -2,9 +2,9 @@ with SERIAL;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
 with File_System.SERIAL;
-with Log;
+with Loggers;
 package body File_System.SERIAL is
-   package Logger renames Log;
+   package Logger renames Loggers;
 
    -------------------
    -- SERIAL Open --

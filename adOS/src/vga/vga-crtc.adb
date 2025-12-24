@@ -13,12 +13,12 @@ with Ada.Unchecked_Conversion;
 with SERIAL;
 with VGA.GTF;    use VGA.GTF;
 with Interfaces; use Interfaces;
-with Log;
+with Loggers;
 
 with VGA.CRTC.Registers; use VGA.CRTC.Registers;
 
 package body VGA.CRTC is
-   package Logger renames Log;
+   package Logger renames Loggers;
 
 
    -- Prepare_CRTC_For_Configuration --

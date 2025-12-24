@@ -9,10 +9,10 @@
 
 with File_System; use File_System;
 with Interfaces;  use Interfaces;
-with Log;
+with Loggers;
 
 package body VGA.DAC is
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Loggers.Serial_Logger;
 
    ----------------
    -- Load_Color --

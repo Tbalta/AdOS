@@ -3,11 +3,11 @@ with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
 with File_System.ISO;
 with System.Address_To_Access_Conversions;
-with Log;
+with Loggers;
 with Ramdisk;
 
 package body File_System.ISO is
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Loggers.Serial_Logger;
    function To_Upper (str : String) return String is
       result : String := str;
    begin

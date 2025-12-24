@@ -1,10 +1,10 @@
 with Interfaces; use Interfaces;
 with x86.Port_IO;
-with Log;
+with Loggers;
 with Ada.Unchecked_Conversion;
 
 package body Atapi is
-   package Logger renames Log;
+   package Logger renames Loggers;
 
    function Inb is new x86.Port_IO.Inb (Unsigned_8);
    procedure Outb is new x86.Port_IO.Outb (Unsigned_8);

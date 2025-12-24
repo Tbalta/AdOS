@@ -1,9 +1,9 @@
 with System.Machine_Code; use System.Machine_Code;
 with SERIAL;
-with Log;
+with Loggers;
 package body x86.Userspace is
    use Standard.ASCII;
-   package Logger renames Log;
+   package Logger renames Loggers;
 
    procedure Jump_To_Userspace (Entry_Point : Virtual_Address; CR3 : x86.vmm.CR3_register) is
       use System;

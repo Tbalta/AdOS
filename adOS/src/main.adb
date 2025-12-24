@@ -20,7 +20,7 @@ with File_System.ISO;
 with ELF;
 with ELF.Loader;
 with x86.Userspace;           use x86.Userspace;
-with Log;
+with Loggers;
 with Ada.Assertions;
 with Util;
 with VGA;
@@ -34,8 +34,8 @@ procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Addre
    package MultiBoot_Conversion is new System.Address_To_Access_Conversions (multiboot_info);
    info : access multiboot_info := MultiBoot_Conversion.To_Pointer (multiboot_address);
 
-   package Logger renames Log.VGA_Logger;
-   package VGA_Logger renames Log.VGA_Logger;
+   package Logger renames Loggers.VGA_Logger;
+   package VGA_Logger renames Loggers.VGA_Logger;
    CR3 : CR3_register;
 begin
    VGA_Logger.Log_Info ("Starting adOS...");

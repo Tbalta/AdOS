@@ -9,7 +9,7 @@
 
 with VGA;
 with x86.Port_IO;
-with Log;
+with Loggers;
 with Interfaces;                       use Interfaces;
 with System;
 with System.Machine_Code;
@@ -33,7 +33,7 @@ with File_System;
 
 package body VGA is
    use Standard.ASCII;
-   package Logger renames Log;
+   package Logger renames Loggers;
 
    --------------------
    -- Dump_Registers --
