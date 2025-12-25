@@ -3,17 +3,17 @@
 --                                                                          --
 --                                 B o d y                                  --
 -- (c) 2025 Tanguy Baltazart                                                --
--- License : See LICENCE.txt in the root directory.                         --
+-- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
 
 --  TODO: This unit needs to be revised to add PIC register records.
 with Interfaces; use Interfaces;
 
-with Log;
-package body pic
-is
-   package Logger renames Log.Serial_Logger;
+with Loggers;
+
+package body pic is
+   package Logger renames Loggers.VGA_Logger;
    ---------
    -- Rep --
    ---------
@@ -33,6 +33,7 @@ is
       pragma Unreferenced (SINGLE, EDGE, CASCADE);
       procedure Outb is new x86.Port_IO.Outb (Unsigned_8);
    begin
+      Logger.Log_Info ("Initializing PIC...");
       Outb (Rep (MASTER_CMD), INIT or ICW4); -- ICW1
       Outb (Rep (SLAVE_CMD), INIT or ICW4); -- ICW1
       Outb (Rep (MASTER_DATA), 32); -- ICW2
@@ -46,12 +47,12 @@ is
 
       Outb (Rep (MASTER_DATA), 16#FF# and not (Shift_Left (1, 2))); -- ICW4
       Outb (Rep (SLAVE_DATA), 16#FF#); -- ICW4
+      Logger.Log_Ok ("PIC initialized");
    end init;
 
-   procedure Clear_Mask (irq : Integer)
-   is
-      Port : PIT_PORT;
-      IRQ_V : Integer :=irq;
+   procedure Clear_Mask (irq : Integer) is
+      Port  : PIT_PORT;
+      IRQ_V : Integer := irq;
       Value : Unsigned_8;
       function Inb is new x86.Port_IO.Inb (Unsigned_8);
       procedure Outb is new x86.Port_IO.Outb (Unsigned_8);
@@ -63,8 +64,8 @@ is
          port := SLAVE_DATA;
       end if;
 
-      Value := Unsigned_8 (Inb (Rep(port)) and not Shift_Left(1, IRQ_V));
+      Value := Unsigned_8 (Inb (Rep (port)) and not Shift_Left (1, IRQ_V));
       Logger.Log_Info ("Value: " & Value'Image);
-      Outb (Rep(port), Value);
+      Outb (Rep (port), Value);
    end Clear_Mask;
 end pic;

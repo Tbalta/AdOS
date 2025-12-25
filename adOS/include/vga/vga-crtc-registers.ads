@@ -3,7 +3,7 @@
 --                                                                          --
 --                                 S p e c                                  --
 -- (c) 2025 Tanguy Baltazart                                                --
--- License : See LICENCE.txt in the root directory.                         --
+-- License : See license.txt in the root directory.                         --
 --                                                                          --
 --                                                                          --
 --  Description:                                                            --
@@ -163,11 +163,12 @@ package VGA.CRTC.Registers is
    --------------------------------
    type Maximum_Scan_Line_Register is record
       MSL             : Unsigned_5 := 0;
-      VBS9            : Start_Vertical_Blanking_VSB9;
-      LC9             : Line_Compare_LC9;
-      Double_Scanning : Boolean;
+      VBS9            : Start_Vertical_Blanking_VSB9 := 0;
+      LC9             : Line_Compare_LC9 := 0;
+      Double_Scanning : Boolean := False;
    end record
-   with Size => 8;
+   with Size => 8,
+        Object_Size => 8; 
    for Maximum_Scan_Line_Register use
      record
        MSL at 0 range 0 .. 4;

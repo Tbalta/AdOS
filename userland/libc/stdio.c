@@ -86,7 +86,7 @@ int snprintf(char *buf, size_t size, const char *fmt, ...)
         case 'd':
         {
             unsigned int val = va_arg (args, unsigned int);
-            char* str = to_hex (int_buffer, sizeof (int_buffer), val);
+            char* str = itoa (int_buffer, sizeof (int_buffer), val);
             for (; *str != '\0' && i < size - 1; i++)
             {
                 buf[i] = *(str++);

@@ -1,5 +1,5 @@
-with Interfaces;   use Interfaces;
-with Interfaces.C; use Interfaces.C;
+with Interfaces;              use Interfaces;
+with Interfaces.C;            use Interfaces.C;
 with System;
 with System.Address_To_Access_Conversions;
 with Ados;
@@ -31,30 +31,34 @@ private
    FRAME_BUFFER_FD : constant Driver_File_Descriptor := Driver_File_Descriptor'First;
    WIDTH_FD        : constant Driver_File_Descriptor := FRAME_BUFFER_FD + 1;
    HEIGHT_FD       : constant Driver_File_Descriptor := FRAME_BUFFER_FD + 2;
-   COLORS_FD      : constant Driver_File_Descriptor := FRAME_BUFFER_FD + 3;
-   MODE_FD      : constant Driver_File_Descriptor := FRAME_BUFFER_FD + 4;
+   COLORS_FD       : constant Driver_File_Descriptor := FRAME_BUFFER_FD + 3;
+   MODE_FD         : constant Driver_File_Descriptor := FRAME_BUFFER_FD + 4;
 
    --  generic
    --     type Read_Type is private;
    --  function read (fd : Driver_File_Descriptor; Buffer : out Read_Type) return Integer;
    generic
       type Write_Type is private;
-      function Frame_Buffer_Write (fd : Driver_File_Descriptor; Buffer : access Write_Type) return Integer;
+   function Frame_Buffer_Write
+     (fd : Driver_File_Descriptor; Buffer : access Write_Type) return Integer;
    generic
       type Write_Type is private;
-      function Attribute_Write (fd : Driver_File_Descriptor; Buffer : access Write_Type) return Integer;
-
+   function Attribute_Write
+     (fd : Driver_File_Descriptor; Buffer : access Write_Type) return Integer;
 
    type File_Information is record
-      used : Boolean := False;
-      Width : Standard.VGA.Pixel_Count := 0;
-      Height : Standard.VGA.Scan_Line_Count := 0;
-      Color_Depth : Unsigned_32 := 0;
+      used         : Boolean := False;
+      Width        : Standard.VGA.Pixel_Count := 0;
+      Height       : Standard.VGA.Scan_Line_Count := 0;
+      Color_Depth  : Unsigned_32 := 0;
       Graphic_Mode : Boolean := False;
-      offset : Storage_Offset := 0;
+      offset       : Storage_Offset := 0;
    end record;
 
-   type VGA_File_Info_Array is array (Driver_File_Descriptor range Driver_File_Descriptor'First .. Driver_File_Descriptor'First) of File_Information;
+   type VGA_File_Info_Array is
+     array (Driver_File_Descriptor
+              range Driver_File_Descriptor'First .. Driver_File_Descriptor'First)
+     of File_Information;
    Descriptors : VGA_File_Info_Array := (others => <>);
 
 

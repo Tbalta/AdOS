@@ -3,7 +3,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 -- (c) 2025 Tanguy Baltazart                                                --
--- License : See LICENCE.txt in the root directory.                         --
+-- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
 
@@ -27,14 +27,13 @@ package body VGA.Graphic_Controller.Registers is
 
    procedure Dump_Graphic_Controller_Registers is
    begin
-      SERIAL.send_line ("");
+      SERIAL.send_line (Serial.COM1, "");
       for I in Register_Array'Range loop
-         SERIAL.send_string (I'image & "-> ");
-         SERIAL.send_hex (Unsigned_32 (Register_Array (I)));
-         SERIAL.send_line ("");
+         SERIAL.send_string (Serial.COM1, I'image & "-> ");
+         SERIAL.send_hex (Serial.COM1, Unsigned_32 (Register_Array (I)));
+         SERIAL.send_line (Serial.COM1, "");
       end loop;
    end Dump_Graphic_Controller_Registers;
-
 
    function Read_Data return Data_Type is
       function Read is new x86.Port_IO.Read_Port_8 (Data_Register_Address, Data_Type);

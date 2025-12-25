@@ -3,7 +3,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 -- (c) 2025 Tanguy Baltazart                                                --
--- License : See LICENCE.txt in the root directory.                         --
+-- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
 
@@ -43,8 +43,7 @@ package body x86.Port_IO is
       pragma Assert (Write_Type'Size = 8);
       System.Machine_Code.Asm
         (Template => "outb %0, %w1",
-         Inputs   =>
-           (Write_Type'Asm_Input ("a", Data), Port_Address'Asm_Input ("Nd", Port)),
+         Inputs   => (Write_Type'Asm_Input ("a", Data), Port_Address'Asm_Input ("Nd", Port)),
          Volatile => True);
    end Outb;
 
@@ -80,8 +79,7 @@ package body x86.Port_IO is
       pragma Assert (Write_Type'Size = 16);
       System.Machine_Code.Asm
         (Template => "outw %0, %w1",
-         Inputs   =>
-           (Write_Type'Asm_Input ("a", Data), Port_Address'Asm_Input ("Nd", Port)),
+         Inputs   => (Write_Type'Asm_Input ("a", Data), Port_Address'Asm_Input ("Nd", Port)),
          Volatile => True);
    end Outw;
 end x86.Port_IO;

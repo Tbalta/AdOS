@@ -5,76 +5,20 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <syscall.h>
+#include <vga.h>
 
-bool set_vga_mode (int width, int height, int color_depth)
-{
-    int vga_width = open("vga_width", 0);
-    int vga_height = open("vga_height", 0);
-    int color = open("vga_color_depth", 0);
-    int vga_mode = open("vga_mode", 0);
-    bool success = true;
-    int tty = open("tty0", 0);
-
-    if (vga_width == -1 || vga_height == -1 || color == -1 || vga_mode == -1){
-        success = false;
-        write (tty, "Something went wrong1", 22);
-        goto set_vga_mode_close;
-    }
-    
-    if (write (vga_height, &height, sizeof (int)) == -1){
-        write (tty, "Something went wrong2", 22);
-        success = false;
-        goto set_vga_mode_close;
-    }
-
-    if (write (color, &color_depth, sizeof (int)) == -1){
-        write (tty, "Something went wrong3", 22);
-        success = false;
-        goto set_vga_mode_close;
-    }
-    
-    if (write (vga_width, &width, sizeof (int)) == -1){
-        write (tty, "Something went wrong4", 22);
-        success = false;
-        goto set_vga_mode_close;
-    }
-
-    int vga_graphic = 1;
-    if (write (vga_mode, &vga_graphic, sizeof (int)) == -1){
-        write (tty, "Something went wrong5", 22);
-        success = false;
-        goto set_vga_mode_close;
-    }
-
-set_vga_mode_close:
-    if (vga_width != -1){
-        close (vga_width);
-    }
-
-    if (vga_height != -1){
-        close (vga_height);
-    }
-
-    if (color != -1){
-        close (color);
-    }
-
-    if (vga_mode != -1){
-        close (vga_mode);
-    }
-
-    return success;
-}
 
 int _start() {
-    int tty = 0;
-    if (!set_vga_mode (320, 200, 256))
+    int tty = open("tty0", 0);
+    int vga = set_vga_mode (320, 200, 256);
+    if (vga == -1)
     {
+        write (tty, "Unable to open vga", 19);
         while (true)
         {
+            /* code */
         }
     }
-    int vga = open("vga_frame_buffer", 0);
     
     unsigned char vga_line[320] = {0};
     char bmp_header[14];

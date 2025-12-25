@@ -12,7 +12,7 @@ package file_system.ISO
   with Preelaborate
 is
 
-   subtype Supported_Drivers is Ados.Ados_Driver range Ados.ATAPI_DRIVER .. Ados.ATAPI_DRIVER;
+   subtype Supported_Drivers is Ados.Ados_Driver range Ados.ATAPI_DRIVER .. Ados.RAMDISK_DRIVER;
    function open (File_Path : Path; flag : Integer) return Driver_File_Descriptor_With_Error;
 
    generic
@@ -26,7 +26,7 @@ is
 
 
 private
-   BLOCK_SIZE   : constant := Atapi.SECTOR_BUFFER'Length;
+   BLOCK_SIZE : constant := Atapi.SECTOR_BUFFER'Length;
    Atapi_Buffer : Atapi.SECTOR_BUFFER;
 
    --  ISO9660 filesystem structures --
@@ -132,12 +132,13 @@ private
 
       type Driver (Driver_Type : Supported_Drivers := Ados.ATAPI_DRIVER) is record
          Present : Boolean := False;
+         root_lba     : Natural;
+         root_dirsize : Unsigned_32;
          case Driver_Type is
             when Ados.ATAPI_DRIVER =>
-               root_lba     : Natural;
-               root_dirsize : Unsigned_32;
                Atapi_Device : Atapi.Atapi_Device_id;
-
+            when Ados.RAMDISK_DRIVER =>
+               Address     : System.Address;
             when others =>
                null;
          end case;
@@ -165,5 +166,6 @@ private
    type ISO_File_Info_Array is array (Driver_File_Descriptor) of File_Information;
    Descriptors : ISO_File_Info_Array := (others => <>);
 
+   function Read_Iso_Block (Driver : Device_Driver.Driver; lba : Natural; buffer : out Atapi.SECTOR_BUFFER) return Integer;
 
 end file_system.ISO;

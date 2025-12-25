@@ -3,22 +3,23 @@
 --                                                                          --
 --                                 B o d y                                  --
 -- (c) 2025 Tanguy Baltazart                                                --
--- License : See LICENCE.txt in the root directory.                         --
+-- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with Interfaces; use Interfaces;
+with Interfaces;              use Interfaces;
 with VGA.Sequencer.Registers; use VGA.Sequencer.Registers;
+
 package body VGA.Sequencer is
 
    ----------------------------
    -- Set_Sequencer_For_Mode --
    ----------------------------
-   procedure Set_Sequencer_For_Mode (mode : VGA_mode)
-   is
+   procedure Set_Sequencer_For_Mode (mode : VGA_mode) is
    begin
       Write_Reset_Register ((ASR => True, SR => True));
-      Write_Clocking_Mode_Register ((D89 => mode.Box.Width = 8, SL => False, DC => False, SH4 => False, SO => False));
+      Write_Clocking_Mode_Register
+        ((D89 => mode.Box.Width = 8, SL => False, DC => False, SH4 => False, SO => False));
 
       --  In alphanumeric modes, the system writes the ASCII character
       --  code and attribute data to video memory maps 0 and 1,
@@ -35,9 +36,10 @@ package body VGA.Sequencer is
         (To_Character_Map_Select_Register (Map_2_1st_8KB, Map_2_1st_8KB));
 
       -- In the alphanumeric modes, the programmer views maps 0 and 1 as
-      --  a single buffer. 
+      --  a single buffer.
       if mode.vga_type = alphanumeric then
-         Write_Memory_Mode_Register ((Extended_Memory => True, Odd_Even => False, Chain_4 => False));
+         Write_Memory_Mode_Register
+           ((Extended_Memory => True, Odd_Even => False, Chain_4 => False));
       else
          Write_Memory_Mode_Register ((Extended_Memory => True, Odd_Even => True, Chain_4 => True));
       end if;

@@ -3,7 +3,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 -- (c) 2025 Tanguy Baltazart                                                --
--- License : See LICENCE.txt in the root directory.                         --
+-- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
 
@@ -11,26 +11,27 @@ with VGA.CRTC;
 with x86.Port_Io;
 with Ada.Unchecked_Conversion;
 with SERIAL;
-with VGA.GTF; use VGA.GTF;
+with VGA.GTF;    use VGA.GTF;
 with Interfaces; use Interfaces;
-with Log;
+with Loggers;
 
-with VGA.CRTC.Registers;   use VGA.CRTC.Registers;
+with VGA.CRTC.Registers; use VGA.CRTC.Registers;
+
 package body VGA.CRTC is
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Loggers;
 
 
    -- Prepare_CRTC_For_Configuration --
    procedure Prepare_CRTC_For_Configuration is
    begin
-      Write_End_Horizontal_Blanking_Register ((others => <>));
-      Write_End_Horizontal_Retrace_Register ((others => <>));
       Write_Vertical_Retrace_End_Register
         ((Clear_Vertical_Interrupt  => False,
           Enable_Vertical_Interrupt => False,
           Select_5_Refresh_Cycles   => False,
           Protect_Register          => False,
           others                    => 0));
+      Write_End_Horizontal_Blanking_Register ((one => 1, others => <>));
+      Write_End_Horizontal_Retrace_Register ((others => <>));
       Write_Maximum_Scan_Line_Register ((others => <>));
       Write_Start_Address_High_Register (0);
       Write_Start_Address_Low_Register (0);
@@ -47,7 +48,7 @@ package body VGA.CRTC is
    begin
       if HW_MAX_SUPPORTED_HEIGHT < Height then
          return 1;
-   end if;
+      end if;
 
       return HW_MAX_SUPPORTED_HEIGHT / Height;
    end Get_MSL_Multiplier;
@@ -63,22 +64,24 @@ package body VGA.CRTC is
       end if;
    end Compute_Dot_Per_Pixel;
 
-
-   procedure Set_CRTC_For_Mode (mode : VGA_mode)
-   is
+   procedure Set_CRTC_For_Mode (mode : VGA_mode) is
       Timing : VGA_Timing;
       Line_Compare_Disable : constant := 16#3FF#;
-      Offset     : Positive;
+      Offset : Positive;
    begin
       if mode.vga_type = alphanumeric then
          Offset := mode.AN_Format.Width / (1 * 2);
          Timing := Compute_Timing (mode.Pixel_Width, mode.Pixel_Height);
       else
          Offset := mode.Pixel_Width / (2 * 2 * 2);
-         Timing := Compute_Timing (mode.Pixel_Width * Compute_Dot_Per_Pixel (mode.Colors), mode.Pixel_Height * Get_MSL_Multiplier (mode.Pixel_Height));
+         Timing :=
+           Compute_Timing
+             (mode.Pixel_Width * Compute_Dot_Per_Pixel (mode.Colors),
+              mode.Pixel_Height * Get_MSL_Multiplier (mode.Pixel_Height));
       end if;
       Logger.Log_Info ("Setting CRTC for mode" & mode'Image);
       Logger.Log_Info (Timing'Image);
+
       Prepare_CRTC_For_Configuration;
 
       Write_Horizontal_Total_Register (Horizontal_Total_Register (Timing.Total_H - 5));
@@ -92,38 +95,47 @@ package body VGA.CRTC is
       Set_Vertical_Blanking (Timing.V_Blanking_Start, Timing.V_Blanking_Duration);
       Set_Vertical_Retrace (Timing.V_Retrace_Start, Timing.V_Retrace_Duration);
 
-      Write_Cursor_Start_Register ((Row_Scan_Cursor_Begins => 16#D#, Cursor_Off => False));
-      Write_Cursor_End_Register ((Row_Scan_Cursor_Ends => 16#E#, Cursor_Skew_Control => 0));
+      if mode.vga_type = alphanumeric then
+         Write_Cursor_Start_Register ((Row_Scan_Cursor_Begins => 16#D#, Cursor_Off => False));
+         Write_Cursor_End_Register ((Row_Scan_Cursor_Ends => 16#E#, Cursor_Skew_Control => 0));
+      else
+         Write_Cursor_Start_Register ((Row_Scan_Cursor_Begins => 16#0#, Cursor_Off => False));
+         Write_Cursor_End_Register ((Row_Scan_Cursor_Ends => 16#0#, Cursor_Skew_Control => 0));
+      end if;
 
       Write_Offset_Register (Offset_Register (Offset));
 
       if mode.vga_type = alphanumeric then
          Write_Underline_Location_Register
-         ((Start_Under_Line => 16#1F#, Count_By_4 => False, Double_Word => False, others => <>));
+           ((Start_Under_Line => 16#1F#, Count_By_4 => False, Double_Word => False, others => <>));
       else
          Write_Underline_Location_Register
-         ((Start_Under_Line => 16#0#, Count_By_4 => False, Double_Word => True, others => <>));
+           ((Start_Under_Line => 16#0#, Count_By_4 => False, Double_Word => True, others => <>));
       end if;
 
       if mode.vga_type = alphanumeric then
          Write_Maximum_Scan_Line_Register
-         ((MSL => Unsigned_5 (mode.Box.Height * 2) - 1, Double_Scanning => False, others => 0));
+           ((MSL => Unsigned_5 (mode.Box.Height * 2) - 1, Double_Scanning => False, others => 0));
       else
          Write_Maximum_Scan_Line_Register
-         ((MSL => Unsigned_5 (Get_MSL_Multiplier (mode.Pixel_Height) - 1), Double_Scanning => False, others => 0));
+           ((MSL             => Unsigned_5 (Get_MSL_Multiplier (mode.Pixel_Height) - 1),
+             Double_Scanning => False,
+             others          => 0));
       end if;
       Set_Line_Compare (Line_Compare_Disable);
 
-         Write_CRT_Mode_Control_Register
-         ((CSM_0          => True,
-            SRC            => True,
-            HRS            => False,
-            Count_By_2     => False,
-            Address_Wrap   => True,
-            Word_Byte_Mode => False,
-            Hardware_Reset => True));
+      Write_CRT_Mode_Control_Register
+        ((CSM_0          => True,
+          SRC            => True,
+          HRS            => False,
+          Count_By_2     => False,
+          Address_Wrap   => True,
+          Word_Byte_Mode => False,
+          Hardware_Reset => True));
 
-      Write_Cursor_Location_Low_Register (16#50#);
+      if mode.vga_type = alphanumeric then
+         Write_Cursor_Location_Low_Register (16#50#);
+      end if;
 
    end Set_CRTC_For_Mode;
 
@@ -168,8 +180,8 @@ package body VGA.CRTC is
 
    procedure Set_Vertical_Blanking (Start : Natural; Duration : Natural) is
       Start_Vertical_Blanking : Start_Vertical_Blanking_T :=
-        (Value => Unsigned_10 (Start), Bit_Access => False);
-      --  To program the End Blanking Register with a âvertical blankingâ signal of width W,
+        (Value => Unsigned_10 (Start - 1), Bit_Access => False);
+      --  To program the End Blanking Register with a Ã¢ÂÂvertical blankingÃ¢ÂÂ signal of width W,
       --  the following algorithm is used: the width W, in horizontal scan
       --  line units, is added to the value in the Start Vertical Blanking
       --  register minus 1. The 8 low-order bits of the result are the 8-bit

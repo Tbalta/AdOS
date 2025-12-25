@@ -2,7 +2,7 @@ with System.Storage_Elements; use System.Storage_Elements;
 with SERIAL;                  use SERIAL;
 with System.Machine_Code;     use System.Machine_Code;
 with x86.gdt;
-with Log;
+with Loggers;
 
 package body x86.gdt is
    use Standard.ASCII;
@@ -10,7 +10,7 @@ package body x86.gdt is
    pragma Suppress (Range_Check);
    pragma Suppress (Overflow_Check);
    pragma Suppress (All_Checks);
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Loggers.VGA_Logger;
 
    procedure set_gdt_entry
      (index       : Integer;

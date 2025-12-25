@@ -29,8 +29,6 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with Ada.Unchecked_Conversion;
-
 package body System.Storage_Elements is
 
    pragma Suppress (All_Checks);
@@ -40,10 +38,19 @@ package body System.Storage_Elements is
    --  Note qualification below of To_Address to avoid ambiguities systems
    --  where Address is a visible integer type.
 
-   function To_Address is
-     new Ada.Unchecked_Conversion (Storage_Offset, Address);
-   function To_Offset  is
-     new Ada.Unchecked_Conversion (Address, Storage_Offset);
+   function To_Address (Value : Storage_Offset) return Address is
+   begin
+      if Value < 0 then
+         raise Constraint_Error;
+      else
+         return Address (Value);
+      end if;
+   end To_Address;
+
+   function To_Offset (Value : Address) return Storage_Offset is
+   begin
+      return Storage_Offset (Value);
+   end To_Offset;
 
    --  Conversion to/from integers
 

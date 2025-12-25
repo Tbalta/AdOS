@@ -3,9 +3,9 @@ with Ada.Interrupts; use Ada.Interrupts;
 
 package x86.idt is
    pragma Preelaborate;
-   pragma Suppress (Index_Check);
-   pragma Suppress (Overflow_Check);
-   pragma Suppress (All_Checks);
+   --  pragma Suppress (Index_Check);
+   --  pragma Suppress (Overflow_Check);
+   --  pragma Suppress (All_Checks);
 
    type stack_frame (Privilege_Level_Change : Boolean := False) is record
       eax            : Unsigned_32;
@@ -35,19 +35,19 @@ package x86.idt is
    --!format off
    for stack_frame use
      record
-         eax             at 0 range 0 .. 31;
-         ebx             at 4 range 0 .. 31;
-         ecx             at 8 range 0 .. 31;
-         edx             at 12 range 0 .. 31;
-         esi             at 16 range 0 .. 31;
-         edi             at 20 range 0 .. 31;
-         interrupt_code  at 24 range 0 .. 31;
-         error_code      at 28 range 0 .. 31;
-         eip             at 32 range 0 .. 31;
-         cs              at 36 range 0 .. 31;
-         eflags          at 40 range 0 .. 31;
-         old_esp         at 44 range 0 .. 31;
-         old_ss          at 48 range 0 .. 31;
+       eax at 0 range 0 .. 31;
+       ebx at 4 range 0 .. 31;
+       ecx at 8 range 0 .. 31;
+       edx at 12 range 0 .. 31;
+       esi at 16 range 0 .. 31;
+       edi at 20 range 0 .. 31;
+       interrupt_code at 24 range 0 .. 31;
+       error_code at 28 range 0 .. 31;
+       eip at 32 range 0 .. 31;
+       cs at 36 range 0 .. 31;
+       eflags at 40 range 0 .. 31;
+       old_esp at 44 range 0 .. 31;
+       old_ss at 48 range 0 .. 31;
      end record;
    --!format on
 
@@ -61,9 +61,9 @@ package x86.idt is
 
    for Page_Fault_Error_Code use
      record
-       Present         at 0 range 0 .. 0;
-       Write           at 0 range 1 .. 1;
-       User_Mode       at 0 range 2 .. 2;
+       Present at 0 range 0 .. 0;
+       Write at 0 range 1 .. 1;
+       User_Mode at 0 range 2 .. 2;
        Instruction_Fetch at 0 range 4 .. 4;
      end record;
 

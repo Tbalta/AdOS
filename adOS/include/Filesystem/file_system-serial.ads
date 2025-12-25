@@ -4,6 +4,7 @@ with System;
 with System.Address_To_Access_Conversions;
 with Ados;
 with Atapi;
+with SERIAL;
 
 with File_System;
 
@@ -27,10 +28,10 @@ is
 
 
 private
-   
+
    type File_Information is record
       used : Boolean := False;
-      tty  : Positive;
+      COM  : Standard.Serial.COM_Port := Standard.Serial.COM1;
    end record;
 
    type SERIAL_File_Info_Array is array (Driver_File_Descriptor) of File_Information;

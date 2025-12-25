@@ -2,7 +2,7 @@
 # Calculation in this file are extracted from https://glenwing.github.io/docs/VESA-GTF-1.1.pdf
 import math
 
-
+MARGINS_RQD = True
 MARGIN_P = 1.8
 CELL_GRAN = 8
 
@@ -28,7 +28,7 @@ J = 20
 
 # Inputs
 H_PIXELS = 640
-V_LINES = 200
+V_LINES = 400
 
 I_P_FREQ_RQD = 25
 
@@ -47,13 +47,13 @@ V_LINES_RND = round (V_LINES / 2) if INTERLACE_REQUIRED else V_LINES
 PIXEL_FREQ=I_P_FREQ_RQD
 
 # 4. Find number of lines in left margin:
-LEFT_MARGIN = 0
+LEFT_MARGIN = round (H_PIXELS_RND*MARGIN_P/100/CELL_GRAN, 0)*CELL_GRAN if MARGINS_RQD else 0
 
 # 5. Find number of lines in rigth margin:
-RIGHT_MARGIN = 0
+RIGHT_MARGIN = round (H_PIXELS_RND*MARGIN_P/100/CELL_GRAN, 0)*CELL_GRAN if MARGINS_RQD else 0
 
 # 6. Find total number of active pixels in image and left and right margins:
-TOTAL_ACTIVE_PIXELS =H_PIXELS_RND+ RIGHT_MARGIN+LEFT_MARGIN
+TOTAL_ACTIVE_PIXELS = H_PIXELS_RND + RIGHT_MARGIN + LEFT_MARGIN
 
 # 7. Find the ideal horizontal period from the blanking duty cycle equation:
 IDEAL_H_PERIOD= ( (C-100) + (math.sqrt(((100-C)**2) + (0.4*M* (TOTAL_ACTIVE_PIXELS + RIGHT_MARGIN + LEFT_MARGIN) / PIXEL_FREQ)))) / 2 / M * 1000
@@ -62,7 +62,7 @@ IDEAL_H_PERIOD= ( (C-100) + (math.sqrt(((100-C)**2) + (0.4*M* (TOTAL_ACTIVE_PIXE
 IDEAL_DUTY_CYCLE = C - (M * IDEAL_H_PERIOD / 1000)
 
 # 9. Find the number of pixels in the blanking time to the nearest double character cell:
-H_BLANK = (round ((TOTAL_ACTIVE_PIXELS* IDEAL_DUTY_CYCLE / (100 - IDEAL_DUTY_CYCLE) / ( 2 * CELL_GRAN)),0))*(2*CELL_GRAN)
+H_BLANK = round (TOTAL_ACTIVE_PIXELS* IDEAL_DUTY_CYCLE / (100 - IDEAL_DUTY_CYCLE) / ( 2 * CELL_GRAN) , 0) * 2 * CELL_GRAN
 
 # 10. Find total number of pixels:
 TOTAL_PIXELS = TOTAL_ACTIVE_PIXELS + H_BLANK
@@ -74,10 +74,10 @@ H_FREQ=PIXEL_FREQ/TOTAL_PIXELS*1000
 H_PERIOD = 1000 / H_FREQ
 
 # 13. Find number of lines in Top margin:
-TOP_MARGIN=0
+TOP_MARGIN = round ((MARGIN_P / 100 * V_LINES_RND), 0) if MARGINS_RQD else 0
 
 # 14. Find number of lines in Bottom margin:
-BOT_MARGIN=0
+BOT_MARGIN = round ((MARGIN_P / 100 * V_LINES_RND), 0) if MARGINS_RQD else 0
 
 # 15. If interlace is required, then set variable INTERLACE = 0.5:
 INTERLACE= 0.5 if INTERLACE_REQUIRED else 0
@@ -226,31 +226,38 @@ V_ODD_BACK_PORCH=V_BACK_PORCH*H_PERIOD
 BOT_MARGIN_US=BOT_MARGIN*H_PERIOD
 
 
-print (math.sqrt(((100-C)**2) + (0.4*M* (TOTAL_ACTIVE_PIXELS + RIGHT_MARGIN + LEFT_MARGIN) / PIXEL_FREQ)))
-print (IDEAL_DUTY_CYCLE)
-
-
-print ("Vertical Total: ", TOTAL_V_LINES)
-print ("Horizontal Total", TOTAL_H_TIME)
-
 print ("")
 
-# I decided Horizontal Blanking start after active display (no border)
+# Horizontal timing:
+#<---prev. line----><---------------------- Video line ----------------------->
+#    <-LEFT_MARGIN-><--Addressable Line--><-HS-><-RIGHT_MARGIN-><-LEFT_MARGIN->
+
+# HS:  |<-FRONT_PORCH-><-SYNC-><-BACK_PORCH->
+#      |<-------------- H_BLANKING --------------><-RIGHT_MARGIN-><- LEFT_MARGIN ->
+#      + Addressable video ends here 
+print ("Horizontal Total", TOTAL_H_TIME)
 print ("Horizontal Blanking start (chars): ", H_ADDR_TIME_CHARS)
 print ("Horizontal Blanking duration: ", H_BLANK_CHAR)
 
-# I decided Horizontal Retrace will start at H_ADDR_TIME_CHARS + H_FRONT_PORCH_CHARS
 print ("Horizontal Sync Start (chars):", H_ADDR_TIME_CHARS + H_FRONT_PORCH_CHARS)
 print ("Horizontal Sync Duration", H_SYNC_CHARS)
 
 print ("")
 
 
-# I decided Horizontal Blanking start after active display (no border)
-print ("Vertical Blanking Start (lines)", ADDR_LINES_PER_FRAME )
+# Vertical timing:
+# <--previous frame--><--------------------- Video frame --------------------->
+#       <-TOP_MARGIN-><--Addressable Video--><-BOT_MARGIN-><-VS-><-TOP_MARGIN->
+
+# VS:  |              <-FRONT_PORCH-><-SYNC-><-BACK_PORCH->
+#      |<-BOT_MARGIN-><-------------- V_BLANKING --------------><- TOP_MARGIN ->
+#      + Addressable video ends here 
+
+print ("Vertical Total: ", TOTAL_V_LINES)
+
+print ("Vertical Blanking Start (lines)", ADDR_LINES_PER_FRAME + BOT_MARGIN)
 print ("Vertical (even) Blanking Duration (lines)", V_EVEN_BLANKING_LINES )
 print ("Vertical (odd) Blanking Duration (lines)", V_ODD_BLANKING_LINES )
 
-# I decided Horizontal Retrace will start at V_LINES_RND + V_ODD_FRONT_PORCH_LINES
-print ("Vertical Sync Start", V_LINES_RND + V_ODD_FRONT_PORCH_LINES)
-print ("Vertical Sync Duration", V_SYNC_BP)
+print ("Vertical Sync Start", ADDR_LINES_PER_FRAME + BOT_MARGIN + MIN_PORCH_RND)
+print ("Vertical Sync Duration", V_SYNC_RND)

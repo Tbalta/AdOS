@@ -3,7 +3,7 @@
 --                                                                          --
 --                                 S p e c                                  --
 -- (c) 2025 Tanguy Baltazart                                                --
--- License : See LICENCE.txt in the root directory.                         --
+-- License : See license.txt in the root directory.                         --
 --                                                                          --
 --                                                                          --
 --  Description:                                                            --
@@ -14,6 +14,7 @@ with System;
 with x86.Port_IO;
 with Interfaces; use Interfaces;
 with File_System;
+
 package VGA.DAC is
    pragma Preelaborate;
 

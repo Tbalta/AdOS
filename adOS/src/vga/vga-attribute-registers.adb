@@ -3,7 +3,7 @@
 --                                                                          --
 --                                 B o d y                                  --
 -- (c) 2025 Tanguy Baltazart                                                --
--- License : See LICENCE.txt in the root directory.                         --
+-- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
 
@@ -20,11 +20,11 @@ package body VGA.Attribute.Registers is
    ------------------------------
    procedure Dump_Attribute_Registers is
    begin
-      SERIAL.send_line ("");
+      SERIAL.send_line (Serial.COM1, "");
       for I in Register_Array'Range loop
-         SERIAL.send_string (I'image & "-> ");
-         SERIAL.send_hex (Unsigned_32 (Register_Array (I)));
-         SERIAL.send_line ("");
+         SERIAL.send_string (Serial.COM1, I'image & "-> ");
+         SERIAL.send_hex (Serial.COM1, Unsigned_32 (Register_Array (I)));
+         SERIAL.send_line (Serial.COM1, "");
       end loop;
    end Dump_Attribute_Registers;
 
@@ -74,7 +74,8 @@ package body VGA.Attribute.Registers is
      (Index : Internal_Palette_Register_Index; Register : Internal_Palette_Register)
    is
       procedure Write is new Write_Register (Internal_Palette_Register, Index);
-      function To_U8 is new Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Internal_Palette_Register);
+      function To_U8 is new
+        Ada.Unchecked_Conversion (Target => Unsigned_8, Source => Internal_Palette_Register);
    begin
       Register_Array (Index) := To_U8 (Register);
       Write (Register);

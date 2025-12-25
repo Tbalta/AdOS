@@ -51,7 +51,7 @@ make run
 
 # Remarks
 ## gnatformat
-Gnatformat installation should be don through alr.
+Gnatformat installation should be done through alr.
 
 Since it seems there is an issue with alr 1.2.0 distributed on Ubuntu 24.04, a newer version of alr should be installed.
 

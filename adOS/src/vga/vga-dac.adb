@@ -3,16 +3,16 @@
 --                                                                          --
 --                                 B o d y                                  --
 -- (c) 2025 Tanguy Baltazart                                                --
--- License : See LICENCE.txt in the root directory.                         --
+-- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
 
 with File_System; use File_System;
-with Interfaces; use Interfaces;
-with Log;
+with Interfaces;  use Interfaces;
+with Loggers;
 
 package body VGA.DAC is
-   package Logger renames Log.Serial_Logger;
+   package Logger renames Loggers.Serial_Logger;
 
    ----------------
    -- Load_Color --
@@ -41,23 +41,24 @@ package body VGA.DAC is
    ---------------
    procedure Load_File (file : Path) is
       type File_Entry is record
-         Red : String (1 .. 2);
+         Red   : String (1 .. 2);
          Green : String (1 .. 2);
-         Blue : String (1 .. 2);
+         Blue  : String (1 .. 2);
       end record;
 
-      for File_Entry use record
-         Red at 0 range 0 .. 15;
-         Green at 2 range 0 .. 15;
-         Blue at 4 range 0 .. 15;
-      end record;
+      for File_Entry use
+        record
+          Red at 0 range 0 .. 15;
+          Green at 2 range 0 .. 15;
+          Blue at 4 range 0 .. 15;
+        end record;
 
-      function To_Palette_Color (c : File_Entry) return Palette_Color
-      is
+      function To_Palette_Color (c : File_Entry) return Palette_Color is
       begin
-         return (RED => Color (Shift_Right (Unsigned_8'Value ("16#" & c.Red &"#"), 2)),
-               Green => Color (Shift_Right (Unsigned_8'Value ("16#" & c.Green &"#"), 2)),
-               Blue => Color (Shift_Right (Unsigned_8'Value ("16#" & c.Blue &"#"), 2)));
+         return
+           (RED   => Color (Shift_Right (Unsigned_8'Value ("16#" & c.Red & "#"), 2)),
+            Green => Color (Shift_Right (Unsigned_8'Value ("16#" & c.Green & "#"), 2)),
+            Blue  => Color (Shift_Right (Unsigned_8'Value ("16#" & c.Blue & "#"), 2)));
       end;
       function Palette_Read is new read (File_Entry);
       fd : File_Descriptor_With_Error;
@@ -70,7 +71,6 @@ package body VGA.DAC is
          Logger.Log_Error ("Unable to open palette file " & String (file));
          return;
       end if;
-
 
       Write_Address (0);
       while Palette_Read (fd, palette_color'Access) > 0 loop

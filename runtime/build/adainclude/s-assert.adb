@@ -40,8 +40,11 @@ package body System.Assertions is
       procedure PANIC (msg : System.Address);
       pragma Import (C, PANIC, "PANIC");
       pragma No_Return (PANIC);
+      procedure ADA_PANIC (msg : String);
+      pragma Import (Ada, ADA_PANIC, "ADA_PANIC");
       char_msg : char_array (1 .. size_t (Msg'Length + 1));
    begin
+      ADA_PANIC (Msg);
       for i in Msg'Range loop
          char_msg (size_t (i)) := char (Msg (i));
       end loop;

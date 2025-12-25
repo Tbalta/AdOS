@@ -1,3 +1,11 @@
+------------------------------------------------------------------------------
+--                                 X86.PMM                                  --
+--                                                                          --
+--                                 S p e c                                  --
+-- (c) 2025 Tanguy Baltazart                                                --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
 with MultiBoot;               use MultiBoot;
 with System;
 with System.Storage_Elements; use System.Storage_Elements;
@@ -7,14 +15,9 @@ with Interfaces;              use Interfaces;
 package x86.pmm is
    pragma Preelaborate;
 
-   MULTIBOOT_MEMORY_AVAILABLE        : constant multiboot_uint32_t := 1;
-   MULTIBOOT_MEMORY_RESERVED         : constant multiboot_uint32_t := 2;
-   MULTIBOOT_MEMORY_ACPI_RECLAIMABLE : constant multiboot_uint32_t := 3;
-   MULTIBOOT_MEMORY_NVS              : constant multiboot_uint32_t := 4;
-   MULTIBOOT_MEMORY_BADRAM           : constant multiboot_uint32_t := 5;
-   PMM_PAGE_SIZE : constant := 4_096;
+   PMM_PAGE_SIZE : constant Storage_Count := 4_096;
 
-   type multiboot_mmap is array (Natural range <>) of multiboot_mmap_entry with Pack;
+   type multiboot_mmap is array (Natural range <>) of aliased multiboot_mmap_entry with Pack;
    type PMM_Bitmap_Entry is (PMM_Bitmap_Entry_Free, PMM_Bitmap_Entry_Used) with Size => 1;
 
 
@@ -49,7 +52,7 @@ package x86.pmm is
    with
      Post =>
        check
-         (Integer_Address ((Positive (addr) / PMM_PAGE_SIZE) * PMM_PAGE_SIZE)
+         (Integer_Address ((Storage_Count (addr) / PMM_PAGE_SIZE) * PMM_PAGE_SIZE)
           = To_Integer (Offset_To_Address_Unchecked (Address_To_Offset'Result)),
           To_Integer (addr)'Image
           & " /= "

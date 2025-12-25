@@ -3,7 +3,7 @@
 --                                                                          --
 --                                 S p e c                                  --
 -- (c) 2025 Tanguy Baltazart                                                --
--- License : See LICENCE.txt in the root directory.                         --
+-- License : See license.txt in the root directory.                         --
 --                                                                          --
 --                                                                          --
 --  Description:                                                            --
@@ -200,7 +200,7 @@ package VGA.CRTC is
        Value at 0 range 0 .. 9;
      end record;
 
-  
+
 private
 
 

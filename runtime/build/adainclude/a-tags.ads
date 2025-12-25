@@ -429,7 +429,7 @@ private
                                       System.Storage_Unit));
    --  Size of the Typeinfo_Ptr field of the Dispatch Table
 
-   use type System.Storage_Elements.Storage_Offset;
+   use type System.Storage_Elements.Storage_Count;
 
    DT_Offset_To_Top_Offset : constant SSE.Storage_Count :=
                                DT_Typeinfo_Ptr_Size

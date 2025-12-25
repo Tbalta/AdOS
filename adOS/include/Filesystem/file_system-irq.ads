@@ -1,5 +1,5 @@
-with Interfaces;   use Interfaces;
-with Interfaces.C; use Interfaces.C;
+with Interfaces;              use Interfaces;
+with Interfaces.C;            use Interfaces.C;
 with System;
 with System.Address_To_Access_Conversions;
 with Ados;
@@ -10,7 +10,7 @@ with Programmable_Interval_Timer;
 with File_System;
 
 
-package file_system.PIT
+package file_system.IRQ
   with Preelaborate
 is
 
@@ -22,5 +22,6 @@ is
    function close (fd : Driver_File_Descriptor) return Integer;
 private
    SYSTICK_FD  : constant Driver_File_Descriptor := Driver_File_Descriptor'First;
+   KEYBOARD_FD : constant Driver_File_Descriptor := Driver_File_Descriptor'First + 1;
 
-end file_system.PIT;
+end file_system.IRQ;

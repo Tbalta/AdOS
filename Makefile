@@ -22,7 +22,7 @@ userland: make_dir
 	cp userland/bin/* iso/bin/
 
 
-main.elf:
+main.elf: ramdisk_content.o
 	cd runtime && gprbuild
 	gprbuild
 
@@ -32,7 +32,7 @@ clean:
 	$(RM) -r iso/bin
 	gprclean
 
-run: main.iso
+run:
 	qemu-system-i386.exe -cdrom main.iso $(qemu_param)
 
 debug:
@@ -57,3 +57,7 @@ docker-debug:
 
 gdb:
 	gdb -ex "target remote localhost:1234" main.elf
+
+ramdisk_content.o: userland
+	genisoimage -o ramdisk.iso iso/
+	objcopy --input binary --output elf32-i386 ramdisk.iso obj/ramdisk_content.o

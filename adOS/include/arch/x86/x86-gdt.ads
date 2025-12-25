@@ -56,8 +56,8 @@ package x86.gdt is
    stack : aliased array (1 .. 4096) of Unsigned_8
    with Export => True, Convention => C, External_Name => "tss_stack";
 
-   GDT_ENTRY_COUNT         : constant Integer :=
-     6; -- Null, Kernel Code, Kernel Data, User Code, User Data, TSS
+   -- Null, Kernel Code, Kernel Data, User Code, User Data, TSS
+   GDT_ENTRY_COUNT         : constant Integer := 6;
    type Global_Descriptor_Table_T is array (0 .. (GDT_ENTRY_COUNT - 1)) of segment_descriptor;
    Global_Descriptor_Table : Global_Descriptor_Table_T
    with Alignment => 16;

@@ -80,6 +80,9 @@ package Interfaces is
    type Unsigned_6 is mod 2 ** 6;
    for Unsigned_6'Size use 6;
 
+   type Unsigned_7 is mod 2 ** 7;
+   for Unsigned_7'Size use 7;
+
    type Unsigned_10 is mod 2 ** 10;
    for Unsigned_10'Size use 10;
 
