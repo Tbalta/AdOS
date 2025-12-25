@@ -8,28 +8,6 @@ with Ramdisk;
 
 package body File_System.ISO is
    package Logger renames Loggers.Serial_Logger;
-   function To_Upper (str : String) return String is
-      result : String := str;
-   begin
-      for I in result'Range loop
-         if result (I) in 'a' .. 'z' then
-            result (I) := Character'Val (Character'Pos (result (I)) - 32);
-         end if;
-      end loop;
-      return result;
-   end To_Upper;
-
-   function IndexOfString (str : String; c : Character) return Positive is
-      i : Positive := str'First;
-   begin
-      while i in str'Range and then str (i) /= c and then str (i) /= Character'Val (0) loop
-         i := i + 1;
-      end loop;
-      return i;
-   end IndexOfString;
-
-   function Min (a, b : Integer) return Integer
-   is (if (a < b) then a else b);
 
    -------------------
    -- ISO 9660 Open --
@@ -56,6 +34,7 @@ package body File_System.ISO is
       root_lba     : Natural := Drivers (Driver_Id).root_lba;
       root_dirsize : Unsigned_32 := Drivers (Driver_Id).root_dirsize;
 
+      -- Local Functions --
       function Next_File (current_file : iso_dir_ptr) return iso_dir_ptr is
       begin
          return To_Pointer (To_Address (current_file) + Storage_Offset (current_file.dir_size));
@@ -65,7 +44,6 @@ package body File_System.ISO is
       begin
          return To_Address (current_file) + Storage_Offset (iso_dir'Size / 8);  -- 34 bytes offset
       end Idf_Start;
-      -- Local Functions --
       function Locate_File
         (str : String; lba_param : Natural; dir_size_param : Unsigned_32) return iso_dir_ptr
       is
