@@ -5,6 +5,10 @@ OBJ = obj
 
 qemu_param = -no-reboot -boot d -D ./log.txt -d int,guest_errors,in_asm -serial mon:stdio -m 1G
 
+ifeq ($(SKIP_RAMDISK), TRUE)
+docker_make_flags = SKIP_RAMDISK=TRUE
+endif
+
 .PHONY: userland
 
 
@@ -29,7 +33,7 @@ main.elf: ramdisk_content.o
 clean:
 	cd runtime && gprclean
 	$(MAKE) -C userland clean
-	$(RM) -r iso/bin
+	$(RM) -r iso/bin ramdisk.iso
 	gprclean
 
 run:
@@ -58,6 +62,14 @@ docker-debug:
 gdb:
 	gdb -ex "target remote localhost:1234" main.elf
 
+ifeq ($(SKIP_RAMDISK), TRUE)
 ramdisk_content.o: userland
+	$(RM) -r obj/ramdisk_content.o ramdisk.iso
+	genisoimage -o ramdisk.iso /dev/null
+	objcopy --input binary --output elf32-i386 ramdisk.iso obj/ramdisk_content.o
+else
+ramdisk_content.o: userland
+	$(RM) -r obj/ramdisk_content.o ramdisk.iso
 	genisoimage -o ramdisk.iso iso/
 	objcopy --input binary --output elf32-i386 ramdisk.iso obj/ramdisk_content.o
+endif
