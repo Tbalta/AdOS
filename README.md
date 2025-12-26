@@ -82,14 +82,19 @@ alr build
 sudo cp bin/gnatformat /usr/local/bin
 ```
 
-# Additional resources used for development
-# Ada
+# References
+## Intel
+### 8259 PIC 
+https://wiki.osdev.org/8259_PIC
+https://pdos.csail.mit.edu/6.828/2005/readings/hardware/8259A.pdf
+
+## Ada
 https://www.adaic.org/resources/add_content/standards/22rm/rm-bar.pdf <br />
-# Osdev
+## Osdev
 https://github.com/cirosantilli/x86-bare-metal-examples <br />
 https://github.com/ajxs/cxos/ <br />
 https://wiki.osdev.org/Ada_Bare_bones <br />
-# VGA
+## VGA
 http://www.mcamafia.de/pdf/ibm_vgaxga_trm2.pdf
 http://www.osdever.net/FreeVGA/vga/crtcreg.htm
 https://www.worldradiohistory.com/Archive-Byte/80s/Byte-1988-11-IBM-Issue.pdf

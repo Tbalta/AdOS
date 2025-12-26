@@ -7,65 +7,83 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
---  TODO: This unit needs to be revised to add PIC register records.
 with Interfaces; use Interfaces;
-
 with Loggers;
 
 package body pic is
    package Logger renames Loggers.VGA_Logger;
-   ---------
-   -- Rep --
-   ---------
-   function Rep (P : PIT_PORT) return x86.Port_IO.Port_Address
-   is (x86.Port_IO.Port_Address (PIT_PORT'Enum_Rep (P)));
 
    ----------
    -- Init --
    ----------
-   procedure init is
-      ICW4    : constant Unsigned_8 := 16#01#;
-      SINGLE  : constant Unsigned_8 := 16#02#;
-      EDGE    : constant Unsigned_8 := 16#04#;
-      CASCADE : constant Unsigned_8 := 16#08#;
-      INIT    : constant Unsigned_8 := 16#10#;
-
-      pragma Unreferenced (SINGLE, EDGE, CASCADE);
-      procedure Outb is new x86.Port_IO.Outb (Unsigned_8);
+   procedure Init is
+      Master_Interrupt_Offset : constant Unsigned_8 := 16#20#;
+      Slave_Interrupt_Offset  : constant Unsigned_8 := 16#28#;
+      Slave_Index             : constant := 2;
    begin
-      Logger.Log_Info ("Initializing PIC...");
-      Outb (Rep (MASTER_CMD), INIT or ICW4); -- ICW1
-      Outb (Rep (SLAVE_CMD), INIT or ICW4); -- ICW1
-      Outb (Rep (MASTER_DATA), 32); -- ICW2
-      Outb (Rep (SLAVE_DATA), 40); -- ICW2
+      -- Master
+      Write_Master_ICW1 ((IC4_Needed   => True,
+                   Single_Mode  => False,
+                   ADI          => Interval_Of_8,
+                   Trigger_Mode => Edge_Triggered,
+                   others => <>));
+      Write_Master_ICW2 ((Interrupt_Address_T7_T3 => Unsigned_5 (Shift_Right (Master_Interrupt_Offset, 3))));
+      Write_Master_ICW3 ((Slave_Index => True, others => False));
+      Write_Master_ICW4 ((Is_8086                  => True,
+                          Auto_EOI_Enable          => False,
+                          Buffer_Mode              => Non_Buffered,
+                          Fully_Nested_Mode_Enable => False));
 
-      Outb (Rep (MASTER_DATA), Shift_Left (1, 2)); -- ICW3
-      Outb (Rep (SLAVE_DATA), 2); -- ICW3
+      -- Slave
+      Write_Slave_ICW1 ((IC4_Needed   => True,
+                         Single_Mode  => False,
+                         ADI          => Interval_Of_8,
+                         Trigger_Mode => Edge_Triggered,
+                         others => <>));
+      Write_Slave_ICW2 ((Interrupt_Address_T7_T3 => Unsigned_5 (Shift_Right (Slave_Interrupt_Offset, 3))));
+      Write_Slave_ICW3 ((Slave_Index => Slave_Index));
+      Write_Slave_ICW4 ((Is_8086                  => True,
+                         Auto_EOI_Enable          => False,
+                         Buffer_Mode              => Non_Buffered,
+                         Fully_Nested_Mode_Enable => False));
 
-      Outb (Rep (MASTER_DATA), 1); -- ICW4
-      Outb (Rep (SLAVE_DATA), 1); -- ICW4
+      -- Unmask interrupt
+      Write_Master_OCW1 ((Slave_Index => CHANNEL_ENABLED, others => CHANNEL_MASKED));
+      Write_Slave_OCW1 ((others => CHANNEL_MASKED));
+   end Init;
 
-      Outb (Rep (MASTER_DATA), 16#FF# and not (Shift_Left (1, 2))); -- ICW4
-      Outb (Rep (SLAVE_DATA), 16#FF#); -- ICW4
-      Logger.Log_Ok ("PIC initialized");
-   end init;
-
-   procedure Clear_Mask (irq : Integer) is
+   procedure Clear_Mask (irq : IRQ_Line) is
       Port  : PIT_PORT;
-      IRQ_V : Integer := irq;
-      Value : Unsigned_8;
-      function Inb is new x86.Port_IO.Inb (Unsigned_8);
-      procedure Outb is new x86.Port_IO.Outb (Unsigned_8);
+      IRQ_V : IRQ_Line := irq;
+      OCW1 : OCW1_Format;
+
+      function Read_OCW1 is new x86.Port_IO.Inb (OCW1_Format);
+      procedure Write_OCW1 is new x86.Port_IO.Outb (OCW1_Format);
    begin
-      if irq < 8 then
+      if irq in 0 .. 7 then
          port := MASTER_DATA;
       else
          IRQ_V := IRQ_V - 8;
          port := SLAVE_DATA;
       end if;
 
-      Value := Unsigned_8 (Inb (Rep (port)) and not Shift_Left (1, IRQ_V));
-      Logger.Log_Info ("Value: " & Value'Image);
-      Outb (Rep (port), Value);
+      OCW1 := Read_OCW1(Port);
+      if OCW1 (IRQ_V) = CHANNEL_ENABLED then
+         Logger.Log_Warning ("IRQ " & irq'Image & " already enabled");
+      end if;
+
+      OCW1 (IRQ_V) := CHANNEL_ENABLED;
+      Write_OCW1 (Port, OCW1);
    end Clear_Mask;
+
+   procedure Send_EOI (irq : IRQ_Number) is
+      Slave_Index             : constant := 2;
+   begin
+      if irq >= 40 then
+         Write_Slave_OCW2 ((EOI_Command => Non_Specific_EOI, others => <>));
+      end if;
+      Write_Master_OCW2 ((EOI_Command => Non_Specific_EOI, others => <>));
+
+   end Send_EOI;
+
 end pic;

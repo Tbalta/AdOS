@@ -1,3 +1,4 @@
+with Pic;
 with SERIAL;
 with System;
 with System.Storage_Elements; use System.Storage_Elements;
@@ -108,15 +109,12 @@ package body x86.idt is
       procedure outb is new x86.Port_Io.Outb (Unsigned_8);
    begin
       Programmable_Interval_Timer.Handle_Systick;
-
-      outb (x86.Port_Io.Port_Address (16#20#), 16#20#);
    end handle_timer;
 
    procedure handle_keyboard is
       procedure outb is new x86.Port_Io.Outb (Unsigned_8);
    begin
       Keyboard.Handle_Keyboard;
-      outb (x86.Port_Io.Port_Address (16#20#), 16#20#);
    end handle_keyboard;
 
    procedure handler (stf : access stack_frame) is
@@ -144,10 +142,12 @@ package body x86.idt is
 
       if interrupt_code = 32 then
          handle_timer;
+         Pic.Send_EOI (Pic.IRQ_Number (interrupt_code));
       end if;
 
       if interrupt_code = 33 then
          handle_keyboard;
+         Pic.Send_EOI (Pic.IRQ_Number (interrupt_code));
       end if;
 
 
