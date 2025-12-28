@@ -325,7 +325,6 @@ package body File_System.ISO is
             Add_Atapi_Driver (Atapi_Device, Volume_Descriptor);
          end if;
       end loop;
-
       if Has_Iso_Filesystem (
            (Driver_Type => Ados.RAMDISK_DRIVER, Present => True, Address => Ramdisk_Start'Address, others => <>),
            Volume_Descriptor)

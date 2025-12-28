@@ -85,8 +85,8 @@ sudo cp bin/gnatformat /usr/local/bin
 # References
 ## Intel
 ### 8259 PIC 
-https://wiki.osdev.org/8259_PIC
-https://pdos.csail.mit.edu/6.828/2005/readings/hardware/8259A.pdf
+https://wiki.osdev.org/8259_PIC <br />
+https://pdos.csail.mit.edu/6.828/2005/readings/hardware/8259A.pdf <br />
 
 ## Ada
 https://www.adaic.org/resources/add_content/standards/22rm/rm-bar.pdf <br />
@@ -95,8 +95,8 @@ https://github.com/cirosantilli/x86-bare-metal-examples <br />
 https://github.com/ajxs/cxos/ <br />
 https://wiki.osdev.org/Ada_Bare_bones <br />
 ## VGA
-http://www.mcamafia.de/pdf/ibm_vgaxga_trm2.pdf
-http://www.osdever.net/FreeVGA/vga/crtcreg.htm
-https://www.worldradiohistory.com/Archive-Byte/80s/Byte-1988-11-IBM-Issue.pdf
-https://wiki.osdev.org/Video_Signals_And_Timing
-https://glenwing.github.io/docs/VESA-GTF-1.1.pdf
+http://www.mcamafia.de/pdf/ibm_vgaxga_trm2.pdf <br />
+http://www.osdever.net/FreeVGA/vga/crtcreg.htm <br />
+https://www.worldradiohistory.com/Archive-Byte/80s/Byte-1988-11-IBM-Issue.pdf <br />
+https://wiki.osdev.org/Video_Signals_And_Timing <br />
+https://glenwing.github.io/docs/VESA-GTF-1.1.pdf <br />

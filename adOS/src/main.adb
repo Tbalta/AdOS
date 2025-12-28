@@ -34,7 +34,7 @@ procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Addre
    package MultiBoot_Conversion is new System.Address_To_Access_Conversions (multiboot_info);
    info : access multiboot_info := MultiBoot_Conversion.To_Pointer (multiboot_address);
 
-   package Logger renames Loggers.VGA_Logger;
+   package Logger renames Loggers;
    package VGA_Logger renames Loggers.VGA_Logger;
    CR3 : CR3_register;
 begin
@@ -144,7 +144,6 @@ begin
       Buffer : access vga_buffer := null;
       count  : Integer := 0;
    begin
-      VGA.Save_Frame_Buffer;
       VGA.Set_Graphic_Mode (320, 200, 256);
       VGA.load_palette ("vga_gui.hex");
       Buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
@@ -169,7 +168,10 @@ begin
       FD             : File_Descriptor_With_Error := FD_ERROR;
       Program_Header : ELF.ELF_Header;
       File_To_Open : constant Path := Path (Util.Read_String_From_Address (info.cmdline));
+      Userland_CR3 : CR3_Register := Create_CR3;
    begin
+      Logger.Log_Info ("Loading file: " & String (File_To_Open));
+      Identity_Map (Userland_CR3);
       FD := open (File_To_Open, 0);
       if FD = FD_ERROR then
          Logger.Log_Error ("Error opening ELF file: " & String (File_To_Open));
@@ -177,7 +179,7 @@ begin
       end if;
 
       Program_Header := ELF.Loader.Get_Elf_Header (FD);
-      ELF.Loader.Load_Elf (FD, Program_Header, CR3);
+      ELF.Loader.Load_Elf (FD, Program_Header, Userland_CR3);
       Logger.Log_Ok ("ELF file loaded in memory");
       if close (FD) /= 0 then
          Logger.Log_Error ("Error closing ELF file");
@@ -186,7 +188,7 @@ begin
       end if;
 
       Logger.Log_Info ("Entry point: " & To_Integer (Program_Header.e_entry)'Image);
-      Jump_To_Userspace (Program_Header.e_entry, CR3);
+      Jump_To_Userspace (Program_Header.e_entry, Userland_CR3);
    end;
 
    <<Init_End>>

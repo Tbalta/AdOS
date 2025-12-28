@@ -1,0 +1,3 @@
+[submodule "userland/doomgeneric"]
+	path = userland/doomgeneric
+	url = git@github.com:ozkl/doomgeneric.git

@@ -8,8 +8,9 @@
 #include <vga.h>
 
 
-int _start() {
-    int tty = open("tty0", 0);
+int main() {
+    write(0, "Hello World!", 13);
+    int tty = 0;
     int vga = set_vga_mode (320, 200, 256);
     if (vga == -1)
     {
@@ -23,7 +24,9 @@ int _start() {
     unsigned char vga_line[320] = {0};
     char bmp_header[14];
     char read_buffer[100];
-    
+
+    printf ("Starting AdOS");
+
     
     int ados = open("ados.bmp", 0);
     read (ados, bmp_header, sizeof (bmp_header));

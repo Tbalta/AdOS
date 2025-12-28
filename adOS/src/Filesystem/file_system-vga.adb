@@ -19,7 +19,6 @@ package body File_System.VGA is
       Logger.Log_Info ("Starting: " & File'Image);
       if File.Graphic_Mode then
 
-         Save_Frame_Buffer;
          Set_Graphic_Mode
            (Width       => Integer (File.Width),
             Height      => Integer (File.Height),
@@ -30,7 +29,6 @@ package body File_System.VGA is
            (Width       => Integer (File.Width),
             Height      => Integer (File.Height),
             Color_Depth => Integer (File.Color_Depth));
-         Restore_Frame_Buffer;
          load_palette ("vga_tui.hex");
       end if;
    end Start_VGA;

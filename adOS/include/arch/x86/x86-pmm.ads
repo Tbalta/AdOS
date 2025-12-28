@@ -14,6 +14,7 @@ with Interfaces;              use Interfaces;
 
 package x86.pmm is
    pragma Preelaborate;
+   use all type System.Address;
 
    PMM_PAGE_SIZE : constant Storage_Count := 4_096;
 
@@ -78,16 +79,18 @@ package x86.pmm is
 
    function Get_Pmm_Start_Address return Physical_Address;
    function Get_Pmm_End_Address return Physical_Address;
+   function Is_System_Address (addr : Physical_Address) return Boolean;
 
-   function Allocate_Page return Physical_Address
-   with
-     Post =>
-       check
-         (Get_Next_Free_Page > Address_To_Offset (Allocate_Page'Result),
-          "Allocate_Page: Free page available but not returned");
+   function Allocate_Page return Physical_Address;
+   --  with
+   --    Post =>
+   --      check (Get_Next_Free_Page'Old = Address_To_Offset (Allocate_Page'Result), "Incorrect Page allocated") and
+   --      check (Get_Next_Free_Page'Old < Get_Next_Free_Page, "No page allocated returned: " & Get_Next_Free_Page'Image & " old was " & Get_Next_Free_Page'Old'Image) and
+   --      check (not Is_System_Address (Allocate_Page'Result), "Allocate_Page: Allocating system page (" & Address_To_Offset (Allocate_Page'Result)'Image & ")");
 
    procedure Free_Page (addr : Physical_Address)
-   with Post => check (Get_Next_Free_Page <= Address_To_Offset (addr), "Free_Page: Page not freed");
+   with Pre => check (not Is_System_Address (addr) , "Free_Page: Trying to free system page"),
+        Post => check (Get_Next_Free_Page <= Address_To_Offset (addr), "Free_Page: Page not freed");
 
    generic
       PMM_Address : System.Address;
@@ -96,7 +99,7 @@ package x86.pmm is
 
       subtype PMM_Headers is PMM_Headers_Array (1 .. PMM_Info.Header_Count);
       type PMM_Bitmap is array (0 .. (PMM_Info.Bitmap_Length - 1)) of PMM_Bitmap_Entry
-      with Convention => C, Pack => True;
+         with Component_Size => 1;
       package PMM_Header_Conv is new System.Address_To_Access_Conversions (PMM_Headers);
       package PMM_Bitmap_Conv is new System.Address_To_Access_Conversions (PMM_Bitmap);
 
@@ -105,6 +108,7 @@ package x86.pmm is
    end PMM_Utils;
 
 private
-   PMM_Header_Address     : System.Address;
-   PMM_Bitmap_End_Address : System.Address;
+   PMM_Header_Address        : System.Address;
+   PMM_Bitmap_End_Address    : System.Address;
+   Number_Of_Remaining_Pages : Natural;
 end x86.pmm;

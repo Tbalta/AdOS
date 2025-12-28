@@ -3,7 +3,7 @@
 
 OBJ = obj
 
-qemu_param = -no-reboot -boot d -D ./log.txt -d int,guest_errors,in_asm -serial mon:stdio -m 1G
+qemu_param = -no-reboot -boot d -serial mon:stdio -m 2G
 
 ifeq ($(SKIP_RAMDISK), TRUE)
 docker_make_flags = SKIP_RAMDISK=TRUE
@@ -34,10 +34,11 @@ clean:
 	cd runtime && gprclean
 	$(MAKE) -C userland clean
 	$(RM) -r iso/bin ramdisk.iso
+	$(RM) iso/boot/main.elf
 	gprclean
 
 run:
-	qemu-system-i386.exe -cdrom main.iso $(qemu_param)
+	qemu-system-i386 -cdrom main.iso $(qemu_param)
 
 debug:
 	qemu-system-i386.exe -cdrom '$<' $(qemu_param) -s -S
@@ -46,17 +47,17 @@ format:
 	gnatformat  -P default.gpr -w 100 $(shell find adOS/ -name '*.adb' -or -name '*.ads')
 
 docker-make:
-	docker-compose -f .docker/docker-compose.yml run --rm --remove-orphans ados make
-	qemu-system-i386.exe -cdrom main.iso $(qemu_param)
+	docker-compose -f .docker/docker-compose.yml run --rm ados make $(docker_make_flags)
+	qemu-system-i386 -cdrom main.iso $(qemu_param)
 
 docker-build:
 	docker-compose -f .docker/docker-compose.yml build ados
 
 docker-run:
-	docker-compose -f .docker/docker-compose.yml run --rm --remove-orphans ados
+	docker-compose -f .docker/docker-compose.yml run --rm ados
 
 docker-debug:
-	docker-compose -f .docker/docker-compose.yml run --rm --remove-orphans ados make
+	docker-compose -f .docker/docker-compose.yml run --rm ados make
 	qemu-system-i386.exe -cdrom main.iso $(qemu_param) -s -S
 
 gdb:
@@ -64,11 +65,13 @@ gdb:
 
 ifeq ($(SKIP_RAMDISK), TRUE)
 ramdisk_content.o: userland
+	$(RM) iso/boot/main.elf
 	$(RM) -r obj/ramdisk_content.o ramdisk.iso
 	genisoimage -o ramdisk.iso /dev/null
 	objcopy --input binary --output elf32-i386 ramdisk.iso obj/ramdisk_content.o
 else
 ramdisk_content.o: userland
+	$(RM) iso/boot/main.elf
 	$(RM) -r obj/ramdisk_content.o ramdisk.iso
 	genisoimage -o ramdisk.iso iso/
 	objcopy --input binary --output elf32-i386 ramdisk.iso obj/ramdisk_content.o

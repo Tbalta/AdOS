@@ -4,27 +4,6 @@
 #include "snake.h"
 #include <vga.h>
 
-void *memset(void *s, char c, size_t n)
-{
-	char *p = s;
-
-	for (size_t i = 0; i < n; ++i)
-		p[i] = c;
-
-	return s;
-}
-
-void *memcpy(void *dest, const void *src, size_t n)
-{
-	const char *s = src;
-	char *d = dest;
-
-	for (size_t i = 0; i < n; i++)
-		*d++ = *s++;
-
-	return dest;
-}
-
 
 void draw_box (void *buffer, int x, int y, int w, int h, int color)
 {
@@ -173,8 +152,7 @@ direction_t get_next_direction (int keyboard_fd, direction_t prev_direction)
     return prev_direction;
 }
 
-int _start() {
-
+int main() {
     char* snake_heads[] = {
         head_bmp_down,
         head_bmp_up,
@@ -187,8 +165,8 @@ int _start() {
         head_dead_bmp_left,
         head_dead_bmp_right,
     };
-
-    int tty = open("tty0", 0);
+    
+    int tty = 0;
     while (tty == -1)
     {
     }

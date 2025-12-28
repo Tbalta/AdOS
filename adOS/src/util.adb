@@ -9,7 +9,6 @@
 
 with System;
 with System.Address_To_Access_Conversions;
-with Util;
 
 package body Util is
    function Read_String_From_Address (addr : System.Address) return String is
@@ -25,9 +24,9 @@ package body Util is
       return path_access.all;
    end Read_String_From_Address;
 
-   function Round (val : Integer; Alignment : Integer) return Integer is
+   function Round (val : Data_Type; Alignment : Data_Type) return Data_Type is
    begin
-      return ((val + Alignment - 1) / Alignment) * Alignment;
+      return ((val + Alignment - (Alignment / Alignment)) / Alignment) * Alignment;
    end Round;
 
    function sqrt (val : Float) return Float is

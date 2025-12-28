@@ -18,7 +18,6 @@ package body Programmable_Interval_Timer is
         (Value      => Unsigned_16 (Float'Rounding (PIT_Frequency_Hz * Float (ms) / 1000.0)),
          Bit_Access => False);
    begin
-      Logger.Log_Info ("Reload_Value " & Reload_Value.Value'Image);
       Write_Control_Word
         ((Counter    => Select_Counter_0,
           Read_Write => LSB_Then_MSB,

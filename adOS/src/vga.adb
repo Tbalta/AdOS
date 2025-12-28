@@ -107,12 +107,12 @@ package body VGA is
    begin
       -- Disable IPAS to load color values to register
       Reset_Attribute_Register;
-      VGA.Attribute.Registers.Select_Attribute_Register (16#0#);
+      -- VGA.Attribute.Registers.Select_Attribute_Register (16#0#);
       VGA.Dac.Load_File (p);
 
       -- Reenable IPAS for normal operations
-      Reset_Attribute_Register;
-      VGA.Attribute.Registers.Select_Attribute_Register (16#20#);
+      -- Reset_Attribute_Register;
+      -- VGA.Attribute.Registers.Select_Attribute_Register (16#20#);
    end Load_Palette;
 
    ----------------------
@@ -285,7 +285,7 @@ package body VGA is
            ("mode " & Width'Image & "x" & Height'Image & "x" & Color_Depth'image & " is invalid");
          return;
       end if;
-
+      Save_Frame_Buffer;
       Logger.Log_Info ("Setting mode: " & mode'Image);
 
       Miscellaneous := (IOS  => True,
@@ -349,5 +349,6 @@ package body VGA is
       VGA.Attribute.Registers.Select_Attribute_Register (16#20#);
 
       Logger.Log_Ok ("mode " & Width'Image & "x" & Height'Image & "x" & Color_Depth'image & " set");
+      Restore_Frame_Buffer;
    end Set_Text_Mode;
 end VGA;

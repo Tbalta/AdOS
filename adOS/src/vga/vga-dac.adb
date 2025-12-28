@@ -78,6 +78,7 @@ package body VGA.DAC is
          seek (fd, 1, SEEK_CUR);
       end loop;
 
+      Logger.Log_Ok ("Loaded palette file: " & String (file));
       close (fd);
    end Load_File;
 

@@ -31,8 +31,8 @@ package body Syscall is
       process : in x86.vmm.CR3_register;
       result  : out Syscall_Result) is
    begin
-      --  Logger.Log_Info ("Handling syscall number: " & number'Image);
       x86.vmm.Enable_Kernel_Mapping;
+      -- Logger.Log_Info ("Handling syscall number: " & number'Image);
       case number is
          when SYSCALL_READ =>
             Read_Syscall (arg1, System.Address (arg2), Storage_Count (arg3), process, result);
@@ -177,6 +177,7 @@ package body Syscall is
         x86.vmm.Process_To_Process_Map (process, File_Path, Kernel_CR3, Max_Length);
 
    begin
+      Logger.Log_Info ("Open_Syscall");
       if Kernel_Path = System.Null_Address then
          Logger.Log_Error ("Open_Syscall: Failed to map user file path to kernel address");
          result.Signed_Value := -1;
@@ -186,9 +187,9 @@ package body Syscall is
       declare
          Path_String : constant String := Util.Read_String_From_Address (Kernel_Path);
       begin
-         result.Signed_Value := Integer_32 (open (File_System.Path (Path_String), Integer (flag)));
          Logger.Log_Info
            ("Open_Syscall: Opening file: " & Path_String & " FD: " & result.Signed_Value'Image);
+         result.Signed_Value := Integer_32 (open (File_System.Path (Path_String), Integer (flag)));
       end;
 
       x86.vmm.Memory_Unmap (Kernel_CR3, Kernel_Path, Max_Length, False);
@@ -262,11 +263,19 @@ package body Syscall is
       File_Buffer : System.Address := System.Null_Address;
       Kernel_CR3  : constant x86.vmm.CR3_register := x86.vmm.Get_Kernel_CR3;
    begin
+      Logger.Log_Info ("Mmap_Syscall");
       if not File_System.Is_File_Descriptor (Integer (arg5)) then
          Logger.Log_Error ("Mmap_Syscall - Invalid file descriptor: " & arg5'Image);
          result.Signed_Value := -1;
          return;
       end if;
+
+      if flags = 1 then
+         Logger.Log_Info ("Trying to call mmap with flags 1");
+         result.Unsigned_Value := Interfaces.Unsigned_32 (x86.vmm.Kernel_Alloc (CR3 => process, Size => length, Is_Writable => True, Is_Usermode => True));
+         return;
+      end if;
+
       fd := File_System.File_Descriptor (arg5);
 
       File_Buffer := File_System.mmap (fd, length);

@@ -14,7 +14,7 @@ with Programmable_Interval_Timer;
 with Keyboard;
 
 package body x86.idt is
-   package Logger renames Loggers.VGA_Logger;
+   package Logger renames Loggers;
 
    procedure add_entry
      (index     : Interrupt_ID;
@@ -131,6 +131,7 @@ package body x86.idt is
       process_CR3    : x86.vmm.CR3_register := x86.vmm.Get_Current_CR3;
       syscall_result : Syscall.Syscall_Result (signed => False);
    begin
+      x86.vmm.Set_Process_CR3 (process_CR3);
       if interrupt_code = 128 then
          Syscall.Handle_Syscall (eax, ebx, ecx, edx, esi, edi, process_CR3, syscall_result);
          eax := syscall_result.Unsigned_Value;
@@ -154,6 +155,6 @@ package body x86.idt is
       --  while True loop
       --     ASM ("hlt", Volatile => True);
       --  end loop;
-
+      x86.vmm.Load_CR3 (process_CR3);
    end handler;
 end x86.idt;

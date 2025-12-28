@@ -51,8 +51,7 @@ package body ELF.Loader is
       User_Allocated_Buffer : System.Address;
    begin
       Logger.Log_Info ("Reading segment" & Program_Header'Image);
-      Kernel_Buffer :=
-        x86.vmm.Kernel_Alloc (CR3, Program_Header.p_memsz, Is_Writable => True, Is_Usermode => True);
+      Kernel_Buffer := x86.vmm.Kernel_Alloc (Kernel_CR3, Program_Header.p_memsz, Is_Writable => True, Is_Usermode => True);
 
       if Kernel_Buffer = System.Null_Address then
          Logger.Log_Error ("Unable to allocate segment for " & Program_Header'Image);

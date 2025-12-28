@@ -7,6 +7,7 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 with VGA;
+with x86.vmm;
 package body Loggers is
 
    procedure Serial_Send_Line (Message : in String) is
@@ -50,6 +51,8 @@ package body Loggers is
    procedure Panic (Panic_Message : in String) is
    begin
       Serial_Logger.Log_Error (Panic_Message);
+      x86.vmm.Load_CR3 (x86.vmm.Get_Process_CR3);
+      x86.vmm.Enable_Paging;
       VGA.Set_Text_Mode (80, 25, 16);
       VGA_Logger.Log_Error (Panic_Message);
       while True loop
