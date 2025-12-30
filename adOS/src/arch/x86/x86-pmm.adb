@@ -129,9 +129,9 @@ package body x86.pmm is
       end if;
       Util.Bitmap (Offset) := PMM_Bitmap_Entry_Used;
       Number_Of_Remaining_Pages := Number_Of_Remaining_Pages - 1;
-      Logger.Log_Info (PMM_Header_Address'Image);
-      Logger.Log_Info
-        ("PMM: Allocated page at " & To_Address (Result)'Image & " with offset " & Offset'Image & " | " & Util.Bitmap (Offset)'Address'Image);
+      --  Logger.Log_Info (PMM_Header_Address'Image);
+      --  Logger.Log_Info
+      --    ("PMM: Allocated page at " & To_Address (Result)'Image & " with offset " & Offset'Image & " | " & Util.Bitmap (Offset)'Address'Image);
       return Result;
    end Allocate_Page;
 

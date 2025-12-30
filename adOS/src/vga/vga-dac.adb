@@ -27,13 +27,29 @@ package body VGA.DAC is
    --------------------------
    -- Load_Default_Palette --
    --------------------------
-   procedure Load_Default_Palette is
+   procedure Prepare_For_Load is
+   begin
+      Write_Address (0);
+   end Prepare_For_Load;
+
+   procedure Load_Channel (C : Color)
+   is
+   begin
+      Write_Palette_Data_Register (C);
+   end Load_Channel;
+
+   procedure Load_Palette (P : in Palette) is
    begin
       Write_Address (0);
 
-      for C of Default_Palette loop
+      for C of P loop
          Load_Color (C);
       end loop;
+   end Load_Palette;
+
+   procedure Load_Default_Palette is
+   begin
+      Load_Palette (Default_Palette);
    end Load_Default_Palette;
 
    ---------------

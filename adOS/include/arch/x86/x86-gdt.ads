@@ -40,7 +40,7 @@ package x86.gdt is
       ss0      : Unsigned_16 := 0;
       IOPB     : Unsigned_16 := 0;
    end record
-   with Size => 16#68# * 8, Alignment => 32;
+   with Size => 16#68# * 8;
 
    for TSS_Entry use
      record
@@ -53,8 +53,11 @@ package x86.gdt is
    tss : TSS_Entry
    with Export => True, Convention => C, External_Name => "tss_entry";
 
-   stack : aliased array (1 .. 4096) of Unsigned_8
-   with Export => True, Convention => C, External_Name => "tss_stack";
+   stack : aliased array (1 .. 8192) of aliased Unsigned_8
+   with Export => True,
+        Convention => C,
+        External_Name => "tss_stack",
+        Size => 8192 * 8;
 
    -- Null, Kernel Code, Kernel Data, User Code, User Data, TSS
    GDT_ENTRY_COUNT         : constant Integer := 6;

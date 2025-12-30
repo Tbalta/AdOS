@@ -29,5 +29,11 @@ package Util is
       with function "-" (Left, Right : Data_Type) return Data_Type is <>;
       with function "/" (Left, Right : Data_Type) return Data_Type is <>;
    function Floor_Divide (a, b : Data_Type) return Data_Type;
+   
+   generic
+      type Data_Type is(<>);
+      with function "/" (Left, Right : Data_Type) return Data_Type is <>;
+      with function "mod" (Left, Right : Data_Type) return Data_Type is <>;
+   function To_Hex (a : Data_Type; Size : Natural := 0) return String;
 
 end Util;

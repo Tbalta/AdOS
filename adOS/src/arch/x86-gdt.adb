@@ -63,7 +63,7 @@ package body x86.gdt is
          & Integer ((tss'Size / 8) - 1)'Image);
 
       tss.prev_tss := 0;
-      tss.esp0 := stack'Address + To_Address (stack'Length * 8); -- Stack for kernel mode
+      tss.esp0 := stack'Address + Storage_Count (8192); -- Stack for kernel mode
       tss.ss0 := 16#10#; -- Kernel Data Segment
 
       gdt_pointer.limit := (Global_Descriptor_Table'Size - 1) / 8;

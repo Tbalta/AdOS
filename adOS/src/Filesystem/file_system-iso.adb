@@ -121,8 +121,6 @@ package body File_System.ISO is
       Descriptors (FD).used := True;
       Descriptors (FD).size := Integer (file.file_size.le);
       Descriptors (FD).offset := 0;
-
-      Logger.Log_Info ("FD: " & FD'Image);
       return FD;
    end Open;
 
@@ -316,20 +314,23 @@ package body File_System.ISO is
       pragma Import (C, Ramdisk_Start, "_binary_ramdisk_iso_start");
    begin
       Logger.Log_Info ("Initializing ISO filesystem");
-      for Atapi_Device in Atapi.Atapi_Device_id'range loop
-         if Atapi.Is_Present (Atapi_Device)
-           and then Has_Iso_Filesystem ((Driver_Type => Ados.ATAPI_DRIVER, Present => True,
-                                        Atapi_Device => Atapi_Device, others => <>),
-                                       Volume_Descriptor)
-         then
-            Add_Atapi_Driver (Atapi_Device, Volume_Descriptor);
-         end if;
-      end loop;
+      --  for Atapi_Device in Atapi.Atapi_Device_id'range loop
+      --     if Atapi.Is_Present (Atapi_Device)
+      --       and then Has_Iso_Filesystem ((Driver_Type => Ados.ATAPI_DRIVER, Present => True,
+      --                                    Atapi_Device => Atapi_Device, others => <>),
+      --                                   Volume_Descriptor)
+      --     then
+      --        Add_Atapi_Driver (Atapi_Device, Volume_Descriptor);
+      --     end if;
+      --  end loop;
       if Has_Iso_Filesystem (
            (Driver_Type => Ados.RAMDISK_DRIVER, Present => True, Address => Ramdisk_Start'Address, others => <>),
            Volume_Descriptor)
       then
          Add_Ramdisk_Driver (Ramdisk_Start'Address, Volume_Descriptor);
+         Logger.Log_Ok ("Found Ramdisk fs");
+      else
+         Logger.Log_Error ("No Ramdisk driver found");
       end if;
    end init;
 

@@ -266,14 +266,14 @@ int main() {
         while (1)
         {
             draw_image (vga_buff, press_to_play_bmp, garden_dims, (dimensions_t){320, 50}, (point_t){0, 150}, (point_t){0, 0}, (dimensions_t){320, 50});
-            busy_wait_ms (systick_fd, 75);
+            busy_wait_ms (systick_fd, 750);
             while (read (keyboard_fd, &key, sizeof (int)) != -1 && key != 57 && key != -1);
             if (key == 57)
             {
                 break;
             }
             draw_box (vga_buff, 0, 150, 320, 50, 153);
-            busy_wait_ms (systick_fd, 50);
+            busy_wait_ms (systick_fd, 500);
             while (read (keyboard_fd, &key, sizeof (int)) != -1 && key != 57 && key != -1);
             if (key == 57)
             {
@@ -300,10 +300,7 @@ int main() {
         while (1)
         {
 
-            busy_wait_ms (systick_fd, 25);
-
-            int n = snprintf (buff, sizeof (buff), "tick: %d\n", tick);
-            write (tty, buff, n);
+            busy_wait_ms (systick_fd, 250);
 
             if (next_fruit <= 0 && !fruit_valid)
             {
@@ -408,29 +405,27 @@ int main() {
                 next_fruit--;
             }
             tick++;
-            n = snprintf (buff, sizeof (buff), "%d : %d\n", (unsigned) body[head].x, (unsigned)body[head].y);
-            write (tty, buff, n);
     }
     
 lost:
     draw_image (vga_buff, snake_dead_heads [prev_direction], garden_dims, body_part_dims, body[head],  (point_t){0, 0}, body_part_dims);
-    busy_wait_ms (systick_fd, 100);
+    busy_wait_ms (systick_fd, 1000);
 
     for (int i = tail; i != head; i = next_mod (i, MAX_BODY_PART))
     {
         draw_image (vga_buff, body_boom_bmp, garden_dims, body_part_dims, body[i],  (point_t){0, 0}, body_part_dims);
-        busy_wait_ms (systick_fd, 25);
+        busy_wait_ms (systick_fd, 250);
     }
     
     for (int i = tail; i != head; i = next_mod (i, MAX_BODY_PART))
     {
         draw_image (vga_buff, garden, garden_dims, garden_dims, body[i], body[i], body_part_dims);
-        busy_wait_ms (systick_fd, 25);
+        busy_wait_ms (systick_fd, 250);
     }
 
 
     load_image (vga_buff, "lost.bmp", 320, 200);
-    busy_wait_ms (systick_fd, 200);
+    busy_wait_ms (systick_fd, 2000);
 }
     while (1)
     {

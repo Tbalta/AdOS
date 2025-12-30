@@ -69,6 +69,7 @@ package VGA is
 
    function Get_Frame_Buffer return System.Address;
    procedure Dump_Registers;
+   function Is_In_Graphic_Mode return Boolean;
 
    procedure Set_Graphic_Mode (Width, Height, Color_Depth : Positive);
    procedure Set_Text_Mode (Width, Height, Color_Depth : Positive);
@@ -128,5 +129,8 @@ private
        (Miscellaneous_Output_Register_Write_Address,
         Miscellaneous_Output_Register);
 
+   -- Static Variables --
+   Default_Mode : constant  Mode_Type := alphanumeric;
+   Current_Mode : Mode_Type := Default_Mode;
 
 end VGA;

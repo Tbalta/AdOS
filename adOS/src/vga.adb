@@ -49,6 +49,14 @@ package body VGA is
       VGA.Attribute.Registers.Dump_Attribute_Registers;
    end Dump_Registers;
 
+   ------------------------
+   -- Is_In_Graphic_Mode --
+   ------------------------
+   function Is_In_Graphic_Mode return Boolean is
+   begin
+      return Current_Mode = all_point_addressable;
+   end Is_In_Graphic_Mode;
+
    -----------------------
    -- Save_Frame_Buffer --
    -----------------------
@@ -285,7 +293,7 @@ package body VGA is
            ("mode " & Width'Image & "x" & Height'Image & "x" & Color_Depth'image & " is invalid");
          return;
       end if;
-      Save_Frame_Buffer;
+      --  Save_Frame_Buffer;
       Logger.Log_Info ("Setting mode: " & mode'Image);
 
       Miscellaneous := (IOS  => True,
@@ -313,6 +321,7 @@ package body VGA is
       VGA.Attribute.Registers.Select_Attribute_Register (16#20#);
 
       Logger.Log_Ok ("mode " & Width'Image & "x" & Height'Image & "x" & Color_Depth'image & " set");
+      Current_Mode := all_point_addressable;
    end Set_Graphic_Mode;
 
    procedure Set_Text_Mode (Width, Height, Color_Depth : Positive) is
@@ -349,6 +358,7 @@ package body VGA is
       VGA.Attribute.Registers.Select_Attribute_Register (16#20#);
 
       Logger.Log_Ok ("mode " & Width'Image & "x" & Height'Image & "x" & Color_Depth'image & " set");
+      Current_Mode := alphanumeric;
       Restore_Frame_Buffer;
    end Set_Text_Mode;
 end VGA;

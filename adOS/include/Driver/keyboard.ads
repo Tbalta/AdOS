@@ -13,6 +13,7 @@
 with x86.Port_IO; use x86.Port_IO;
 with Interfaces;  use Interfaces;
 with Circular_Buffer;
+with Ada.Unchecked_Conversion;
 
 package Keyboard is
    pragma Preelaborate;
@@ -55,6 +56,7 @@ private
        Key at 0 range 0 .. 6;
        Is_Released at 0 range 7 .. 7;
      end record;
+   function To_U8 is new Ada.Unchecked_Conversion (Source => Keycode, Target => Unsigned_8);
 
    DATA_PORT             : constant Port_Address := 16#60#;
    STATUS_REGISTER_PORT  : constant Port_Address := 16#64#;
@@ -74,7 +76,8 @@ private
 
    Keycode_Buffer : aliased Keycode_Circular_Buffer.Buffer_Type;
 
-
+   type Keycode_Array is array (Unsigned_8) of Boolean;
+   Pressed_Key_Map : Keycode_Array := (others => True);
 
 
 end Keyboard;

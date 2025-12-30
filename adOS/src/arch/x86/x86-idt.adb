@@ -12,7 +12,7 @@ with Ada.Unchecked_Conversion;
 with x86.Port_IO;
 with Programmable_Interval_Timer;
 with Keyboard;
-
+with Util;
 package body x86.idt is
    package Logger renames Loggers;
 
@@ -43,6 +43,7 @@ package body x86.idt is
 
    procedure handle_page_fault (stf : access stack_frame) is
       function To_Error_Code is new Ada.Unchecked_Conversion (Unsigned_32, Page_Fault_Error_Code);
+      function To_Hex is new Util.To_Hex (Unsigned_32);
       function Get_CR2 return Unsigned_32 is
          CR2_Value : Unsigned_32;
       begin
@@ -56,8 +57,16 @@ package body x86.idt is
       error_code       : Page_Fault_Error_Code := To_Error_Code (stf.error_code);
       faulting_address : constant Unsigned_32 := Get_CR2;
    begin
-      Logger.Log_Error ("Page Fault at address: " & faulting_address'Image);
 
+      if error_code.User_Mode then
+         Logger.Log_Info ("Userland memory:");
+         x86.vmm.Print_Mapped_Memory (x86.vmm.Get_Process_CR3);
+      else
+         Logger.Log_Info ("Kernel memory:");
+         x86.vmm.Print_Mapped_Memory (x86.vmm.Get_Kernel_CR3);
+      end if;
+      Logger.Log_Error ("Page Fault at : " & To_Hex (stf.eip));
+      Logger.Log_Error ("Faulting address is: " & To_Hex (faulting_address));
       if error_code.Present then
          Logger.Log_Error (" - caused by a protection violation.");
       else

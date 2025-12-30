@@ -13,16 +13,18 @@ package body Keyboard is
 
       key := Read_Keycode;
 
-      if not Key.Is_Released then
-         return;
-      end if;
+      --  if Key.Is_Released = Pressed_Key_Map (To_U8 (Key)) then
+      --     return;
+      --  end if;
+
+      Pressed_Key_Map (To_U8 (Key)) := Key.Is_Released;
 
       if Key.Key = 96 then
          -- Ignore extended keycodes for now
          return;
       end if;
 
-      Logger.Log_Info ("Received: " & key'Image & " from keyboard");
+      --  Logger.Log_Info ("Received: " & key'Image & " from keyboard");
       Push (Keycode_Buffer'Access, Key);
 
    end Handle_Keyboard;
@@ -42,7 +44,7 @@ package body Keyboard is
          null;
       end loop;
 
-      Logger.Log_Info ("Read :" & Read_Data_Register'Image & "From device");
+      --  Logger.Log_Info ("Read :" & Read_Data_Register'Image & "From device");
    end init;
 
    function Get_Key_Code return Integer is
@@ -51,7 +53,7 @@ package body Keyboard is
       Last_Keycode : Dequeue_Result := Pop (Keycode_Buffer'Access);
    begin
       if Last_Keycode.Valid then
-         return Integer (Last_Keycode.Value.Key);
+         return Integer (To_U8 (Last_Keycode.Value));
       else
          return -1;
       end if;

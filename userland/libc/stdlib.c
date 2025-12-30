@@ -90,7 +90,7 @@ void alloc_in_slot(size_t to_allocate, slot_header_t *slot)
     {
         slot_header_t *next_slot = (slot_header_t *) (((char*)slot) + to_allocate + sizeof (slot_header_t));
         next_slot->next = NULL;
-        printf("Tanguy: slot_size %d, to_allocate %d", slot->slot_size, to_allocate);
+        printf("Tanguy: slot_size %d, to_allocate %d\n", slot->slot_size, to_allocate);
         next_slot->slot_size = slot->slot_size - to_allocate - sizeof (slot_header_t);
         next_slot->used = false;
         slot->slot_size = to_allocate;
@@ -128,11 +128,11 @@ void print_info(void)
 void *malloc(size_t size)
 {
     printf("malloc(%d)", size);
-    print_info();
     size_t to_allocate = ((size + 31) / 32) * 32;
     slot_header_t *slot = find_slot_for_size(to_allocate);
     alloc_in_slot(to_allocate, slot);
-
+    
+    // print_info();
     return (void*)((char*)slot + sizeof (slot_header_t));
 }
 
@@ -143,6 +143,11 @@ void stdlib_init(void)
 
 void free(void *ptr)
 {
+    if (ptr == NULL)
+    {
+        return;
+    }
+    printf("Freeing %d\n", ptr);
     slot_header_t* slot = (slot_header_t*)(ptr - sizeof(slot_header_t));
     slot->used = false;
 }
@@ -156,6 +161,16 @@ void *calloc(size_t nmemb, size_t size)
 
 void *realloc(void *ptr, size_t size)
 {
+    if (ptr == NULL)
+    {
+        return malloc (size);
+    }
+
+    if (size == 0)
+    {
+        free (ptr);
+        return NULL;
+    }
     slot_header_t* slot = (slot_header_t*)(ptr - sizeof(slot_header_t));
     if (slot->slot_size > size)
         return ptr;

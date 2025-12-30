@@ -134,26 +134,26 @@ begin
 
    VGA.load_palette ("vga_tui.hex");
 
-   declare
-      use File_System;
-      fd : File_System.File_Descriptor_With_Error := FD_ERROR;
+   --  declare
+   --     use File_System;
+   --     fd : File_System.File_Descriptor_With_Error := FD_ERROR;
 
-      type vga_buffer is array (Integer range 1 .. 320 * 200) of Unsigned_8 with Pack => True;
-      package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
+   --     type vga_buffer is array (Integer range 1 .. 320 * 200) of Unsigned_8 with Pack => True;
+   --     package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
 
-      Buffer : access vga_buffer := null;
-      count  : Integer := 0;
-   begin
-      VGA.Set_Graphic_Mode (320, 200, 256);
-      VGA.load_palette ("vga_gui.hex");
-      Buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
-      Buffer (1 .. 320 * 200) := (others => 5);
-      Buffer (1 .. 320 * 150) := (others => 70);
-      Buffer (1 .. 320 * 100) := (others => 90);
-      Buffer (1 .. 320 * 50) := (others => 250);
-   end;
+   --     Buffer : access vga_buffer := null;
+   --     count  : Integer := 0;
+   --  begin
+   --     VGA.Set_Graphic_Mode (320, 200, 256);
+   --     VGA.load_palette ("vga_gui.hex");
+   --     Buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
+   --     Buffer (1 .. 320 * 200) := (others => 5);
+   --     Buffer (1 .. 320 * 150) := (others => 70);
+   --     Buffer (1 .. 320 * 100) := (others => 90);
+   --     Buffer (1 .. 320 * 50) := (others => 250);
+   --  end;
 
-   Programmable_Interval_Timer.set_timer_period (10);
+   Programmable_Interval_Timer.set_timer_period (1);
    --  Keyboard.Init;
    -- ?? sti here
    System.Machine_Code.Asm (Template => "sti", Volatile => True);

@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include "string.h"
 #include "syscall.h"
+#include "stdlib.h"
 
 int fputs(const char *s, FILE *stream)
 {
@@ -80,6 +81,10 @@ FILE *fopen(const char *pathname, const char *mode)
 {
     static FILE files[256];
     int fd = open(pathname, 0);
+    if (fd == -1)
+    {
+        return NULL;
+    }
     files[fd] = fd;
     return &files[fd];
 }
@@ -129,7 +134,6 @@ int fflush(FILE *stream)
 
 int snprintf(char *buf, size_t size, const char *fmt, ...)
 {
-    write(0, "snprintf", 9);
     va_list args;
     va_start(args, fmt);
     int result = vsnprintf (buf, size, fmt, args);
@@ -163,6 +167,7 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
             break;
         
         case 'd':
+        case 'i':
         {
             unsigned int val = va_arg (args, unsigned int);
             char* str = itoa (int_buffer, sizeof (int_buffer), val);
@@ -241,6 +246,7 @@ int vfprintf(FILE *stream, const char *format, va_list args)
             }
             break;
         
+        case 'i':
         case 'd':
         {
             unsigned int val = va_arg (args, unsigned int);
@@ -257,6 +263,23 @@ int vfprintf(FILE *stream, const char *format, va_list args)
             }
 
         }
+        break;
+
+        // case 'f':
+        // {
+        //     unsigned int val = va_arg (args, unsigned int);
+        //     char* str = atof (int_buffer, sizeof (int_buffer), val);
+        //     for (; *str != '\0'; i++)
+        //     {
+        //         printf_buffer[i] = *(str++);
+        //         if (i == sizeof(printf_buffer) - 2)
+        //         {
+        //             printf_buffer[i + 1] = '\0';
+        //             fputs( printf_buffer, stream);
+        //             i = 0;
+        //         }
+        //     }
+        // }
         break;
 
         default:

@@ -32,5 +32,5 @@ int strncasecmp(const char *s1, const char *s2, size_t n)
         n--;
     }
     
-    return toupper (*s1) - toupper (*s2);
+    return n ? toupper (*s1) - toupper (*s2) : 0;
 }

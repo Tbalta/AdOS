@@ -112,6 +112,8 @@ is
    -- Enable_Kernel_Mapping --
    ---------------------------
    procedure Enable_Kernel_Mapping;
+   procedure Print_Mapped_Memory (CR3 : CR3_Register);
+
    
 
    ------------------
@@ -310,5 +312,9 @@ private
 
    Kernel_CR3        : CR3_register;
    Process_CR3        : CR3_register;
+   procedure Next
+     (Page_Directory_Start : in out Page_Directory_Index;
+      Page_Table_Start     : in out Page_Table_Index);
+
 
 end x86.vmm;

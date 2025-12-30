@@ -9,10 +9,13 @@
 ------------------------------------------------------------------------------
 
 with System.Address_To_Access_Conversions;
+with System.Storage_Elements; use System.Storage_Elements;
 package VGA.Terminal is
    pragma Preelaborate;
 
    procedure Put_String (Str : in String);
+   procedure Send_Raw_Buffer (Buffer : System.Address; size : Storage_Count);
+
 
 private
    procedure Sroll_Up;

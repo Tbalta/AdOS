@@ -83,7 +83,7 @@ char *strdup(const char *s)
     {
         return NULL;
     }
-    size_t len = strlen(s);
+    size_t len = strlen(s) + sizeof ("");
     char *new_string = calloc (1, len);
     if (new_string == NULL)
     {
@@ -142,7 +142,7 @@ int strncmp(const char *s1, const char *s2, size_t n)
         n--;
     }
     
-    return *s1 - *s2;
+	return n ? *s1 - *s2 : 0;
 }
 
 char *strcpy(char *dest, const char *src)

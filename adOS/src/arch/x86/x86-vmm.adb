@@ -5,11 +5,12 @@ with Ada.Assertions;
 --  with System.Secondary_Stack;
 with Loggers;
 with x86.vmm;
+with Util;
 
 package body x86.vmm is
    use Standard.ASCII;
    pragma Assertion_Policy (Assert => Check);
-   package Logger renames Loggers.Serial_Logger;
+   package Logger renames Loggers;
 
    ----------------
    -- To_Address --
@@ -197,6 +198,108 @@ package body x86.vmm is
    begin
       Process_CR3 := CR3;
    end Set_Process_CR3;
+
+   procedure Print_Mapped_Memory (CR3 : CR3_Register) is
+      Current_Region_Start : Virtual_Address_Break := Null_Address_Break;
+      Current_Region : Virtual_Address_Break := Null_Address_Break;
+
+      PD : Page_Directory_Access := Get_Page_Directory (CR3);
+      PT : Page_Table_Access := null;
+      Region_Valid : Boolean := false;
+
+      function Get_Region_Size return Storage_Count is
+      begin
+         return From_Virtual_Address_Break (Current_Region) - From_Virtual_Address_Break (Current_Region_Start);
+      end Get_Region_Size;
+
+      function Get_Flag_String return String is
+         Result : String (1 .. 2);
+         Is_Writable : Boolean := PT (Current_Region_Start.Table).Is_Writable;
+         Is_Usermode : Boolean := PT (Current_Region_Start.Table).Is_Usermode;
+      begin
+         if Is_Usermode then
+            Result (1) := 'U';
+         else
+            Result (1) := '-';
+         end if;
+            
+         if Is_Writable then
+            Result (2) := 'W';
+         else
+            Result (2) := 'R';
+         end if;
+
+         return Result;
+      end Get_Flag_String;
+
+      function To_Hex is new Util.To_Hex (Storage_Count);
+      procedure Print (Dir : Page_Directory_Index; Table : Page_Table_Index) is
+         Region_Start_Address : constant Virtual_Address := From_Virtual_Address_Break (Current_Region_Start);
+         Region_End_Address :   constant Virtual_Address := From_Virtual_Address_Break ((Directory => Dir, Table => Table, Offset => 0));
+      begin
+         Logger.Log_Info (To_Hex (Storage_Count (Region_Start_Address), 8)      & " " &
+                          To_Hex (Storage_Count (Region_End_Address), 8)        & " " &
+                          To_Hex (Region_End_Address - Region_Start_Address, 8) & " " &
+                          Get_Flag_String);
+      end Print;
+
+      procedure Test (Dir : Page_Directory_Index; Table : Page_Table_Index) is
+         Current_PT : Page_Table_Access := null;
+      begin
+         if not PD (Current_Region_Start.Directory).Present then
+            Current_Region_Start.Directory := Dir;
+            Current_Region_Start.Table := Table;
+            return;
+         end if;
+
+         PT := Get_Page_Table (CR3, Current_Region_Start.Directory);
+         if not PT (Current_Region_Start.Table).Present then
+            Current_Region_Start.Directory := Dir;
+            Current_Region_Start.Table := Table;
+            return;
+         end if;
+
+         if not PD (Dir).Present then
+            Print (Dir, Table);
+            Current_Region_Start.Directory := Dir;
+            Current_Region_Start.Table := Table;
+            return;
+         end if;
+
+         Current_PT := Get_Page_Table (CR3, Dir);
+         if not Current_PT (Table).Present then
+            Print (Dir, Table);
+            Current_Region_Start.Directory := Dir;
+            Current_Region_Start.Table := Table;
+            return;
+         end if;
+
+         if (Dir = Page_Directory'Last and Table = Page_Table'Last)                       or else
+            Current_PT (Table).Is_Usermode /= PT (Current_Region_Start.Table).Is_Usermode or else
+            Current_PT (Table).Is_Writable /= PT (Current_Region_Start.Table).Is_Writable
+         then
+            Print (Dir, Table);
+            Current_Region_Start.Directory := Dir;
+            Current_Region_Start.Table := Table;
+         end if;
+      end Test;
+
+      Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
+   begin
+      if Paging_Currently_Enabled then
+         Disable_Paging;
+      end if;
+      
+      for Dir in Page_Directory'Range loop
+         for Page in Page_Table'Range loop
+            Test (Dir, Page);
+         end loop;
+      end loop;
+
+      if Paging_Currently_Enabled then
+         Enable_Paging;
+      end if;
+   end Print_Mapped_Memory;
 
    -----------------------
    -- Create_Page_Table --
@@ -400,8 +503,8 @@ package body x86.vmm is
    procedure Identity_Map (CR3 : CR3_register) is
       PD                  : Page_Directory_Access := Get_Page_Directory (CR3);
       Address_Breakdown   : Virtual_Address_Break := To_Virtual_Address_Break (Null_Address);
-      PMM_Start_Breakdown : Virtual_Address_Break :=
-        To_Virtual_Address_Break (PMM.Get_Pmm_Start_Address);
+      PMM_Start_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (PMM.Get_Pmm_Start_Address);
+      Kernel_Start_Break  : Virtual_Address_Break := To_Virtual_Address_Break (Kernel_Start);
       Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
    begin
       if Paging_Currently_Enabled then
@@ -415,6 +518,14 @@ package body x86.vmm is
          Address_Breakdown.Directory,
          Address_Breakdown.Table,
          Null_Address,
+         Kernel_Start,
+         Is_Writable => False,
+         Is_Usermode => False);
+      Map_Range
+        (PD,
+         Kernel_Start_Break.Directory,
+         Kernel_Start_Break.Table,
+         Kernel_Start,
          Kernel_End,
          Is_Writable => True,
          Is_Usermode => False);
@@ -424,7 +535,7 @@ package body x86.vmm is
          PMM_Start_Breakdown.Table,
          PMM.Get_Pmm_Start_Address,
          PMM.Get_Pmm_End_Address,
-         Is_Writable => True,
+         Is_Writable => False,
          Is_Usermode => False);
 
       if Paging_Currently_Enabled then

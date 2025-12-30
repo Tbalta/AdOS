@@ -16,7 +16,7 @@ with System.Storage_Elements; use System.Storage_Elements;
 with VGA.Sequencer;
 
 package body Syscall is
-   package Logger renames Loggers.Serial_Logger;
+   package Logger renames Loggers;
 
    --------------------
    -- Handle Syscall --
@@ -177,7 +177,6 @@ package body Syscall is
         x86.vmm.Process_To_Process_Map (process, File_Path, Kernel_CR3, Max_Length);
 
    begin
-      Logger.Log_Info ("Open_Syscall");
       if Kernel_Path = System.Null_Address then
          Logger.Log_Error ("Open_Syscall: Failed to map user file path to kernel address");
          result.Signed_Value := -1;
@@ -187,9 +186,9 @@ package body Syscall is
       declare
          Path_String : constant String := Util.Read_String_From_Address (Kernel_Path);
       begin
+         result.Signed_Value := Integer_32 (open (File_System.Path (Path_String), Integer (flag)));
          Logger.Log_Info
            ("Open_Syscall: Opening file: " & Path_String & " FD: " & result.Signed_Value'Image);
-         result.Signed_Value := Integer_32 (open (File_System.Path (Path_String), Integer (flag)));
       end;
 
       x86.vmm.Memory_Unmap (Kernel_CR3, Kernel_Path, Max_Length, False);
@@ -263,7 +262,7 @@ package body Syscall is
       File_Buffer : System.Address := System.Null_Address;
       Kernel_CR3  : constant x86.vmm.CR3_register := x86.vmm.Get_Kernel_CR3;
    begin
-      Logger.Log_Info ("Mmap_Syscall");
+      Logger.Log_Info ("Mmap_Syscall fd: " & Integer (arg5)'Image);
       if not File_System.Is_File_Descriptor (Integer (arg5)) then
          Logger.Log_Error ("Mmap_Syscall - Invalid file descriptor: " & arg5'Image);
          result.Signed_Value := -1;
@@ -281,7 +280,7 @@ package body Syscall is
       File_Buffer := File_System.mmap (fd, length);
       if File_Buffer = System.Null_Address then
          Logger.Log_Error ("Mmap_Syscall - Unable to retrieve File_Buffer for fd " & fd'Image);
-         result.Signed_Value := -1;
+         result.Signed_Value := 0;
          return;
       end if;
 

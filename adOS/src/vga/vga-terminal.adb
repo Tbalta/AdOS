@@ -9,7 +9,7 @@
 
 with VGA;
 package body VGA.Terminal is
-
+   use Standard.ASCII;
 
    function Parse_Attribute (Attr : in String) return Character_Attribute is
       Attribute : Character_Attribute;
@@ -48,6 +48,11 @@ package body VGA.Terminal is
    procedure Put_Char (Char : VGA_CHAR) is
       Buffer : access vga_buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
    begin
+      if Char.c = LF then
+         New_Line;
+         return;
+      end if;
+
       Buffer ((current_line - 1) * 80 + current_column) := Char;
       
       if current_column = 80 then
@@ -63,6 +68,9 @@ package body VGA.Terminal is
       Attribute : Character_Attribute := (Foreground => 16#F#, Background => 0);
       I : Positive := Str'First;
    begin
+      if VGA.Is_In_Graphic_Mode then
+         return;
+      end if;
       while I <= Str'Last loop
          if Str (I) = Character'Val (16#1B#) then
             Attribute := Parse_Attribute (Str (I .. Str'Last));
@@ -77,5 +85,24 @@ package body VGA.Terminal is
       New_Line;
 
    end Put_String;
+
+   procedure Send_Raw_Buffer (Buffer : System.Address; size : Storage_Count)
+   is
+      type Byte_Array is array (Storage_Offset range 1 .. size) of Interfaces.Unsigned_8;
+      package Conversion is new System.Address_To_Access_Conversions (Byte_Array);
+      byte_array_access : access Byte_Array := Conversion.To_Pointer (buffer);
+      Attribute : Character_Attribute := (Foreground => 16#F#, Background => 0);
+
+   begin
+      if VGA.Is_In_Graphic_Mode then
+         return;
+      end if;
+
+      for Byte of byte_array_access.all loop
+         Put_Char ((c => Character'Val (Byte), attribute => Attribute));
+      end loop;
+
+   end Send_Raw_Buffer;
+
 
 end VGA.Terminal;

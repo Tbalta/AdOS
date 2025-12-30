@@ -47,11 +47,16 @@ package body ELF.Loader is
 
       function Read_Segment_Data is new File_System.read (Segment_Data);
 
+      procedure memset (Address : System.Address; Value : Unsigned_8; Size : Unsigned_32);
+      pragma Import (C, memset, "memset");
+
       Kernel_Buffer         : System.Address;
       User_Allocated_Buffer : System.Address;
+      Segment_Page_Offset : Storage_Offset := Storage_Offset (To_Integer (Program_Header.p_vaddr) mod 4096);
    begin
       Logger.Log_Info ("Reading segment" & Program_Header'Image);
       Kernel_Buffer := x86.vmm.Kernel_Alloc (Kernel_CR3, Program_Header.p_memsz, Is_Writable => True, Is_Usermode => True);
+      memset (Kernel_Buffer, 0, Unsigned_32 (Program_Header.p_memsz));
 
       if Kernel_Buffer = System.Null_Address then
          Logger.Log_Error ("Unable to allocate segment for " & Program_Header'Image);
@@ -59,7 +64,7 @@ package body ELF.Loader is
       end if;
 
       File_System.Seek (File, Program_Header.p_offset, File_System.SEEK_SET);
-      Read_Count := Read_Segment_Data (File, Conversion.To_Pointer (Kernel_Buffer));
+      Read_Count := Read_Segment_Data (File, Conversion.To_Pointer (Kernel_Buffer + Segment_Page_Offset));
       pragma Assert (Read_Count = Integer (Program_Header.p_filesz));
 
       User_Allocated_Buffer :=
@@ -69,6 +74,7 @@ package body ELF.Loader is
            Dest_CR3       => CR3,
            Size           => Program_Header.p_memsz,
            Hint           => Program_Header.p_vaddr);
+
       pragma Assert (User_Allocated_Buffer = Program_Header.p_vaddr);
 
       x86.vmm.Memory_Unmap

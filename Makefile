@@ -65,12 +65,14 @@ gdb:
 
 ifeq ($(SKIP_RAMDISK), TRUE)
 ramdisk_content.o: userland
+	$(RM) main.elf
 	$(RM) iso/boot/main.elf
 	$(RM) -r obj/ramdisk_content.o ramdisk.iso
 	genisoimage -o ramdisk.iso /dev/null
 	objcopy --input binary --output elf32-i386 ramdisk.iso obj/ramdisk_content.o
 else
 ramdisk_content.o: userland
+	$(RM) main.elf
 	$(RM) iso/boot/main.elf
 	$(RM) -r obj/ramdisk_content.o ramdisk.iso
 	genisoimage -o ramdisk.iso iso/
