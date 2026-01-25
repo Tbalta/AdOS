@@ -90,7 +90,6 @@ void alloc_in_slot(size_t to_allocate, slot_header_t *slot)
     {
         slot_header_t *next_slot = (slot_header_t *) (((char*)slot) + to_allocate + sizeof (slot_header_t));
         next_slot->next = NULL;
-        printf("Tanguy: slot_size %d, to_allocate %d\n", slot->slot_size, to_allocate);
         next_slot->slot_size = slot->slot_size - to_allocate - sizeof (slot_header_t);
         next_slot->used = false;
         slot->slot_size = to_allocate;
@@ -182,6 +181,7 @@ void *realloc(void *ptr, size_t size)
 
 void exit(int status)
 {
+    _exit(status);
     while (1)
     {
         /* code */

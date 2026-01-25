@@ -13,10 +13,6 @@ package body Keyboard is
 
       key := Read_Keycode;
 
-      --  if Key.Is_Released = Pressed_Key_Map (To_U8 (Key)) then
-      --     return;
-      --  end if;
-
       Pressed_Key_Map (To_U8 (Key)) := Key.Is_Released;
 
       if Key.Key = 96 then
@@ -43,8 +39,6 @@ package body Keyboard is
       while Read_Data_Register /= ACK loop
          null;
       end loop;
-
-      --  Logger.Log_Info ("Read :" & Read_Data_Register'Image & "From device");
    end init;
 
    function Get_Key_Code return Integer is

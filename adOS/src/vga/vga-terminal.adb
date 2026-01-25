@@ -29,7 +29,7 @@ package body VGA.Terminal is
    end Parse_Attribute;
 
    procedure Sroll_Up is
-      Buffer : access vga_buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
+      Buffer : vga_buffer_ptr := Get_Text_Buffer;
    begin
       Buffer (1 .. 80 * 24) := Buffer (81 .. 80 * 25);
       Buffer (80 * 24 + 1 .. 80 * 25) := (others => (c => ' ', attribute => (Foreground => 16#F#, Background => 0)));
@@ -46,7 +46,7 @@ package body VGA.Terminal is
    end New_Line;
 
    procedure Put_Char (Char : VGA_CHAR) is
-      Buffer : access vga_buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
+      Buffer : vga_buffer_ptr := Get_Text_Buffer;
    begin
       if Char.c = LF then
          New_Line;
@@ -64,7 +64,7 @@ package body VGA.Terminal is
    end Put_Char;
 
    procedure Put_String (Str : in String) is
-      Buffer : access vga_buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
+      Buffer : vga_buffer_ptr := Get_Text_Buffer;
       Attribute : Character_Attribute := (Foreground => 16#F#, Background => 0);
       I : Positive := Str'First;
    begin
@@ -94,15 +94,32 @@ package body VGA.Terminal is
       Attribute : Character_Attribute := (Foreground => 16#F#, Background => 0);
 
    begin
-      if VGA.Is_In_Graphic_Mode then
-         return;
-      end if;
 
       for Byte of byte_array_access.all loop
          Put_Char ((c => Character'Val (Byte), attribute => Attribute));
       end loop;
 
    end Send_Raw_Buffer;
+
+   function Get_Text_Buffer return vga_buffer_ptr is
+   begin
+      if not VGA.Is_In_Graphic_Mode then
+         return vga_buffer_ptr (Conversion.To_Pointer (VGA.Get_Frame_Buffer));
+      else
+         return saved_buffer'Access;
+      end if;
+   end Get_Text_Buffer;
+
+   procedure Pause_Output is
+   begin
+      saved_buffer := vga_buffer_ptr (Conversion.To_Pointer (VGA.Get_Frame_Buffer)).all;
+   end Pause_Output;
+
+
+   procedure Resume is
+   begin
+      vga_buffer_ptr (Conversion.To_Pointer (VGA.Get_Frame_Buffer)).all := saved_buffer;
+   end Resume;
 
 
 end VGA.Terminal;

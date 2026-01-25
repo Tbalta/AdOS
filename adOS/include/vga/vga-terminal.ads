@@ -16,7 +16,8 @@ package VGA.Terminal is
    procedure Put_String (Str : in String);
    procedure Send_Raw_Buffer (Buffer : System.Address; size : Storage_Count);
 
-
+   procedure Pause_Output;
+   procedure Resume;
 private
    procedure Sroll_Up;
    type Character_Attribute is record
@@ -39,9 +40,12 @@ private
         end record;
 
    type vga_buffer is array (Positive range 1 .. 80 * 25) of aliased VGA_CHAR with Pack => True;
+   type vga_buffer_ptr is access all vga_buffer;
    package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
+   function Get_Text_Buffer return vga_buffer_ptr;
 
    current_line : Positive range 1 .. 25 := 1;
    current_column : Positive range 1 .. 80 := 1;
+   saved_buffer : aliased vga_buffer;
 
 end VGA.Terminal;

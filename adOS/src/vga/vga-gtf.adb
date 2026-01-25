@@ -18,7 +18,7 @@ package body VGA.GTF is
    --------------------
    -- Compute_Timing --
    --------------------
-   function Compute_Timing (H_PIXELS : Pixel_Count; V_LINES : Scan_Line_Count) return VGA_Timing is
+   function Compute_Timing (H_PIXELS : Pixel_Count; V_LINES : Scan_Line_Count; CELL_GRAN : Pixel_Count) return VGA_Timing is
       -- Refer to gtf.py for calculations comments --
 
       -- Hardware specific --
@@ -35,7 +35,7 @@ package body VGA.GTF is
       MARGIN_P : constant Float := 1.8;
 
       IDEAL_DUTY_CYCLE_SCALING : constant := 100;
-      CELL_GRAN : constant Pixel_Count := 8;
+      --  CELL_GRAN : constant Pixel_Count := 8;
       I_P_FREQ_RQD : constant := 25.0;
 
 

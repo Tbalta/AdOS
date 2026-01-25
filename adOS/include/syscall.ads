@@ -15,6 +15,7 @@ with System.Storage_Elements; use System.Storage_Elements;
 package Syscall is
    pragma Preelaborate;
 
+   SYSCALL_EXIT  : constant Unsigned_32 := 1;
    SYSCALL_READ  : constant Unsigned_32 := 3;
    SYSCALL_WRITE : constant Unsigned_32 := 4;
    SYSCALL_OPEN  : constant Unsigned_32 := 5;
@@ -45,6 +46,10 @@ package Syscall is
 
 
 private
+   procedure Exit_Syscall 
+      (Status : in  Unsigned_32;
+      Process : in x86.vmm.CR3_Register);
+
    procedure Read_Syscall
      (arg1    : in Unsigned_32;
       buffer  : in System.Address;

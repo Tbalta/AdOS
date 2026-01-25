@@ -13,7 +13,8 @@ with System.Address_To_Access_Conversions;
 with Interfaces.C;
 with Util;
 with System.Storage_Elements; use System.Storage_Elements;
-with VGA.Sequencer;
+with VGA;
+with System.Machine_Code;
 
 package body Syscall is
    package Logger renames Loggers;
@@ -34,6 +35,9 @@ package body Syscall is
       x86.vmm.Enable_Kernel_Mapping;
       -- Logger.Log_Info ("Handling syscall number: " & number'Image);
       case number is
+         when SYSCALL_EXIT =>
+            Exit_Syscall (arg1, process);
+
          when SYSCALL_READ =>
             Read_Syscall (arg1, System.Address (arg2), Storage_Count (arg3), process, result);
 
@@ -59,6 +63,20 @@ package body Syscall is
       end case;
    end Handle_Syscall;
 
+   ------------------
+   -- Exit Syscall --
+   ------------------
+   procedure Exit_Syscall 
+      (Status : in  Unsigned_32;
+      Process : in x86.vmm.CR3_Register) is
+   begin
+      VGA.Set_Text_Mode (80, 25, 16);
+      VGA.load_palette ("vga_tui.hex");
+      Logger.Log_Info ("Process exited with status " & Status'Image);
+      while True loop
+         System.Machine_Code.Asm (Template => "hlt", Volatile => True);
+      end loop;
+   end Exit_Syscall;
 
    -------------------
    -- Write Syscall --
@@ -272,6 +290,7 @@ package body Syscall is
       if flags = 1 then
          Logger.Log_Info ("Trying to call mmap with flags 1");
          result.Unsigned_Value := Interfaces.Unsigned_32 (x86.vmm.Kernel_Alloc (CR3 => process, Size => length, Is_Writable => True, Is_Usermode => True));
+         x86.vmm.Print_Mapped_Memory (Kernel_CR3);
          return;
       end if;
 

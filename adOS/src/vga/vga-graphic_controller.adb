@@ -27,7 +27,7 @@ package body VGA.Graphic_Controller is
    begin
 
       if Storage_Needed <= 32 * 1024 then
-         return B0000_32KB;
+         return B8000_32KB;
       end if;
 
       if Storage_Needed <= 64 * 1024 then

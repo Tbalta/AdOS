@@ -21,7 +21,7 @@ with VGA.CRTC;                         use VGA.CRTC;
 with VGA.CRTC.Registers;
 with VGA.Attribute;                    use VGA.Attribute;
 with VGA.Attribute.Registers;
-use VGA.Attribute;
+with VGA.Terminal;
 with VGA.DAC;                          use VGA.DAC;
 with VGA.GTF;                          use VGA.GTF;
 with Util;
@@ -83,7 +83,7 @@ package body VGA is
          buffer.all := current_vga_buffer.all;
       end;
 
-      Logger.Log_Ok ("vga buffer saved at address: " & save_buffer_address'Image);
+      Logger.Log_Ok ("vga buffer (" & Get_Frame_Buffer'Image & ") saved at address: " & save_buffer_address'Image);
    end Save_Frame_Buffer;
 
    --------------------------
@@ -105,7 +105,7 @@ package body VGA is
          current_vga_buffer.all := buffer.all;
       end;
 
-      Logger.Log_Ok ("vga buffer restored from address: " & save_buffer_address'Image);
+      Logger.Log_Ok ("vga buffer ("& Get_Frame_Buffer'Image &") restored from address: " & save_buffer_address'Image);
    end Restore_Frame_Buffer;
 
    ------------------
@@ -212,7 +212,7 @@ package body VGA is
    is
       function Find_Graphic_Mode return VGA_Mode is
       begin
-         for mode of Modes loop
+         for mode of reverse Modes loop
             if mode.vga_type = all_point_addressable then
                if mode.Pixel_Height = Height
                  and then mode.Pixel_Width = Width
@@ -293,8 +293,11 @@ package body VGA is
            ("mode " & Width'Image & "x" & Height'Image & "x" & Color_Depth'image & " is invalid");
          return;
       end if;
-      --  Save_Frame_Buffer;
       Logger.Log_Info ("Setting mode: " & mode'Image);
+      VGA.Terminal.Pause_Output;
+
+      -- Disabling vga-terminal logging
+      Current_Mode := all_point_addressable;
 
       Miscellaneous := (IOS  => True,
                         ERAM => True,
@@ -321,7 +324,7 @@ package body VGA is
       VGA.Attribute.Registers.Select_Attribute_Register (16#20#);
 
       Logger.Log_Ok ("mode " & Width'Image & "x" & Height'Image & "x" & Color_Depth'image & " set");
-      Current_Mode := all_point_addressable;
+      Save_Frame_Buffer;
    end Set_Graphic_Mode;
 
    procedure Set_Text_Mode (Width, Height, Color_Depth : Positive) is
@@ -334,6 +337,7 @@ package body VGA is
       end if;
 
       Logger.Log_Info ("Setting mode: " & mode'Image);
+      Restore_Frame_Buffer;
 
       -- Misc
       Write_Miscellaneous_Output_Register
@@ -359,6 +363,6 @@ package body VGA is
 
       Logger.Log_Ok ("mode " & Width'Image & "x" & Height'Image & "x" & Color_Depth'image & " set");
       Current_Mode := alphanumeric;
-      Restore_Frame_Buffer;
+      Vga.Terminal.Resume;
    end Set_Text_Mode;
 end VGA;

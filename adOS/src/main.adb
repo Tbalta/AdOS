@@ -29,6 +29,7 @@ with Interfaces;
 with VGA.CRTC;
 with Programmable_Interval_Timer;
 with Keyboard;
+with VGA.Terminal;
 
 procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Address) is
    package MultiBoot_Conversion is new System.Address_To_Access_Conversions (multiboot_info);
@@ -152,6 +153,12 @@ begin
    --     Buffer (1 .. 320 * 100) := (others => 90);
    --     Buffer (1 .. 320 * 50) := (others => 250);
    --  end;
+   --  VGA.Set_Text_Mode (80, 25, 16);
+   --  VGA.load_palette ("vga_tui.hex");
+   --  Logger.Log_Info ("Hello World!");
+   --  while True loop
+   --     null;
+   --  end loop;
 
    Programmable_Interval_Timer.set_timer_period (1);
    --  Keyboard.Init;

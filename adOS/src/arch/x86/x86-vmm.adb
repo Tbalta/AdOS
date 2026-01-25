@@ -213,7 +213,7 @@ package body x86.vmm is
       end Get_Region_Size;
 
       function Get_Flag_String return String is
-         Result : String (1 .. 2);
+         Result : String (1 .. 3);
          Is_Writable : Boolean := PT (Current_Region_Start.Table).Is_Writable;
          Is_Usermode : Boolean := PT (Current_Region_Start.Table).Is_Usermode;
       begin
@@ -223,10 +223,11 @@ package body x86.vmm is
             Result (1) := '-';
          end if;
             
+         Result (2) := 'R';
          if Is_Writable then
-            Result (2) := 'W';
+            Result (3) := '-';
          else
-            Result (2) := 'R';
+            Result (3) := 'W';
          end if;
 
          return Result;
@@ -834,7 +835,7 @@ package body x86.vmm is
          Disable_Paging;
       end if;
 
-      for i in 0 .. Page_Count loop
+      for i in 1 .. Page_Count loop
          Unmap_Page (PD, Address_Breakdown.Directory, Address_Breakdown.Table, Free_Page);
          Next (Address_Breakdown.Directory, Address_Breakdown.Table);
       end loop;

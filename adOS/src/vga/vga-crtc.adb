@@ -71,13 +71,14 @@ package body VGA.CRTC is
    begin
       if mode.vga_type = alphanumeric then
          Offset := mode.AN_Format.Width / (1 * 2);
-         Timing := Compute_Timing (mode.Pixel_Width, mode.Pixel_Height);
+         Timing := Compute_Timing (mode.Pixel_Width, mode.Pixel_Height, mode.Box.Width);
       else
          Offset := mode.Pixel_Width / (2 * 2 * 2);
          Timing :=
            Compute_Timing
              (mode.Pixel_Width * Compute_Dot_Per_Pixel (mode.Colors),
-              mode.Pixel_Height * Get_MSL_Multiplier (mode.Pixel_Height));
+              mode.Pixel_Height * Get_MSL_Multiplier (mode.Pixel_Height),
+              mode.Box.Width);
       end if;
       Logger.Log_Info ("Setting CRTC for mode" & mode'Image);
       Logger.Log_Info (Timing'Image);
@@ -115,7 +116,7 @@ package body VGA.CRTC is
 
       if mode.vga_type = alphanumeric then
          Write_Maximum_Scan_Line_Register
-           ((MSL => Unsigned_5 (mode.Box.Height * 2) - 1, Double_Scanning => False, others => 0));
+           ((MSL => Unsigned_5 (mode.Box.Height - 1), Double_Scanning => False, others => 0));
       else
          Write_Maximum_Scan_Line_Register
            ((MSL             => Unsigned_5 (Get_MSL_Multiplier (mode.Pixel_Height) - 1),
