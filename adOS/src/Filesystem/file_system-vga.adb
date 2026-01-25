@@ -7,6 +7,7 @@ with Loggers;
 with Ada.Unchecked_Conversion;
 
 with VGA; use VGA;
+with VGA.DAC;
 
 package body File_System.VGA is
    package Logger renames Loggers.Serial_Logger;
@@ -18,8 +19,6 @@ package body File_System.VGA is
    begin
       Logger.Log_Info ("Starting: " & File'Image);
       if File.Graphic_Mode then
-
-         Save_Frame_Buffer;
          Set_Graphic_Mode
            (Width       => Integer (File.Width),
             Height      => Integer (File.Height),
@@ -30,7 +29,6 @@ package body File_System.VGA is
            (Width       => Integer (File.Width),
             Height      => Integer (File.Height),
             Color_Depth => Integer (File.Color_Depth));
-         Restore_Frame_Buffer;
          load_palette ("vga_tui.hex");
       end if;
    end Start_VGA;
@@ -54,6 +52,8 @@ package body File_System.VGA is
          return COLORS_FD;
       elsif File_Path = "vga_mode" then
          return MODE_FD;
+      elsif File_Path = "palette" then
+         return PALETTE_FD;
       end if;
 
       return DRIVER_FD_ERROR;
@@ -150,13 +150,43 @@ package body File_System.VGA is
       return Write_Type'Size / Storage_Unit;
    end Attribute_Write;
 
+   function Palette_Write (fd : Driver_File_Descriptor; Buffer : access Write_Type) return Integer
+   is
+   begin
+
+      if Write_Type'Size /= Standard.VGA.Dac.Palette'Size then
+         Logger.Log_Error
+           ("Invalid write size expected: "
+            & Integer (Standard.VGA.Dac.Palette'Size)'Image
+            & "bits got: "
+            & Integer (Write_Type'Size)'Image);
+         return -1;
+      end if;
+
+      pragma Assert (Write_Type'Size = Standard.VGA.Dac.Palette'Size);
+      declare
+         function To_Palette is new
+           Ada.Unchecked_Conversion (Source => Write_Type, Target => Standard.VGA.Dac.Palette);
+      begin
+         Standard.VGA.Dac.load_palette (To_Palette (Buffer.All));
+      end;
+
+      return Write_Type'Size / Storage_Unit;
+   end Palette_Write;
+
+   
+
    function write (fd : Driver_File_Descriptor; Buffer : access Write_Type) return Integer is
       function FB_Write is new Frame_Buffer_Write (Write_Type);
       function E_Write is new Attribute_Write (Write_Type);
+      function P_Write is new Palette_Write (Write_Type);
    begin
       case fd is
          when FRAME_BUFFER_FD =>
             return FB_Write (fd, Buffer);
+         
+         when PALETTE_FD =>
+            return P_Write (fd, Buffer);
 
          when HEIGHT_FD | WIDTH_FD | COLORS_FD | MODE_FD =>
             return E_Write (fd, Buffer);

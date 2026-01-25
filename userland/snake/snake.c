@@ -4,27 +4,6 @@
 #include "snake.h"
 #include <vga.h>
 
-void *memset(void *s, char c, size_t n)
-{
-	char *p = s;
-
-	for (size_t i = 0; i < n; ++i)
-		p[i] = c;
-
-	return s;
-}
-
-void *memcpy(void *dest, const void *src, size_t n)
-{
-	const char *s = src;
-	char *d = dest;
-
-	for (size_t i = 0; i < n; i++)
-		*d++ = *s++;
-
-	return dest;
-}
-
 
 void draw_box (void *buffer, int x, int y, int w, int h, int color)
 {
@@ -173,8 +152,7 @@ direction_t get_next_direction (int keyboard_fd, direction_t prev_direction)
     return prev_direction;
 }
 
-int _start() {
-
+int main() {
     char* snake_heads[] = {
         head_bmp_down,
         head_bmp_up,
@@ -187,8 +165,8 @@ int _start() {
         head_dead_bmp_left,
         head_dead_bmp_right,
     };
-
-    int tty = open("tty0", 0);
+    
+    int tty = 0;
     while (tty == -1)
     {
     }
@@ -288,14 +266,14 @@ int _start() {
         while (1)
         {
             draw_image (vga_buff, press_to_play_bmp, garden_dims, (dimensions_t){320, 50}, (point_t){0, 150}, (point_t){0, 0}, (dimensions_t){320, 50});
-            busy_wait_ms (systick_fd, 75);
+            busy_wait_ms (systick_fd, 750);
             while (read (keyboard_fd, &key, sizeof (int)) != -1 && key != 57 && key != -1);
             if (key == 57)
             {
                 break;
             }
             draw_box (vga_buff, 0, 150, 320, 50, 153);
-            busy_wait_ms (systick_fd, 50);
+            busy_wait_ms (systick_fd, 500);
             while (read (keyboard_fd, &key, sizeof (int)) != -1 && key != 57 && key != -1);
             if (key == 57)
             {
@@ -322,10 +300,7 @@ int _start() {
         while (1)
         {
 
-            busy_wait_ms (systick_fd, 25);
-
-            int n = snprintf (buff, sizeof (buff), "tick: %d\n", tick);
-            write (tty, buff, n);
+            busy_wait_ms (systick_fd, 250);
 
             if (next_fruit <= 0 && !fruit_valid)
             {
@@ -430,29 +405,27 @@ int _start() {
                 next_fruit--;
             }
             tick++;
-            n = snprintf (buff, sizeof (buff), "%d : %d\n", (unsigned) body[head].x, (unsigned)body[head].y);
-            write (tty, buff, n);
     }
     
 lost:
     draw_image (vga_buff, snake_dead_heads [prev_direction], garden_dims, body_part_dims, body[head],  (point_t){0, 0}, body_part_dims);
-    busy_wait_ms (systick_fd, 100);
+    busy_wait_ms (systick_fd, 1000);
 
     for (int i = tail; i != head; i = next_mod (i, MAX_BODY_PART))
     {
         draw_image (vga_buff, body_boom_bmp, garden_dims, body_part_dims, body[i],  (point_t){0, 0}, body_part_dims);
-        busy_wait_ms (systick_fd, 25);
+        busy_wait_ms (systick_fd, 250);
     }
     
     for (int i = tail; i != head; i = next_mod (i, MAX_BODY_PART))
     {
         draw_image (vga_buff, garden, garden_dims, garden_dims, body[i], body[i], body_part_dims);
-        busy_wait_ms (systick_fd, 25);
+        busy_wait_ms (systick_fd, 250);
     }
 
 
     load_image (vga_buff, "lost.bmp", 320, 200);
-    busy_wait_ms (systick_fd, 200);
+    busy_wait_ms (systick_fd, 2000);
 }
     while (1)
     {

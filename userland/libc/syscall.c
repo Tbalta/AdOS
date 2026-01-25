@@ -45,6 +45,13 @@ int read (int fd, void *buf, unsigned int count)
     return ret;
 }
 
+void _exit (int status)
+{
+    int ret;
+    int zero = 0;
+    syscall_3(1, status, zero, zero, ret);
+}
+
 int close (int fd)
 {
     int ret;

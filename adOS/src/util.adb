@@ -9,9 +9,10 @@
 
 with System;
 with System.Address_To_Access_Conversions;
-with Util;
-
+with Loggers;
 package body Util is
+   package Logger renames Loggers;
+
    function Read_String_From_Address (addr : System.Address) return String is
       function strlen (s : System.Address) return Integer;
       pragma Import (C, strlen, "strlen");
@@ -25,9 +26,9 @@ package body Util is
       return path_access.all;
    end Read_String_From_Address;
 
-   function Round (val : Integer; Alignment : Integer) return Integer is
+   function Round (val : Data_Type; Alignment : Data_Type) return Data_Type is
    begin
-      return ((val + Alignment - 1) / Alignment) * Alignment;
+      return ((val + Alignment - (Alignment / Alignment)) / Alignment) * Alignment;
    end Round;
 
    function sqrt (val : Float) return Float is
@@ -44,5 +45,33 @@ package body Util is
    begin
       return (a + b - (b / b)) / b;
    end Floor_Divide;
+
+   function To_Hex (a : Data_Type; Size : Natural := 0) return String is
+      hex_array : constant String := "0123456789ABCDEF";
+      String_Length : Positive := 1;
+
+      A_Param : Data_Type := A;
+   begin
+      if Size = 0 then
+         while (A_Param / Data_Type'Val (16)) /= Data_Type'Val (0) loop
+            String_Length := String_Length + 1;
+            A_Param := A_Param / Data_Type'Val (16);
+         end loop;
+      else
+         String_Length := Size;
+      end if;
+
+
+      A_Param := A;
+      return Result : String (1 .. String_Length + 2) do
+         Result := (others => '0');
+
+         for I in reverse 3 .. Result'Last loop
+            Result (I) := hex_array (Positive ((Data_Type'Pos (A_Param) mod 16) + 1));
+            A_Param := A_Param / Data_Type'Val (16);
+         end loop;
+         Result (1 .. 2) := "0x";
+      end return;
+   end To_Hex;
 
 end Util;

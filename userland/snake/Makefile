@@ -9,7 +9,7 @@ BIN_DIR = ../bin
 all: snake
 
 snake: $(OBJ)
-	$(CC) -o $(BIN_DIR)/$@.elf $(OBJ) $(CFLAGS)
+	$(CC) -o $(BIN_DIR)/$@.elf $(OBJ) ../libc/crt0.o $(CFLAGS)
 
 clean:
 	rm -f $(OBJ)

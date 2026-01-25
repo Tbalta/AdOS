@@ -5,10 +5,12 @@ with Ada.Assertions;
 --  with System.Secondary_Stack;
 with Loggers;
 with x86.vmm;
+with Util;
 
 package body x86.vmm is
    use Standard.ASCII;
-   package Logger renames Loggers.Serial_Logger;
+   pragma Assertion_Policy (Assert => Check);
+   package Logger renames Loggers;
 
    ----------------
    -- To_Address --
@@ -74,7 +76,9 @@ package body x86.vmm is
       --  Logger.Log_Info ("Enabling paging");
       --!format off
       Asm
-        ("movl %%cr0, %%eax" & LF & HT & "or $0x80000001, %%eax" & LF & HT & "movl %%eax, %%cr0",
+        ("movl %%cr0, %%eax"     & LF & HT &
+         "or $0x80000001, %%eax" & LF & HT &
+         "movl %%eax, %%cr0",
          Volatile => True);
       --!format off
       Paging_Enabled := True;
@@ -92,7 +96,9 @@ package body x86.vmm is
       --  Logger.Log_Info ("Disabling paging");
       --!format off
       Asm
-        ("mov %%cr0, %%eax" & LF & "and $0x7FFFFFFF, %%eax" & LF & "mov %%eax, %%cr0" & LF,
+        ("mov %%cr0, %%eax"       & LF & HT &
+         "and $0x7FFFFFFF, %%eax" & LF & HT &
+          "mov %%eax, %%cr0",
          Volatile => True);
       --!format on
       Paging_Enabled := False;
@@ -103,7 +109,12 @@ package body x86.vmm is
    ----------------
    function Create_CR3 return CR3_register is
       CR3 : CR3_register;
+      Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
    begin
+      if Paging_Currently_Enabled then
+         Disable_Paging;
+      end if;
+
       --  Used to allocate Page Directory table
       CR3.Address := To_Page_Address (Allocate_Page);
       CR3.PCD := True;
@@ -111,10 +122,14 @@ package body x86.vmm is
 
       --  Init the Page Directory
       declare
-         PD : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
+         PD : Page_Directory_Access := Get_Page_Directory (CR3);
       begin
          PD.all := Page_Directory'(others => (Present => False, others => <>));
       end;
+
+      if Paging_Currently_Enabled then
+         Enable_Paging;
+      end if;
 
       return CR3;
    end Create_CR3;
@@ -165,6 +180,11 @@ package body x86.vmm is
    begin
       return Kernel_CR3;
    end Get_Kernel_CR3;
+   
+   function Get_Process_CR3 return CR3_register is
+   begin
+      return Process_CR3;
+   end Get_Process_CR3;
 
    --------------------
    -- Set_Kernel_CR3 --
@@ -173,6 +193,114 @@ package body x86.vmm is
    begin
       Kernel_CR3 := CR3;
    end Set_Kernel_CR3;
+
+   procedure Set_Process_CR3 (CR3 : CR3_register) is
+   begin
+      Process_CR3 := CR3;
+   end Set_Process_CR3;
+
+   procedure Print_Mapped_Memory (CR3 : CR3_Register) is
+      Current_Region_Start : Virtual_Address_Break := Null_Address_Break;
+      Current_Region : Virtual_Address_Break := Null_Address_Break;
+
+      PD : Page_Directory_Access := Get_Page_Directory (CR3);
+      PT : Page_Table_Access := null;
+      Region_Valid : Boolean := false;
+
+      function Get_Region_Size return Storage_Count is
+      begin
+         return From_Virtual_Address_Break (Current_Region) - From_Virtual_Address_Break (Current_Region_Start);
+      end Get_Region_Size;
+
+      function Get_Flag_String return String is
+         Result : String (1 .. 3);
+         Is_Writable : Boolean := PT (Current_Region_Start.Table).Is_Writable;
+         Is_Usermode : Boolean := PT (Current_Region_Start.Table).Is_Usermode;
+      begin
+         if Is_Usermode then
+            Result (1) := 'U';
+         else
+            Result (1) := '-';
+         end if;
+            
+         Result (2) := 'R';
+         if Is_Writable then
+            Result (3) := '-';
+         else
+            Result (3) := 'W';
+         end if;
+
+         return Result;
+      end Get_Flag_String;
+
+      function To_Hex is new Util.To_Hex (Storage_Count);
+      procedure Print (Dir : Page_Directory_Index; Table : Page_Table_Index) is
+         Region_Start_Address : constant Virtual_Address := From_Virtual_Address_Break (Current_Region_Start);
+         Region_End_Address :   constant Virtual_Address := From_Virtual_Address_Break ((Directory => Dir, Table => Table, Offset => 0));
+      begin
+         Logger.Log_Info (To_Hex (Storage_Count (Region_Start_Address), 8)      & " " &
+                          To_Hex (Storage_Count (Region_End_Address), 8)        & " " &
+                          To_Hex (Region_End_Address - Region_Start_Address, 8) & " " &
+                          Get_Flag_String);
+      end Print;
+
+      procedure Test (Dir : Page_Directory_Index; Table : Page_Table_Index) is
+         Current_PT : Page_Table_Access := null;
+      begin
+         if not PD (Current_Region_Start.Directory).Present then
+            Current_Region_Start.Directory := Dir;
+            Current_Region_Start.Table := Table;
+            return;
+         end if;
+
+         PT := Get_Page_Table (CR3, Current_Region_Start.Directory);
+         if not PT (Current_Region_Start.Table).Present then
+            Current_Region_Start.Directory := Dir;
+            Current_Region_Start.Table := Table;
+            return;
+         end if;
+
+         if not PD (Dir).Present then
+            Print (Dir, Table);
+            Current_Region_Start.Directory := Dir;
+            Current_Region_Start.Table := Table;
+            return;
+         end if;
+
+         Current_PT := Get_Page_Table (CR3, Dir);
+         if not Current_PT (Table).Present then
+            Print (Dir, Table);
+            Current_Region_Start.Directory := Dir;
+            Current_Region_Start.Table := Table;
+            return;
+         end if;
+
+         if (Dir = Page_Directory'Last and Table = Page_Table'Last)                       or else
+            Current_PT (Table).Is_Usermode /= PT (Current_Region_Start.Table).Is_Usermode or else
+            Current_PT (Table).Is_Writable /= PT (Current_Region_Start.Table).Is_Writable
+         then
+            Print (Dir, Table);
+            Current_Region_Start.Directory := Dir;
+            Current_Region_Start.Table := Table;
+         end if;
+      end Test;
+
+      Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
+   begin
+      if Paging_Currently_Enabled then
+         Disable_Paging;
+      end if;
+      
+      for Dir in Page_Directory'Range loop
+         for Page in Page_Table'Range loop
+            Test (Dir, Page);
+         end loop;
+      end loop;
+
+      if Paging_Currently_Enabled then
+         Enable_Paging;
+      end if;
+   end Print_Mapped_Memory;
 
    -----------------------
    -- Create_Page_Table --
@@ -183,7 +311,11 @@ package body x86.vmm is
       PT          : out Page_Table_Access;
       Is_Writable : Boolean := False;
       Is_Usermode : Boolean := False) is
+
+      Page_To_Allocate : Physical_Address := Allocate_Page;
    begin
+      pragma Assert (not Is_Paging_Enabled);
+      Logger.Log_Info ("Create_Page_Table: Is_Writable" & Is_Writable'Image & " / Is_Usermode: " & Is_Usermode'Image);
       PD.all (PD_Index).Present := True;
       PD.all (PD_Index).Is_Writable := True;
       PD.all (PD_Index).Is_Usermode := True;
@@ -192,10 +324,16 @@ package body x86.vmm is
       PD.all (PD_Index).Accessed := False;
       PD.all (PD_Index).Page_Size := False;
       PD.all (PD_Index).Global := False;
-      PD.all (PD_Index).Address := To_Page_Address (Allocate_Page);
+      PD.all (PD_Index).Address := To_Page_Address (Page_To_Allocate);
 
-      PT := To_Page_Table (To_Address (PD.all (PD_Index).Address));
-      PT.all := Page_Table'(others => (others => <>));
+      pragma Assert (Page_To_Allocate = To_Address (PD (PD_Index).Address));
+      -- Logger.Log_Info ("PT:" & PD.all (PD_Index)'Image);
+      PT := To_Page_Table (To_Address (PD (PD_Index).Address));
+
+      for Index in PT.all'Range loop
+         PT (Index) := (Present => False, others => <>);
+      end loop;
+      -- PT.all := (others => (Present => False, others => <>));
    end Create_Page_Table;
 
    procedure Create_Page_Table
@@ -366,9 +504,13 @@ package body x86.vmm is
    procedure Identity_Map (CR3 : CR3_register) is
       PD                  : Page_Directory_Access := Get_Page_Directory (CR3);
       Address_Breakdown   : Virtual_Address_Break := To_Virtual_Address_Break (Null_Address);
-      PMM_Start_Breakdown : Virtual_Address_Break :=
-        To_Virtual_Address_Break (PMM.Get_Pmm_Start_Address);
+      PMM_Start_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (PMM.Get_Pmm_Start_Address);
+      Kernel_Start_Break  : Virtual_Address_Break := To_Virtual_Address_Break (Kernel_Start);
+      Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
    begin
+      if Paging_Currently_Enabled then
+         Disable_Paging;
+      end if;
 
       -- Identity map the kernel
       Logger.Log_Info ("Identity map kernel " & Kernel_Start'Image & "-" & Kernel_End'Image);
@@ -377,6 +519,14 @@ package body x86.vmm is
          Address_Breakdown.Directory,
          Address_Breakdown.Table,
          Null_Address,
+         Kernel_Start,
+         Is_Writable => False,
+         Is_Usermode => False);
+      Map_Range
+        (PD,
+         Kernel_Start_Break.Directory,
+         Kernel_Start_Break.Table,
+         Kernel_Start,
          Kernel_End,
          Is_Writable => True,
          Is_Usermode => False);
@@ -386,8 +536,12 @@ package body x86.vmm is
          PMM_Start_Breakdown.Table,
          PMM.Get_Pmm_Start_Address,
          PMM.Get_Pmm_End_Address,
-         Is_Writable => True,
+         Is_Writable => False,
          Is_Usermode => False);
+
+      if Paging_Currently_Enabled then
+         Enable_Paging;
+      end if;
    end Identity_Map;
 
    -------------
@@ -402,11 +556,7 @@ package body x86.vmm is
       To_Fit            : Storage_Count := Size;
    begin
       --  Logger.Log_Info ("Can_Fit: Checking if " & To_Fit'Image & " bytes can fit at " & Address'Image);
-      --  Logger.Log_Info
-      --    ("Can_Fit: Address breakdown: " &
-      --     Address_Breakdown.Directory'Image & " " &
-      --     Address_Breakdown.Table'Image & " " &
-      --     Address_Breakdown.Offset'Image);
+      --  Logger.Log_Info ("Can_Fit: Address breakdown: " & Address_Breakdown'Image);
       for PD_Index in Address_Breakdown.Directory .. Page_Directory'Last loop
          exit when To_Fit = 0;
          if not PD (PD_Index).Present then
@@ -442,11 +592,14 @@ package body x86.vmm is
       To_Fit : Storage_Count := Data_Size;
    begin
       if not Can_Fit (CR3, Address, Data_Size) then
+         Logger.Log_Error ("Cannot fit " & Data_Size'Image & " at " & Address'Image);
          return False;
       end if;
 
       while To_Fit > 0 loop
+         --  Logger.Log_Info ("At: " & Address_Breakdown'Image);
          if not PD.all (Address_Breakdown.Directory).Present then
+            Logger.Log_Info ("PTE entry not present");
             Create_Page_Table
               (PD,
                Address_Breakdown.Directory,
@@ -455,7 +608,7 @@ package body x86.vmm is
          end if;
 
          PT := Get_Page_Table (CR3, Address_Breakdown.Directory);
-
+         -- Logger.Log_Info ("PT: " & PT.all'Image);
          Map_Page_Table_Entry
            (PT,
             Address_Breakdown.Table,
@@ -516,6 +669,10 @@ package body x86.vmm is
       Breakdown      : Virtual_Address_Break := To_Virtual_Address_Break (Start);
       PD             : Page_Directory_Access := Get_Page_Directory (CR3);
    begin
+      if Breakdown = To_Virtual_Address_Break (Null_Address) then
+         Next (Breakdown.Directory, Breakdown.Table);
+      end if;
+
       for PD_Index in Breakdown.Directory .. Page_Directory'Last loop
          for PT_Index in Breakdown.Table .. Page_Table'Last loop
             if Can_Fit (CR3, From_Virtual_Address_Break (Breakdown), Size) then
@@ -545,7 +702,6 @@ package body x86.vmm is
       if Paging_Currently_Enabled then
          Disable_Paging;
       end if;
-
       Address_Breakdown := Find_Next_Space (CR3, Size, Null_Address);
       if Address_Breakdown = To_Virtual_Address_Break (Null_Address) then
          Logger.Log_Error ("No more free space in the Page Directory");
@@ -679,7 +835,7 @@ package body x86.vmm is
          Disable_Paging;
       end if;
 
-      for i in 0 .. Page_Count loop
+      for i in 1 .. Page_Count loop
          Unmap_Page (PD, Address_Breakdown.Directory, Address_Breakdown.Table, Free_Page);
          Next (Address_Breakdown.Directory, Address_Breakdown.Table);
       end loop;

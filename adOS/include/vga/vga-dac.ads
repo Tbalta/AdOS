@@ -17,21 +17,25 @@ with File_System;
 
 package VGA.DAC is
    pragma Preelaborate;
-
-   procedure Load_Default_Palette;
-   procedure Load_File (file : File_System.Path);
-
-private
    type Color is new Unsigned_6 range 0 .. 2 ** 6 - 1;
    for Color'Size use 8;
-
    type Palette_Color is record
       RED   : Color;
       Green : Color;
       Blue  : Color;
    end record;
 
-   type Palette is array (1 .. 256) of Palette_Color;
+   type Palette is array (1 .. 256) of Palette_Color
+      with Pack => True, Size => 256 * 8 * 3, Component_Size => 8 * 3;
+
+   procedure Load_Default_Palette;
+   procedure Load_File (file : File_System.Path);
+   procedure Prepare_For_Load;
+   procedure Load_Channel (C : Color);
+   procedure Load_Palette (P : in Palette);
+
+
+private
    Palette_Address_Register_Write_Address : constant x86.Port_IO.Port_Address := 16#03C8#;
    Palette_Data_Register_Address          : constant x86.Port_IO.Port_Address := 16#03C9#;
    DAC_State_Register_Address             : constant x86.Port_IO.Port_Address := 16#03C7#;

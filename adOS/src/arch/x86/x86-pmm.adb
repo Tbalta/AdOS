@@ -13,7 +13,8 @@ with System.Storage_Elements; use System.Storage_Elements;
 with Aligned_System_Address;
 with config;                  use config;
 with Loggers;
-
+with Util;
+with x86.vmm;
 package body x86.pmm is
    package Logger renames Loggers;
 
@@ -49,8 +50,9 @@ package body x86.pmm is
       use Util;
       use all type System.Address;
       Offset : Natural := 0;
+      function Round_64 is new Standard.Util.Round (Unsigned_64);
    begin
-      --  Logger.Log_Info ("Address_To_Offset_Unchecked - looking for " & addr'Image);
+      -- Logger.Log_Info ("Address_To_Offset_Unchecked - looking for " & addr'Image);
       --  Logger.Log_Info ("Max offset: " & Storage_Offset'Last'Image & " " & Standard'Address_Size'Image);
       for Index in Util.Headers.all'Range loop
          if addr in
@@ -60,7 +62,7 @@ package body x86.pmm is
          then
             return Offset + Natural ((To_Address (addr) - Headers (Index).base_addr) / PMM_PAGE_SIZE);
          end if;
-         Offset := Offset + Natural (Headers (Index).length / Unsigned_64 (PMM_PAGE_SIZE));
+         Offset := Offset + Natural (Round_64 (Headers (Index).length, Unsigned_64 (PMM_PAGE_SIZE)) / Unsigned_64 (PMM_PAGE_SIZE));
       end loop;
       Logger.Log_Error ("Address_To_Offset_Unchecked - unable to find Index for " & addr'Image);
       raise Constraint_Error;
@@ -73,21 +75,28 @@ package body x86.pmm is
       package Util is new PMM_Utils (PMM_Header_Address);
       use Util;
       Offset : Natural := paroffset;
+      function Round_64 is new Standard.Util.Round (Unsigned_64);
    begin
       for Index in Headers'Range loop
-         if Offset < Positive (Headers (Index).length / Unsigned_64 (PMM_PAGE_SIZE)) then
+         if Offset < Positive (Round_64 (Headers (Index).length, Unsigned_64 (PMM_PAGE_SIZE)) / Unsigned_64 (PMM_PAGE_SIZE)) then
             return
               Physical_Address
                 (Headers (Index).base_addr + (Storage_Count (Offset) * PMM_PAGE_SIZE));
          else
-            Offset := Offset - Positive (Headers (Index).length / Unsigned_64 (PMM_PAGE_SIZE));
+            Offset := Offset - Positive (Round_64 (Headers (Index).length, Unsigned_64 (PMM_PAGE_SIZE))  / Unsigned_64 (PMM_PAGE_SIZE));
          end if;
       end loop;
+
+      Logger.Log_Error ("Offset not found: " & paroffset'Image);
+      raise Storage_Error;
       return Physical_Address (0);
    end Offset_To_Address_Unchecked;
 
    function Offset_To_Address (paroffset : Natural) return Physical_Address
    is (Offset_To_Address_Unchecked (paroffset));
+
+   function Is_System_Address (addr : Physical_Address) return Boolean
+      is (addr < Physical_Address ((Storage_Count (Get_Pmm_End_Address + PMM_PAGE_SIZE - Storage_Count (1)) / PMM_PAGE_SIZE) * PMM_PAGE_SIZE));
 
    function Get_Next_Free_Page return Natural is
       use all type System.Address;
@@ -95,6 +104,7 @@ package body x86.pmm is
       package Util is new PMM_Utils (PMM_Header_Address);
       use Util;
    begin
+      pragma Assert (not x86.vmm.Is_Paging_Enabled);
       for Index in Util.Bitmap'Range loop
          if Util.Bitmap (Index) = PMM_Bitmap_Entry_Free then
             return Index;
@@ -110,10 +120,18 @@ package body x86.pmm is
       Offset : Natural := Get_Next_Free_Page;
       Result : Physical_Address;
    begin
-      Util.Bitmap (Offset) := PMM_Bitmap_Entry_Used;
+      pragma Assert (not x86.vmm.Is_Paging_Enabled);
       Result := Offset_To_Address (Offset);
-      Logger.Log_Info
-        ("PMM: Allocated page at " & To_Address (Result)'Image & " with offset " & Offset'Image);
+      if Is_System_Address (Result) then
+         Logger.Log_Error ("Allocating System_Address " & Result'Image & " at offset " & Offset'Image);
+         Logger.Log_Error ("Remaining PMM entry: " & Number_Of_Remaining_Pages'Image);
+         raise Program_Error;
+      end if;
+      Util.Bitmap (Offset) := PMM_Bitmap_Entry_Used;
+      Number_Of_Remaining_Pages := Number_Of_Remaining_Pages - 1;
+      --  Logger.Log_Info (PMM_Header_Address'Image);
+      --  Logger.Log_Info
+      --    ("PMM: Allocated page at " & To_Address (Result)'Image & " with offset " & Offset'Image & " | " & Util.Bitmap (Offset)'Address'Image);
       return Result;
    end Allocate_Page;
 
@@ -123,19 +141,23 @@ package body x86.pmm is
       Offset : Natural := Address_To_Offset (addr);
 
    begin
-      --  Logger.Log_Info
-      --    ("PMM: Freeing page at " & To_Address (addr)'Image & " with offset " & Offset'Image);
+      if Is_System_Address (addr) then
+         Logger.Log_Error ("Freeing System_Address " & addr'Image & " at offset " & Offset'Image);
+         raise Program_Error;
+      end if;
+      
       if Offset = -1 then
          return;
       end if;
       Util.Bitmap (Offset) := PMM_Bitmap_Entry_Free;
+      Number_Of_Remaining_Pages := Number_Of_Remaining_Pages + 1;
    end Free_Page;
 
    procedure Init (MB : multiboot_mmap) is
       package ASA is new Aligned_System_Address (PMM_PAGE_SIZE);
       use ASA;
 
-      pmmEntryCount     : Positive := 1;
+      pmmEntryCount     : Natural := 0;
       pmmHeaderCount    : Integer := 0;
       firstValidAddress : Unsigned_32 := 0;
       subtype Positive_Aligned_Address is Aligned_Address
@@ -146,6 +168,8 @@ package body x86.pmm is
       PMM_Bitmap_Address : Positive_Aligned_Address;
       PMM_Headers        : access PMM_Header_Info :=
         PMM_Header_Conv.To_Pointer (To_Address (Kernel_End));
+      
+      function Round_64 is new Standard.Util.Round (Unsigned_64);
    begin
       PMM_Header_Address := To_Address (Kernel_End);
       Logger.Log_Info ("PMM_Header_Address: " & PMM_Header_Address'Image);
@@ -158,7 +182,7 @@ package body x86.pmm is
                & MB (Index).base_addr'Image
                & " of size "
                & MB (Index).length'Image);
-            pmmEntryCount := pmmEntryCount + Positive (MB (Index).length / Unsigned_64 (PMM_PAGE_SIZE));
+            pmmEntryCount := pmmEntryCount + Positive (Round_64 (MB (Index).length, Unsigned_64 (PMM_PAGE_SIZE)) / Unsigned_64 (PMM_PAGE_SIZE));
             pmmHeaderCount := pmmHeaderCount + 1;
          end if;
       end loop;
@@ -202,6 +226,7 @@ package body x86.pmm is
          PMM_Headers.Bitmap := PMM_Bitmap_Address;
          Logger.Log_Info ("PMM_Bitmap start at: " & PMM_Bitmap_Address'Image);
          Logger.Log_Info ("PMM_Bitmap number of element: " & pmmEntryCount'Image);
+         Number_Of_Remaining_Pages := pmmEntryCount;
       end;
 
       ------------------------------------------------------------------------
@@ -211,25 +236,33 @@ package body x86.pmm is
          package Util is new PMM_Utils (PMM_Header_Address);
          use Util;
       begin
-         PMM_Bitmap_End_Address := Align (PMM_Bitmap_Address + Storage_Count ((PMM_Bitmap'Size + 1) / 8));
+         PMM_Bitmap_End_Address := Align (PMM_Bitmap_Address + Storage_Count ((PMM_Bitmap'Size + 7) / 8));
          Logger.Log_Info
            ("Address_To_Offset"
             & Address_To_Offset (Physical_Address (PMM_Bitmap_End_Address))'Image
             & " "
             & Offset_To_Address (Address_To_Offset (To_Address (4_098)))'Image);
          --  Masking the kernel memory.
+         
+         for Index in Util.Bitmap'Range loop
+            Util.Bitmap (Index) := PMM_Bitmap_Entry_Free;
+         end loop;
          Logger.Log_Info
            ("Masking kernel memory. (0 - " & Address_To_Offset (Kernel_End)'Image & ")");
          for Index in 0 .. Positive (Address_To_Offset (Kernel_End)) loop
             Util.Bitmap (Index) := PMM_Bitmap_Entry_Used;
+            Number_Of_Remaining_Pages := Number_Of_Remaining_Pages - 1;
          end loop;
 
          -- Masking the headers and the bitmap.
+         Logger.Log_Info ("Masking PMM entry. (" & Address_To_Offset (Physical_Address (PMM_Header_Address))'Image
+                           & " .. " & Address_To_Offset (Physical_Address (PMM_Bitmap_End_Address))'Image & ")");
          for Index
            in Positive (Address_To_Offset (Physical_Address (PMM_Header_Address)))
            .. Positive (Address_To_Offset (Physical_Address (PMM_Bitmap_End_Address)))
          loop
             Util.Bitmap (Index) := PMM_Bitmap_Entry_Used;
+            Number_Of_Remaining_Pages := Number_Of_Remaining_Pages - 1;
          end loop;
       end;
    end Init;

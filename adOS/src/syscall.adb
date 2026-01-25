@@ -13,10 +13,11 @@ with System.Address_To_Access_Conversions;
 with Interfaces.C;
 with Util;
 with System.Storage_Elements; use System.Storage_Elements;
-with VGA.Sequencer;
+with VGA;
+with System.Machine_Code;
 
 package body Syscall is
-   package Logger renames Loggers.Serial_Logger;
+   package Logger renames Loggers;
 
    --------------------
    -- Handle Syscall --
@@ -31,9 +32,12 @@ package body Syscall is
       process : in x86.vmm.CR3_register;
       result  : out Syscall_Result) is
    begin
-      --  Logger.Log_Info ("Handling syscall number: " & number'Image);
       x86.vmm.Enable_Kernel_Mapping;
+      -- Logger.Log_Info ("Handling syscall number: " & number'Image);
       case number is
+         when SYSCALL_EXIT =>
+            Exit_Syscall (arg1, process);
+
          when SYSCALL_READ =>
             Read_Syscall (arg1, System.Address (arg2), Storage_Count (arg3), process, result);
 
@@ -59,6 +63,20 @@ package body Syscall is
       end case;
    end Handle_Syscall;
 
+   ------------------
+   -- Exit Syscall --
+   ------------------
+   procedure Exit_Syscall 
+      (Status : in  Unsigned_32;
+      Process : in x86.vmm.CR3_Register) is
+   begin
+      VGA.Set_Text_Mode (80, 25, 16);
+      VGA.load_palette ("vga_tui.hex");
+      Logger.Log_Info ("Process exited with status " & Status'Image);
+      while True loop
+         System.Machine_Code.Asm (Template => "hlt", Volatile => True);
+      end loop;
+   end Exit_Syscall;
 
    -------------------
    -- Write Syscall --
@@ -262,17 +280,26 @@ package body Syscall is
       File_Buffer : System.Address := System.Null_Address;
       Kernel_CR3  : constant x86.vmm.CR3_register := x86.vmm.Get_Kernel_CR3;
    begin
+      Logger.Log_Info ("Mmap_Syscall fd: " & Integer (arg5)'Image);
       if not File_System.Is_File_Descriptor (Integer (arg5)) then
          Logger.Log_Error ("Mmap_Syscall - Invalid file descriptor: " & arg5'Image);
          result.Signed_Value := -1;
          return;
       end if;
+
+      if flags = 1 then
+         Logger.Log_Info ("Trying to call mmap with flags 1");
+         result.Unsigned_Value := Interfaces.Unsigned_32 (x86.vmm.Kernel_Alloc (CR3 => process, Size => length, Is_Writable => True, Is_Usermode => True));
+         x86.vmm.Print_Mapped_Memory (Kernel_CR3);
+         return;
+      end if;
+
       fd := File_System.File_Descriptor (arg5);
 
       File_Buffer := File_System.mmap (fd, length);
       if File_Buffer = System.Null_Address then
          Logger.Log_Error ("Mmap_Syscall - Unable to retrieve File_Buffer for fd " & fd'Image);
-         result.Signed_Value := -1;
+         result.Signed_Value := 0;
          return;
       end if;
 

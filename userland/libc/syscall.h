@@ -6,6 +6,8 @@ int write (int fd, const void *buf, unsigned int count);
 int read (int fd, void *buf, unsigned int count);
 int close (int fd);
 int open (const char *pathname, int flags);
+void _exit (int status);
+
 
 #define SYS_READ 3
 #define SYS_WRITE 4

@@ -2,7 +2,7 @@
 #include "syscall.h"
 #include "stdio.h"
 #include <stddef.h>
-
+#include "vga.h"
 int set_vga_mode (int width, int height, int color_depth)
 {
     int vga_width = open("vga_width", 0);
@@ -86,4 +86,16 @@ void load_image (char* framebuffer, const char* path, int width, int height)
     }
 
     close (image);
+}
+
+int set_palette (vga_color_t *palette, int palette_fd)
+{
+    if (palette_fd == -1)
+    {
+        return -1;
+    }
+
+    write (palette_fd, palette, VGA_PALETTE_SIZE * sizeof (vga_color_t));
+        
+    return 0;
 }

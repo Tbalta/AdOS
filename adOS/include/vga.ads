@@ -44,31 +44,32 @@ package VGA is
       Pixel_Height : Positive;
    end record;
 
-   type VGA_Modes is array (Natural range 0 .. 16) of VGA_Mode;
+   type VGA_Modes is array (Natural range <>) of VGA_Mode;
    Modes : VGA_Modes :=
-     (0  => (alphanumeric, 16, (40, 25), (8, 8), 320, 200),
-      1  => (alphanumeric, 16, (40, 25), (8, 14), 320, 350),
-      2  => (alphanumeric, 16, (40, 25), (9, 16), 360, 400),
-      3  => (alphanumeric, 16, (80, 25), (8, 8), 640, 200),
-      4  => (alphanumeric, 16, (80, 25), (8, 14), 640, 350),
-      5  => (alphanumeric, 16, (80, 25), (9, 16), 720, 400),
-      6  => (all_point_addressable, 4, (40, 25), (8, 8), 320, 200),
-      7  => (all_point_addressable, 2, (80, 25), (8, 8), 640, 200),
-      8  => (alphanumeric, 0, (80, 25), (9, 14), 720, 350),
-      9  => (alphanumeric, 0, (80, 25), (9, 16), 720, 400),
-      10 => (all_point_addressable, 16, (40, 25), (8, 8), 320, 200),
-      11 => (all_point_addressable, 16, (80, 25), (8, 8), 640, 200),
-      12 => (all_point_addressable, 0, (80, 25), (8, 1), 640, 350),
-      13 => (all_point_addressable, 16, (80, 25), (8, 1), 640, 350),
-      14 => (all_point_addressable, 2, (80, 30), (8, 1), 640, 480),
-      15 => (all_point_addressable, 16, (80, 30), (8, 1), 640, 480),
-      16 => (all_point_addressable, 256, (40, 25), (8, 8), 320, 200));
+     ((alphanumeric, 16, (40, 25), (8, 8), 320, 200),
+      (alphanumeric, 16, (40, 25), (8, 14), 320, 350),
+      (alphanumeric, 16, (40, 25), (9, 16), 360, 400),
+      --  (alphanumeric, 16, (80, 25), (8, 8), 640, 200),
+      --  (alphanumeric, 16, (80, 25), (8, 14), 640, 350),
+      (alphanumeric, 16, (80, 25), (9, 16), 720, 400),
+      (all_point_addressable, 4, (40, 25), (8, 8), 320, 200),
+      (all_point_addressable, 2, (80, 25), (8, 8), 640, 200),
+      --  (alphanumeric, 0, (80, 25), (9, 14), 720, 350),
+      --  (alphanumeric, 0, (80, 25), (9, 16), 720, 400),
+      (all_point_addressable, 16, (40, 25), (8, 8), 320, 200),
+      (all_point_addressable, 16, (80, 25), (8, 8), 640, 200),
+      (all_point_addressable, 0, (80, 25), (8, 1), 640, 350),
+      (all_point_addressable, 16, (80, 25), (8, 1), 640, 350),
+      (all_point_addressable, 2, (80, 30), (8, 1), 640, 480),
+      (all_point_addressable, 16, (80, 30), (8, 1), 640, 480),
+      (all_point_addressable, 256, (40, 25), (8, 8), 320, 200));
 
    function Find_Mode
      (Width, Height, Color_Depth : Positive; graphic_mode : Mode_Type) return VGA_Mode;
 
    function Get_Frame_Buffer return System.Address;
    procedure Dump_Registers;
+   function Is_In_Graphic_Mode return Boolean;
 
    procedure Set_Graphic_Mode (Width, Height, Color_Depth : Positive);
    procedure Set_Text_Mode (Width, Height, Color_Depth : Positive);
@@ -128,5 +129,8 @@ private
        (Miscellaneous_Output_Register_Write_Address,
         Miscellaneous_Output_Register);
 
+   -- Static Variables --
+   Default_Mode : constant  Mode_Type := alphanumeric;
+   Current_Mode : Mode_Type := Default_Mode;
 
 end VGA;

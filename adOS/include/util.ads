@@ -13,7 +13,13 @@ package Util is
 
    function Read_String_From_Address (addr : System.Address) return String;
 
-   function Round (val : Integer; Alignment : Integer) return Integer;
+   generic
+      type Data_Type is (<>);
+      with function "+" (Left, Right : Data_Type) return Data_Type is <>;
+      with function "-" (Left, Right : Data_Type) return Data_Type is <>;
+      with function "/" (Left, Right : Data_Type) return Data_Type is <>;
+      with function "*" (Left, Right : Data_Type) return Data_Type is <>;
+      function Round (val : Data_Type; Alignment : Data_Type) return Data_Type;
 
    function sqrt (val : Float) return Float;
 
@@ -23,5 +29,11 @@ package Util is
       with function "-" (Left, Right : Data_Type) return Data_Type is <>;
       with function "/" (Left, Right : Data_Type) return Data_Type is <>;
    function Floor_Divide (a, b : Data_Type) return Data_Type;
+   
+   generic
+      type Data_Type is(<>);
+      with function "/" (Left, Right : Data_Type) return Data_Type is <>;
+      with function "mod" (Left, Right : Data_Type) return Data_Type is <>;
+   function To_Hex (a : Data_Type; Size : Natural := 0) return String;
 
 end Util;
