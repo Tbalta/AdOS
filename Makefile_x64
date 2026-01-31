@@ -1,0 +1,100 @@
+.POSIX:
+.PHONY: clean run run-img main.elf folder
+
+OBJ = obj
+
+qemu_param = -no-reboot -boot d -serial mon:stdio -m 2G
+
+ifeq ($(SKIP_RAMDISK), TRUE)
+docker_make_flags = SKIP_RAMDISK=TRUE
+endif
+
+.PHONY: userland
+
+
+all: main.iso
+
+folder:
+	mkdir -p iso/boot/limine
+	mkdir -p iso/EFI/BOOT
+
+
+main.iso: folder main.elf userland limine
+	cp main.elf iso/boot
+	cp limine.conf limine/limine-bios.sys limine/limine-bios-cd.bin limine/limine-uefi-cd.bin iso/boot/limine/
+
+	cp limine/BOOTX64.EFI iso/EFI/BOOT/
+	cp limine/BOOTIA32.EFI iso/EFI/BOOT/
+
+	xorriso -as mkisofs -R -r -J -b boot/limine/limine-bios-cd.bin \
+        -no-emul-boot -boot-load-size 4 -boot-info-table -hfsplus \
+        -apm-block-size 2048 --efi-boot boot/limine/limine-uefi-cd.bin \
+        -efi-boot-part --efi-boot-image --protective-msdos-label \
+        iso -o '$@'
+
+	./limine/limine bios-install '$@'
+
+limine:
+	$(MAKE) -C limine
+
+
+make_dir:
+	mkdir -p iso/bin
+
+userland: make_dir
+	$(MAKE) -C userland
+	cp userland/bin/* iso/bin/
+
+
+main.elf: ramdisk_content.o
+	cd runtime && gprbuild -Xplatform=x86_64-elf
+	gprbuild -Xplatform=x86_64-elf
+
+clean:
+	cd runtime && gprclean
+	$(MAKE) -C userland clean
+	$(RM) -r iso/bin ramdisk.iso
+	$(RM) iso/boot/main.elf
+	gprclean
+
+run:
+	qemu-system-x86_64 -cdrom main.iso $(qemu_param)
+
+debug:
+	qemu-system-x86_64 -cdrom '$<' $(qemu_param) -s -S
+
+format:
+	gnatformat  -P default.gpr -w 100 $(shell find adOS/ -name '*.adb' -or -name '*.ads')
+
+docker-make:
+	docker-compose -f .docker/docker-compose.yml run --rm ados make -f Makefile_x64 $(docker_make_flags)
+	qemu-system-x86_64 -cdrom main.iso $(qemu_param)
+
+docker-build:
+	docker-compose -f .docker/docker-compose.yml build ados
+
+docker-run:
+	docker-compose -f .docker/docker-compose.yml run --rm ados
+
+docker-debug:
+	docker-compose -f .docker/docker-compose.yml run --rm ados make
+	qemu-system-x86_64 -cdrom main.iso $(qemu_param) -s -S
+
+gdb:
+	gdb -ex "target remote localhost:1234" main.elf
+
+ifeq ($(SKIP_RAMDISK), TRUE)
+ramdisk_content.o: userland
+	$(RM) main.elf
+	$(RM) iso/boot/main.elf
+	$(RM) -r obj/ramdisk_content.o ramdisk.iso
+	genisoimage -o ramdisk.iso /dev/null
+	objcopy --input binary --output elf64-x86-64 ramdisk.iso obj/ramdisk_content.o
+else
+ramdisk_content.o: userland
+	$(RM) main.elf
+	$(RM) iso/boot/main.elf
+	$(RM) -r obj/ramdisk_content.o ramdisk.iso
+	genisoimage -o ramdisk.iso iso/
+	objcopy --input binary --output elf64-x86-64 ramdisk.iso obj/ramdisk_content.o
+endif

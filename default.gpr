@@ -1,14 +1,41 @@
 project Default is
-    for Source_Dirs use ("./adOS/**");
+   type Platform_Type is ("i386-elf", "x86_64-elf");
+   Platform    := external ("platform", "i386-elf");
+
+    Linker_File := "linker_i386.ld";
+    case Platform is
+      when "i386-elf" =>
+        Linker_File := "linker_i386.ld";
+      when "x86_64-elf" =>
+        Linker_File := "linker_x86_64.ld";
+      when others =>
+        Linker_File := "linker_i386.ld";
+    end case;
+
+    Ados_Source_Dirs := ("./adOS/src/**", "./adOS/include/**");
+    case Platform is
+      when "i386-elf" =>
+        for Source_Dirs use Ados_Source_Dirs & ("./adOS/arch/i386/**"); 
+      when "x86_64-elf" =>
+        for Source_Dirs use Ados_Source_Dirs & ("./adOS/arch/x86_64/**");        
+        
+    end case;
+
     for Object_Dir   use  "obj";
     for Exec_Dir     use  ".";
 
     for Languages use ("ada", "c", "nasm");
-    for Main use ("entry.asm");
+
+    case Platform is
+      when "i386-elf" =>
+         for Main use ("entry.asm");
+      when "x86_64-elf" =>
+         for Main use ("cutil.c");
+    end case;
     for Create_Missing_Dirs use "True";
 
     External_Object_Files := (
-      Default'Project_Dir & Default'Object_Dir & "/cutil.o",
+      -- Default'Project_Dir & Default'Object_Dir & "/cutil.o",
       Default'Project_Dir & Default'Object_Dir & "/ramdisk_content.o"
     );
 
@@ -17,53 +44,78 @@ project Default is
     end Naming;
 
     package Compiler is
-      for Default_Switches ("ada") use (
-        "-m32",
+      Basic_Switches := (
         "-O0",
         "-ffunction-sections",
         "-fdata-sections",
         "-fno-omit-frame-pointer",
         "-ggdb",
-        "-g",
-        "-gnata",
-        "-gnatwM",
-        "-fno-exceptions",
-        "-gnat2020"
+        "-g");
+      
+      Ada_Basic_Switches := (
+         "-gnata",
+         "-gnatwM",
+         "-fno-exceptions",
+         "-gnat2020"
       );
 
-      for Default_Switches ("c") use (
-        "-m32",
-        "-O0",
+      C_Basic_Switches := (
         "-ffreestanding",
-        "-ffunction-sections",
-        "-fdata-sections",
-        "-fno-omit-frame-pointer",
-        "-ggdb",
-        "-g",
         "-nostdlib",
         "-Iruntime/libc/include",
         "-fno-exceptions",
+        "-fno-pie",
         "-fno-rtti"
-        );
+      );
+
+
+      case Platform is
+        when "i386-elf" =>
+          for Default_Switches ("c") use Basic_Switches & C_Basic_Switches & ("-m32");
+          for Default_Switches ("ada") use Basic_Switches & Ada_Basic_Switches & ("-m32");
+        when "x86_64-elf" =>
+          for Default_Switches ("c") use Basic_Switches & C_Basic_Switches & (
+            "-m64",
+            "-fno-PIC",
+            "-mcmodel=kernel");
+          for Default_Switches ("ada") use Basic_Switches & Ada_Basic_Switches &
+            ("-m64",
+             "-fno-PIC",
+             "-mcmodel=kernel");
+      end case;
 
       for Driver ("nasm") use "nasm";
-      for Default_Switches ("nasm") use ("-f elf32", "-g");
+
+      case Platform is
+        when "i386-elf" =>
+          for Default_Switches ("nasm") use ("-f elf32", "-g");
+        when "x86_64-elf" =>
+          for Default_Switches ("nasm") use ("-f elf64", "-g");
+      end case;
       for Object_File_Switches ("nasm") use ("-o", "");
    end Compiler;
 
   package Builder is
-    for Executable ("entry.asm") use "main";
+   case Platform is
+      when "i386-elf" =>
+         for Executable ("entry.asm") use "main";
+      when "x86_64-elf" =>
+         for Executable ("cutil.c") use "main";
+    end case;
+
     for Executable_Suffix use ".elf";
     for Global_Configuration_Pragmas use "ada.adc";
     for Default_Switches ("ada") use ("-nostdlib", "-nostdinc");
   end Builder;
 
   package Linker is
-    for Leading_Switches ("nasm") use External_Object_Files;
+    for Leading_Switches (others) use External_Object_Files;
     for Required_Switches use (
-        "-T" & Default'Project_Dir & "linker.ld",
+        "-T" & Default'Project_Dir & Linker_File,
         "-static", "-nostartfiles", "-nodefaultlibs",
-        "-g", "-fno-exceptions", "-fno-rtti"
+        "-g", "-fno-exceptions", "-fno-rtti",
+        "-lgcc",
+         "-mcmodel=kernel"
         -- "-Lruntime/build/adalib"
         -- "-lgnat", 
         -- "L.",
@@ -75,5 +127,5 @@ project Default is
   end Binder;
   
   for Runtime("ada") use "runtime/build";
-  for Target use "i386-elf";
+  for Target use Platform;
 end Default;

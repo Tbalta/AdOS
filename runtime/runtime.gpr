@@ -1,4 +1,8 @@
 library project Runtime is
+   type Platform_Type is ("i386-elf", "x86_64-elf");
+   Platform    := external ("platform", "i386-elf");
+
+
    --  Tells Gprbuild to create any missing directories in the build process.
    for Create_Missing_Dirs use "True";
    --  The source files for the run-time library.
@@ -51,7 +55,8 @@ library project Runtime is
         --  '-fdata-sections' directives as detailed above.
         "-Wl,--gc-sections",
         "-g",
-        "-fno-exceptions"
+        "-fno-exceptions",
+         "-mcmodel=kernel"
       );
       for Default_Switches ("C") use ("-g");
    end Compiler;
@@ -72,5 +77,5 @@ library project Runtime is
    --  itself.
    for Runtime ("Ada") use "build";
  
-   for Target use "i386-elf";
+   for Target use Platform;
 end Runtime;

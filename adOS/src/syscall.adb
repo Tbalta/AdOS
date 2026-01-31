@@ -23,12 +23,12 @@ package body Syscall is
    -- Handle Syscall --
    --------------------
    procedure Handle_Syscall
-     (number  : in Unsigned_32;
-      arg1    : in Unsigned_32;
-      arg2    : in Unsigned_32;
-      arg3    : in Unsigned_32;
-      arg4    : in Unsigned_32;
-      arg5    : in Unsigned_32;
+     (number  : in Syscall_Arg;
+      arg1    : in Syscall_Arg;
+      arg2    : in Syscall_Arg;
+      arg3    : in Syscall_Arg;
+      arg4    : in Syscall_Arg;
+      arg5    : in Syscall_Arg;
       process : in x86.vmm.CR3_register;
       result  : out Syscall_Result) is
    begin
@@ -67,7 +67,7 @@ package body Syscall is
    -- Exit Syscall --
    ------------------
    procedure Exit_Syscall 
-      (Status : in  Unsigned_32;
+      (Status : in  Syscall_Arg;
       Process : in x86.vmm.CR3_Register) is
    begin
       VGA.Set_Text_Mode (80, 25, 16);
@@ -82,7 +82,7 @@ package body Syscall is
    -- Write Syscall --
    -------------------
    procedure Write_Syscall
-     (arg1    : in Unsigned_32;
+     (arg1    : in Syscall_Arg;
       buffer  : in System.Address;
       count   : in Storage_Count;
       process : in x86.vmm.CR3_register;
@@ -122,7 +122,7 @@ package body Syscall is
       kernel_buffer_access := Conversion.To_Pointer (Kernel_Buffer);
 
       -- write --
-      result.Signed_Value := Integer_32 (Write (fd, kernel_buffer_access));
+      result.Signed_Value := Signed_Syscall_Output (Write (fd, kernel_buffer_access));
       --  Logger.Log_Info ("Write_Syscall'Result=" & result.Signed_Value'Image);
       x86.vmm.Memory_Unmap (Kernel_CR3, Kernel_Buffer, count, False);
    end Write_Syscall;
@@ -132,7 +132,7 @@ package body Syscall is
    -- Read Syscall --
    ------------------
    procedure Read_Syscall
-     (arg1    : in Unsigned_32;
+     (arg1    : in Syscall_Arg;
       buffer  : in System.Address;
       count   : in Storage_Count;
       process : in x86.vmm.CR3_register;
@@ -172,7 +172,7 @@ package body Syscall is
       kernel_buffer_access := Conversion.To_Pointer (Kernel_Buffer);
 
       -- read --
-      result.Signed_Value := Integer_32 (Read (fd, kernel_buffer_access));
+      result.Signed_Value := Signed_Syscall_Output (Read (fd, kernel_buffer_access));
       --  Logger.Log_Info ("Read_Syscall'Result=" & result.Signed_Value'Image);
       x86.vmm.Memory_Unmap (Kernel_CR3, Kernel_Buffer, count, False);
    end Read_Syscall;
@@ -183,7 +183,7 @@ package body Syscall is
    ------------------
    procedure Open_Syscall
      (File_Path : in System.Address;
-      flag      : in Unsigned_32;
+      flag      : in Syscall_Arg;
       process   : in x86.vmm.CR3_register;
       result    : out Syscall_Result)
    is
@@ -204,7 +204,7 @@ package body Syscall is
       declare
          Path_String : constant String := Util.Read_String_From_Address (Kernel_Path);
       begin
-         result.Signed_Value := Integer_32 (open (File_System.Path (Path_String), Integer (flag)));
+         result.Signed_Value := Signed_Syscall_Output (open (File_System.Path (Path_String), Integer (flag)));
          Logger.Log_Info
            ("Open_Syscall: Opening file: " & Path_String & " FD: " & result.Signed_Value'Image);
       end;
@@ -216,7 +216,7 @@ package body Syscall is
    -- Close_Syscall --
    -------------------
    procedure Close_Syscall
-     (arg1 : in Unsigned_32; process : in x86.vmm.CR3_register; result : out Syscall_Result)
+     (arg1 : in Syscall_Arg; process : in x86.vmm.CR3_register; result : out Syscall_Result)
    is
       fd : File_System.File_Descriptor;
    begin
@@ -227,16 +227,16 @@ package body Syscall is
       end if;
       fd := File_System.File_Descriptor (arg1);
 
-      result.Signed_Value := Integer_32 (File_System.close (fd));
+      result.Signed_Value := Signed_Syscall_Output (File_System.close (fd));
    end Close_Syscall;
 
    ------------------
    -- Seek_Syscall --
    ------------------
    procedure Seek_Syscall
-     (arg1    : Unsigned_32;
-      arg2    : Unsigned_32;
-      arg3    : Unsigned_32;
+     (arg1    : Syscall_Arg;
+      arg2    : Syscall_Arg;
+      arg3    : Syscall_Arg;
       process : in x86.vmm.CR3_register;
       result  : out Syscall_Result)
    is
@@ -258,7 +258,7 @@ package body Syscall is
       end if;
       whence := File_System.whence'Enum_Val (arg3);
 
-      result.Signed_Value := Integer_32 (File_System.seek (fd, offset, whence));
+      result.Signed_Value := Signed_Syscall_Output (File_System.seek (fd, offset, whence));
    end Seek_Syscall;
 
    ------------------
@@ -267,10 +267,10 @@ package body Syscall is
    procedure Mmap_Syscall
      (addr    : System.Address;
       length  : Storage_Count;
-      prot    : Unsigned_32;
-      flags   : Unsigned_32;
-      arg5    : Unsigned_32;
-      --  offset : Unsigned_32;
+      prot    : Syscall_Arg;
+      flags   : Syscall_Arg;
+      arg5    : Syscall_Arg;
+      --  offset : Syscall_Arg;
       process : in x86.vmm.CR3_register;
       result  : out Syscall_Result)
    is
@@ -289,7 +289,7 @@ package body Syscall is
 
       if flags = 1 then
          Logger.Log_Info ("Trying to call mmap with flags 1");
-         result.Unsigned_Value := Interfaces.Unsigned_32 (x86.vmm.Kernel_Alloc (CR3 => process, Size => length, Is_Writable => True, Is_Usermode => True));
+         result.Unsigned_Value := Unsigned_Syscall_Output (x86.vmm.Kernel_Alloc (CR3 => process, Size => length, Is_Writable => True, Is_Usermode => True));
          x86.vmm.Print_Mapped_Memory (Kernel_CR3);
          return;
       end if;
@@ -304,7 +304,7 @@ package body Syscall is
       end if;
 
       result.Unsigned_Value :=
-        Unsigned_32
+        Unsigned_Syscall_Output
           (x86.vmm.Process_To_Process_Map
              (Source_CR3     => Kernel_CR3,
               Source_Address => File_Buffer,

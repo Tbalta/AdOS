@@ -27,10 +27,15 @@ RUN chmod +x /src/gnat_crosscompile.sh
 COPY .bashrc /root/.bashrc
 
 
-RUN /src/gnat_crosscompile.sh
+RUN /src/gnat_crosscompile.sh x86_64-elf
+ENV PATH="$PATH:/opt/cross/x86_64-elf/bin"
+
+RUN /src/gnat_crosscompile.sh i386-elf
 ENV PATH="$PATH:/opt/cross/i386-elf/bin"
 
 RUN ln -s /opt/cross/i386-elf/bin/i386-elf-gcc /opt/cross/i386-elf/bin/i386-elf-gnatgcc
+RUN ln -s /opt/cross/x86_64-elf/bin/x86_64-elf-gcc /opt/cross/x86_64-elf/bin/x86_64-elf-gnatgcc
+
 COPY linker.xml /usr/share/gprconfig/linker.xml
 COPY compilers.xml /usr/share/gprconfig/compilers.xml
 
