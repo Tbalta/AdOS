@@ -153,15 +153,26 @@ static void hcf(void) {
 // If renaming kmain() to something else, make sure to change the
 // linker script accordingly.
 void loader_x64(void) {
+    extern void adainit(void);
+    extern void _ada_main(int argc, char **argv);
+    LOG("Hello from adOS kernel!");
+    adainit();
+    LOG("Ada runtime initialized.");
+    _ada_main(8, NULL);
     // Ensure the bootloader actually understands our base revision (see spec).
     if (LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision) == false) {
-        hcf();
+        for (;;) {
+        asm ("hlt");
+        }
     }
 
     // Ensure we got a framebuffer.
     if (framebuffer_request.response == NULL
      || framebuffer_request.response->framebuffer_count < 1) {
-        hcf();
+
+            for (;;) {
+        asm ("hlt");
+    }
     }
 
     // Fetch the first framebuffer.
@@ -174,7 +185,9 @@ void loader_x64(void) {
     }
 
     // We're done, just hang...
-    hcf();
+       for (;;) {
+        asm ("hlt");
+    }
 }
 
 // void loader_x64(void)

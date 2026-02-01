@@ -70,34 +70,71 @@ package x86.idt is
    type Handler_Proc is access procedure (stf : stack_frame);
 
    type gate_type is
-     (task_gate, interrupt_16_bits, trap_gate_16_bits, interrupt_32_bits, trap_gate_32_bits)
+     (interrupt_64_bits, trap_gate_64_bits)
    with Size => 4;
    for gate_type use
-     (task_gate         => 16#5#,
-      interrupt_16_bits => 16#6#,
-      trap_gate_16_bits => 16#7#,
-      interrupt_32_bits => 16#E#,
-      trap_gate_32_bits => 16#F#);
+     (interrupt_64_bits => 16#E#,
+      trap_gate_64_bits => 16#F#);
 
+   type Cpu_Privilege_Level is
+     (CPL0, CPL1, CPL2, CPL3);
+   for Cpu_Privilege_Level use
+     (CPL0 => 0,
+      CPL1 => 1,
+      CPL2 => 2,
+      CPL3 => 3);
+
+
+   -- Figure 7-8. 64-Bit IDT Gate Descriptors --
+--    +-------------------------------------------------------------------+
+--    |31                                                                0|  12
+--    |                       reserved                                    |
+--    +-------------------------------------------------------------------+
+
+--    +-------------------------------------------------------------------+
+--    |31                                                                0|  8
+--    |                       Offset[63:32]                               |
+--    +-------------------------------------------------------------------+
+
+--    +---------------------------------+----+-----+---+------+------+----+
+--    |31                             16| 15 |14 13|12 |11   8|7    3|2  0|  4
+--    |           Offset                | P  | DPL | 0 | Type | 0    | IST|
+--    +---------------------------------+----+-----+---+------+------+----+
+
+--    +---------------------------------+---------------------------------+
+--    |31                             16|15                              0|  0
+--    |              Segment Selector   |    Offset[15:0]                 |  
+--    +-------------------------------------------------------------------+
    type idt_entry is record
-      offset      : Unsigned_16;
+      offset_low  : Unsigned_16;
       selector    : Unsigned_16;
+
+      IST         : Unsigned_3;
+      zero_1      : Unsigned_4;
       entry_type  : gate_type;
-      zero        : Unsigned_8 range 0 .. 1;
-      DPL         : Unsigned_8 range 0 .. 3;
+      zero_2      : Unsigned_1;
+      DPL         : Cpu_Privilege_Level;
       present     : Boolean;
-      offset_high : Unsigned_16;
+
+      offset_high : Unsigned_48;
    end record
-   with Size => 64;
+      with Size => 4 * 32,
+           Dynamic_Predicate => (
+            present = True and zero_1 = 0 and zero_2 = 0);
+
    for idt_entry use
      record
-       offset at 0 range 0 .. 15;
+       offset_low at 0 range 0 .. 15;
        selector at 0 range 16 .. 31;
-       entry_type at 0 range 40 .. 43;
-       zero at 0 range 44 .. 44;
-       DPL at 0 range 45 .. 46;
-       present at 0 range 47 .. 47;
-       offset_high at 0 range 48 .. 63;
+
+       IST at 4 range 0 .. 2;
+       zero_1 at 4 range 3 .. 7;
+       entry_type at 4 range 8 .. 11;
+       zero_2 at 4 range 12 .. 12;
+       DPL at 4 range 13 .. 14;
+       present at 4 range 15 .. 15;
+
+       offset_high at 4 range 16 .. 63;
      end record;
 
    type interrupt_vector_t is array (Interrupt_Id'Range) of idt_entry;

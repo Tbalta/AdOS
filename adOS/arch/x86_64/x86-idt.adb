@@ -14,25 +14,27 @@ with Programmable_Interval_Timer;
 with Keyboard;
 with Util;
 package body x86.idt is
-   package Logger renames Loggers;
+   package Logger renames Loggers.Serial_Logger;
 
    procedure add_entry
      (index     : Interrupt_ID;
       ISR       : System.Address;
       selector  : Unsigned_16;
-      DPL       : Unsigned_8;
+      DPL       : Cpu_Privilege_Level;
       type_attr : gate_type)
    is
-      offset : Unsigned_32 := Unsigned_32 (To_Integer (ISR));
+      offset : Unsigned_64 := Unsigned_64 (To_Integer (ISR));
    begin
       interrupt_vector (index) :=
-        (offset      => Unsigned_16 (offset and 16#FFFF#),
+        (offset_low  => Unsigned_16 (offset and 16#FFFF#),
          selector    => selector,
-         DPL         => DPL and 2#11#,
+         IST         => 0,
+         DPL         => DPL,
          present     => True,
-         offset_high => Unsigned_16 (Shift_Right (offset, 16)),
+         offset_high => Unsigned_48 (Shift_Right (offset, 16)),
          entry_type  => type_attr,
-         zero        => 0);
+         zero_1      => 0,
+         zero_2      => 0);
    end add_entry;
 
    procedure load_idt (idt_ptr : idt_ptr_t) is
@@ -101,11 +103,11 @@ package body x86.idt is
       idt_ptr : idt_ptr_t;
    begin
       for i in error_vector_t'Range loop
-         add_entry (i, error_vector (i), 8, 0, trap_gate_32_bits);
+         add_entry (i, error_vector (i), 8, CPL0, trap_gate_64_bits);
       end loop;
-      add_entry (TIMER_INTERRUPT, timer_callback'Address, 8, 3, interrupt_32_bits);
-      add_entry (KEYBOARD_INTERRUPT, keyboard_callback'Address, 8, 3, interrupt_32_bits);
-      add_entry (SYSCALL_INTERRUPT, syscall'Address, 8, 3, interrupt_32_bits);
+      add_entry (TIMER_INTERRUPT, timer_callback'Address, 8, CPL3, interrupt_64_bits);
+      add_entry (KEYBOARD_INTERRUPT, keyboard_callback'Address, 8, CPL3, interrupt_64_bits);
+      add_entry (SYSCALL_INTERRUPT, syscall'Address, 8, CPL3, interrupt_64_bits);
       idt_ptr.base := interrupt_vector'Address;
       idt_ptr.limit := interrupt_vector'Size / 8 - 1;
 

@@ -147,8 +147,12 @@ is
 
 private
    Paging_Enabled : Boolean := False;
+   PAGE_SIZE      : constant Storage_Count := 4096;
+   type Page_Index     is mod 2 ** 9;
+
 
    type Page_Address is range 0 .. 2 ** 20 - 1;
+
    subtype Page_Table_Address is Page_Address;
    subtype Page_Directory_Address is Page_Address;
 
@@ -165,51 +169,21 @@ private
        Address at 0 range 12 .. 63;
      end record;
 
-
-   type Page_Table_Entry is record
-      Present       : Boolean := False;
-      Is_Writable   : Boolean := False;
-      Is_Usermode   : Boolean := False;
-      Write_Through : Boolean := False;
-      Cache_Disable : Boolean := False;
-      Accessed      : Boolean := False;
-      Dirty         : Boolean := False;
-      Page_Size     : Boolean := False;
-      Global        : Boolean := False;
-      Address       : Page_Address;
+  type Page_Entry is record
+      Present         : Boolean := False;
+      Is_Writable     : Boolean := False;
+      Is_Usermode     : Boolean := False;
+      Write_Through   : Boolean := False;
+      Cache_Disable   : Boolean := False;
+      Accessed        : Boolean := False;
+      Page_Size       : Boolean := False;
+      Address         : Page_Address;
+      Execute_Disable : Boolean := False;
    end record
-      with Size => 32,
-           Object_Size => 32;
+      with  Size => 64,
+            Object_Size => 64;
    --!format off
-   for Page_Table_Entry use
-     record
-       Present       at 0 range 0 .. 0;
-       Is_Writable   at 0 range 1 .. 1;
-       Is_Usermode   at 0 range 2 .. 2;
-       Write_Through at 0 range 3 .. 3;
-       Cache_Disable at 0 range 4 .. 4;
-       Accessed      at 0 range 5 .. 5;
-       Dirty         at 0 range 6 .. 6;
-       Page_Size     at 0 range 7 .. 7;
-       Global        at 0 range 8 .. 8;
-       Address       at 0 range 12 .. 31;
-     end record;
-   --!format on
-
-   type Page_Directory_Entry is record
-      Present       : Boolean := False;
-      Is_Writable   : Boolean := False;
-      Is_Usermode   : Boolean := False;
-      Write_Through : Boolean := False;
-      Cache_Disable : Boolean := False;
-      Accessed      : Boolean := False;
-      Page_Size     : Boolean := False;
-      Global        : Boolean := False;
-      Address       : Page_Table_Address;
-   end record;
-
-   --!format off
-   for Page_Directory_Entry use
+   for Page_Entry use
      record
        Present       at 0 range 0 .. 0;
        Is_Writable   at 0 range 1 .. 1;
@@ -218,56 +192,101 @@ private
        Cache_Disable at 0 range 4 .. 4;
        Accessed      at 0 range 5 .. 5;
        Page_Size     at 0 range 7 .. 7;
-       Global        at 0 range 8 .. 8;
-       Address       at 0 range 12 .. 31;
+       Address       at 0 range 12 .. 52;
+       Execute_Disable at 0 range 63 .. 63;
      end record;
    --!format on
 
-   type Page_Directory_Index is mod 2 ** 10;
-   type Page_Table_Index     is mod 2 ** 10;
+   type Page_Map_Level_4_Entry is new Page_Entry;
+   type Page_Map_Level_4_Entry_Access is access all Page_Map_Level_4_Entry;
+  
+   type Page_Map_Level_3_Entry is new Page_Entry;
+   type Page_Map_Level_3_Entry_Access is access all Page_Map_Level_3_Entry;
+
+   type Page_Map_Level_2_Entry is new Page_Entry;
+   type Page_Map_Level_2_Entry_Access is access all Page_Map_Level_2_Entry;
+
+   type Page_Map_Level_1_Entry is new Page_Entry;
+   type Page_Map_Level_1_Entry_Access is access all Page_Map_Level_1_Entry;
+
    subtype Virtual_Address_Offset is Storage_Offset range 0 .. 2 ** 12 - 1;
 
    type Virtual_Address_Break is record
-      Directory : Page_Directory_Index;
-      Table     : Page_Table_Index;
-      Offset    : Virtual_Address_Offset;
+      Offset     : Virtual_Address_Offset;
+      PML1_Index : Page_Index;
+      PML2_Index : Page_Index;
+      PML3_Index : Page_Index;
+      PML4_Index : Page_Index;
       end record
-      with Size => 32;
+      with Size => 64;
 
    for Virtual_Address_Break use
      record
-       Directory at 0 range 22 .. 31;
-       Table at 0 range 12 .. 21;
-       Offset at 0 range 0 .. 11;
+       Offset     at 0 range 0 .. 11;
+       PML1_Index at 0 range 12 .. 20;
+       PML2_Index at 0 range 21 .. 29;
+       PML3_Index at 0 range 30 .. 38;
+       PML4_Index at 0 range 39 .. 47;
      end record;
    function To_Virtual_Address_Break is new
      Ada.Unchecked_Conversion (Source => Virtual_Address, Target => Virtual_Address_Break);
    function From_Virtual_Address_Break is new
      Ada.Unchecked_Conversion (Source => Virtual_Address_Break, Target => Virtual_Address);
 
-   type Page_Table is array (Page_Table_Index) of aliased Page_Table_Entry
+   type Page_Map_Level_4 is array (Page_Index) of aliased Page_Map_Level_4_Entry
       with Pack => True,
-           Component_Size => 32,
-           Size => 1024  * 32;
+           Component_Size => 64,
+           Size => PAGE_SIZE * 8;
+    type Page_Map_Level_4_Access is access all Page_Map_Level_4;
+   type Page_Map_Level_3 is array (Page_Index) of aliased Page_Map_Level_3_Entry
+      with Pack => True,
+           Component_Size => 64,
+           Size => PAGE_SIZE * 8;
+    type Page_Map_Level_3_Access is access all Page_Map_Level_3;
+   type Page_Map_Level_2 is array (Page_Index) of aliased Page_Map_Level_2_Entry
+      with Pack => True,
+           Component_Size => 64,
+           Size => PAGE_SIZE * 8;
+    type Page_Map_Level_2_Access is access all Page_Map_Level_2;
+   type Page_Map_Level_1 is array (Page_Index) of aliased Page_Map_Level_1_Entry
+      with Pack => True,
+           Component_Size => 64,
+           Size => PAGE_SIZE * 8;
+    type Page_Map_Level_1_Access is access all Page_Map_Level_1;
 
-   type Page_Directory is
-     array (Page_Directory_Index range 0 .. 1_023) of aliased Page_Directory_Entry
-   with Pack => True, Size => 4_096 * 8;
+   package PML4_Conversion is new System.Address_To_Access_Conversions (Page_Map_Level_4);
+   package PML3_Conversion is new System.Address_To_Access_Conversions (Page_Map_Level_3);
+   package PML2_Conversion is new System.Address_To_Access_Conversions (Page_Map_Level_2);
+   package PML1_Conversion is new System.Address_To_Access_Conversions (Page_Map_Level_1);
 
-   package Address_to_Page_Table is new System.Address_To_Access_Conversions (Page_Table);
-   subtype Page_Table_Access is Address_to_Page_Table.Object_Pointer;
+  function To_PML4_Access (System_Address : System.Address) return Page_Map_Level_4_Access is (Page_Map_Level_4_Access (PML4_Conversion.To_Pointer (System_Address)));
+  function To_PML3_Access (System_Address : System.Address) return Page_Map_Level_3_Access is (Page_Map_Level_3_Access (PML3_Conversion.To_Pointer (System_Address)));
+  function To_PML2_Access (System_Address : System.Address) return Page_Map_Level_2_Access is (Page_Map_Level_2_Access (PML2_Conversion.To_Pointer (System_Address)));
+  function To_PML1_Access (System_Address : System.Address) return Page_Map_Level_1_Access is (Page_Map_Level_1_Access (PML1_Conversion.To_Pointer (System_Address)));
 
-   package Address_to_Page_Directory is new System.Address_To_Access_Conversions (Page_Directory);
-   subtype Page_Directory_Access is Address_to_Page_Directory.Object_Pointer;
-   function To_Page_Directory (Addr : Physical_Address) return Page_Directory_Access
-   is (Address_to_Page_Directory.To_Pointer (Addr));
 
-   Null_Address_Break : constant Virtual_Address_Break := (Directory => 0, Table => 0, Offset => 0);
+   type Page_Count is new Long_Long_Long_Integer range 1 .. 2**64; 
+   Page_Per_PML1 : constant Page_Count := Page_Map_Level_1'Length;
+   Page_Per_PML2 : constant Page_Count := Page_Map_Level_2'Length * Page_Per_PML1;
+   Page_Per_PML3 : constant Page_Count := Page_Map_Level_3'Length * Page_Per_PML2;
+   Page_Per_PML4 : constant Page_Count := Page_Map_Level_4'Length * Page_Per_PML3;
+   pragma Assert (Page_Per_PML1 = 512);
+   pragma Assert (Page_Per_PML2 = 512 * 512);
+   pragma Assert (Page_Per_PML3 = 512 * 512 * 512);
+   pragma Assert (Page_Per_PML4 = 512 * 512 * 512 * 512);
+
+
+
+
+   Null_Address_Break : constant Virtual_Address_Break := 
+     (PML4_Index => 0,
+      PML3_Index => 0,
+      PML2_Index => 0,
+      PML1_Index => 0,
+      Offset     => 0);
 
    function To_Address (Addr : Page_Address) return System.Address;
 
-   function To_Page_Table_Address (Addr : System.Address) return Page_Table_Address;
-   function To_Page_Directory_Address (Addr : System.Address) return Page_Directory_Address;
    function To_Page_Address (Addr : System.Address) return Page_Address;
    function Can_Fit
      (CR3 : CR3_register; Address : Virtual_Address; Size : Storage_Count) return Boolean
@@ -283,10 +302,9 @@ private
            Post => Paging_Enabled'Old = Paging_Enabled; 
    
    procedure Unmap_Page
-     (Page_Directory       : Page_Directory_Access;
-      Page_Directory_Start : Page_Directory_Index;
-      Page_Table_Start     : Page_Table_Index;
-      Free_Page            : Boolean)
+     (CR3           : CR3_register;
+      Destination   : Virtual_Address_Break;
+      Free_Page     : Boolean)
       with Pre => not Paging_Enabled,
            Post => Paging_Enabled'Old = Paging_Enabled; 
 
@@ -300,21 +318,19 @@ private
       with Pre => not Paging_Enabled,
            Post => Paging_Enabled'Old = Paging_Enabled;
 
-   function To_Page_Table (Addr : Physical_Address) return Page_Table_Access
-   is (Address_to_Page_Table.To_Pointer (Addr));
-   function To_Page_Table (PDE : Page_Directory_Entry) return Page_Table_Access
-   is (To_Page_Table (To_Address (PDE.Address)));
-   function To_Page_Table_Access (Page_Table_Addr : Page_Table_Address) return Page_Table_Access
-   is (Address_to_Page_Table.To_Pointer (To_Address (Page_Table_Addr)));
-
    Last_Virtual_Address_Break : constant Virtual_Address_Break :=
-     (Directory => Page_Directory_Index'Last, Table => Page_Table_Index'Last, Offset => 0);
+     (PML4_Index => Page_Index'Last,
+      PML3_Index => Page_Index'Last,
+      PML2_Index => Page_Index'Last,
+      PML1_Index => Page_Index'Last,
+      Offset     => Virtual_Address_Offset'Last);
 
    Kernel_CR3        : CR3_register;
    Process_CR3        : CR3_register;
-   procedure Next
-     (Page_Directory_Start : in out Page_Directory_Index;
-      Page_Table_Start     : in out Page_Table_Index);
+   procedure Next (Address : in out Virtual_Address_Break);
 
+  function Is_Mapped
+     (CR3: CR3_Register; Destination : Virtual_Address_Break) return Boolean;
+     function Get_Page_Number (Address : Virtual_Address_Break) return Page_Count;
 
 end x86.vmm;

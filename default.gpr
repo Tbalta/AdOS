@@ -49,6 +49,7 @@ project Default is
         "-ffunction-sections",
         "-fdata-sections",
         "-fno-omit-frame-pointer",
+        "-fno-lto",
         "-ggdb",
         "-g");
       
@@ -68,20 +69,27 @@ project Default is
         "-fno-rtti"
       );
 
+      x86_64_Switches := (
+        "-m64",
+        "-fno-PIC",
+        "-march=x86-64",
+        "-mabi=sysv",
+        "-mno-80387",
+        "-mno-mmx",
+      --   "-mno-sse",
+        "-mno-sse2",
+        "-mno-red-zone",
+        "-mcmodel=kernel"
+      );
+
 
       case Platform is
         when "i386-elf" =>
           for Default_Switches ("c") use Basic_Switches & C_Basic_Switches & ("-m32");
           for Default_Switches ("ada") use Basic_Switches & Ada_Basic_Switches & ("-m32");
         when "x86_64-elf" =>
-          for Default_Switches ("c") use Basic_Switches & C_Basic_Switches & (
-            "-m64",
-            "-fno-PIC",
-            "-mcmodel=kernel");
-          for Default_Switches ("ada") use Basic_Switches & Ada_Basic_Switches &
-            ("-m64",
-             "-fno-PIC",
-             "-mcmodel=kernel");
+          for Default_Switches ("c") use Basic_Switches & C_Basic_Switches & x86_64_Switches;
+          for Default_Switches ("ada") use Basic_Switches & Ada_Basic_Switches & x86_64_Switches;
       end case;
 
       for Driver ("nasm") use "nasm";

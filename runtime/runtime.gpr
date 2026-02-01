@@ -56,7 +56,10 @@ library project Runtime is
         "-Wl,--gc-sections",
         "-g",
         "-fno-exceptions",
-         "-mcmodel=kernel"
+        -- "-mno-sse",
+        "-mno-sse2",
+        "-mno-red-zone",
+        "-mcmodel=kernel"
       );
       for Default_Switches ("C") use ("-g");
    end Compiler;

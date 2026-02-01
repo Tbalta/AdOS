@@ -103,6 +103,9 @@ package Interfaces is
    type Unsigned_32 is mod 2 ** 32;
    for Unsigned_32'Size use 32;
 
+   type Unsigned_48 is mod 2 ** 48;
+   for Unsigned_48'Size use 48;
+
    type Unsigned_64 is mod 2 ** Long_Long_Integer'Size;
    for Unsigned_64'Size use 64;
    --  See comment on Integer_64 above

@@ -31,8 +31,8 @@ with Keyboard;
 with VGA.Terminal;
 
 procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Address) is
-   package Logger renames Loggers;
-   package VGA_Logger renames Loggers.VGA_Logger;
+   package Logger renames Loggers.Serial_Logger;
+   package VGA_Logger renames Loggers.Serial_Logger;
    CR3 : CR3_register;
 begin
    VGA_Logger.Log_Info ("Starting adOS...");
@@ -49,6 +49,7 @@ begin
    ----------------------------------
    x86.gdt.initialize_gdt;
    x86.idt.init_idt;
+   Logger.Log_Ok ("GDT and IDT initialized");
 
    ------------------------
    -- PIC initialization --

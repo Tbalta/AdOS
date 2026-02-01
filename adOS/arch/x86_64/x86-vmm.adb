@@ -1,3 +1,4 @@
+with Interfaces.C;
 with System.Machine_Code;     use System.Machine_Code;
 with System.Storage_Elements; use System.Storage_Elements;
 with config;                  use config;
@@ -15,54 +16,30 @@ package body x86.vmm is
    ----------------
    -- To_Address --
    ----------------
-   function To_Address (Addr : Page_Address) return System.Address is (System.Address (Integer_Address (Addr) * 4_096));
+   function To_Address (Addr : Page_Address) return System.Address is (System.Address (Storage_Count (Integer_Address (Addr)) * PAGE_SIZE));
 
    -------------------------
    -- Get_Number_Of_Pages --
    -------------------------
    function Get_Number_Of_Pages (Size : Storage_Count; Offset : Storage_Offset := 0) return Positive
-   is (Positive (Size + Storage_Count (4_095 + Offset)) / 4_096);
+   is (Positive (Size + Storage_Count (PAGE_SIZE - 1 + Offset) / PAGE_SIZE));
 
-   -------------------------------
-   -- Get_Number_Of_Page_Tables --
-   -------------------------------
-   function Get_Number_Of_Page_Tables (Size : Storage_Count; Offset : Storage_Offset := 0) return Positive
-   is  ((Get_Number_Of_Pages (Size, Offset) + Positive (Page_Table'Length) - 1) / Page_Table'Length);
 
-   ---------------------------
-   -- To_Page_Table_Address --
-   ---------------------------
-   function To_Page_Table_Address (Addr : System.Address) return Page_Table_Address is
-    (Page_Table_Address (Integer_Address (Addr) / 4_096));
-
-   -------------------------------
-   -- To_Page_Directory_Address --
-   -------------------------------
-   function To_Page_Directory_Address (Addr : System.Address) return Page_Directory_Address is
-   (Page_Directory_Address (Integer_Address (Addr) / 4_096));
 
    ---------------------
    -- To_Page_Address --
    ---------------------
    function To_Page_Address (Addr : System.Address) return Page_Address is
-    (Page_Address (Integer_Address (Addr) / 4_096));
+    (Page_Address (Storage_Count (Integer_Address (Addr)) / PAGE_SIZE));
 
    ------------------------
    -- Get_Page_Directory --
-   ------------------------
-   function Get_Page_Directory (CR3 : CR3_Register) return Page_Directory_Access is (To_Page_Directory (To_Address (CR3.Address)));
-   
+   ------------------------   
    function Is_Paging_Enabled return Boolean
    is
    begin
       return Paging_Enabled;
    end Is_Paging_Enabled;
-
-   --------------------
-   -- Get_Page_Table --
-   --------------------
-   function Get_Page_Table
-     (CR3 : CR3_Register; Index : Page_Directory_Index) return Page_Table_Access is (To_Page_Table_Access (Get_Page_Directory (CR3) (Index).Address));
 
    -------------------
    -- Enable_Paging --
@@ -95,35 +72,6 @@ package body x86.vmm is
       Paging_Enabled := False;
    end Disable_Paging;
 
-   ----------------
-   -- Create_CR3 --
-   ----------------
-   function Create_CR3 return CR3_register is
-      CR3 : CR3_register;
-      Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
-   begin
-      if Paging_Currently_Enabled then
-         Disable_Paging;
-      end if;
-
-      --  Used to allocate Page Directory table
-      CR3.Address := To_Page_Address (Allocate_Page);
-      CR3.PCD := True;
-      CR3.PWT := True;
-
-      --  Init the Page Directory
-      declare
-         PD : Page_Directory_Access := Get_Page_Directory (CR3);
-      begin
-         PD.all := Page_Directory'(others => (Present => False, others => <>));
-      end;
-
-      if Paging_Currently_Enabled then
-         Enable_Paging;
-      end if;
-
-      return CR3;
-   end Create_CR3;
 
    --------------
    -- Load_CR3 --
@@ -190,13 +138,68 @@ package body x86.vmm is
       Process_CR3 := CR3;
    end Set_Process_CR3;
 
+      ----------
+   -- Next --
+   ----------
+   procedure Next (Address : in out Virtual_Address_Break) is
+   begin
+      
+      Address := To_Virtual_Address_Break (From_Virtual_Address_Break (Address) + PAGE_SIZE);
+   end Next;
+
+   -- PLM4 --
+   function Get_PML4 (CR3 : CR3_Register) return Page_Map_Level_4_Access is
+   begin
+      return To_PML4_Access (To_Address (CR3.Address));
+   end Get_PML4;
+   function Get_PML4_Entry (CR3 : CR3_Register; Address : Virtual_Address_Break) return Page_Map_Level_4_Entry_Access is
+      PLM4 : Page_Map_Level_4_Access := Get_PML4 (CR3);
+   begin
+      return PLM4 (Address.PML4_Index)'Access;
+   end Get_PML4_Entry;
+
+   -- PML3 --
+   function Get_PML3 (CR3 : CR3_Register; PML4_Index : Page_Index) return Page_Map_Level_3_Access is
+      PLM4 : Page_Map_Level_4_Access := Get_PML4 (CR3);
+   begin
+      return To_PML3_Access (To_Address (PLM4 (PML4_Index).Address));
+   end Get_PML3;
+   function Get_PML3_Entry (CR3 : CR3_Register; Address : Virtual_Address_Break) return Page_Map_Level_3_Entry_Access is
+      PML3 : Page_Map_Level_3_Access := Get_PML3 (CR3, Address.PML4_Index);
+   begin
+      return PML3 (Address.PML3_Index)'Access;
+   end Get_PML3_Entry;
+
+   -- PML2 --
+   function Get_PML2 (CR3 : CR3_Register; PML4_Index, PML3_Index : Page_Index) return Page_Map_Level_2_Access is
+      PML3 : Page_Map_Level_3_Access := Get_PML3 (CR3, PML4_Index);
+   begin
+      return To_PML2_Access (To_Address (PML3 (PML3_Index).Address));
+   end Get_PML2;
+   function Get_PML2_Entry (CR3 : CR3_Register; Address : Virtual_Address_Break) return Page_Map_Level_2_Entry_Access is
+      PML2 : Page_Map_Level_2_Access := Get_PML2 (CR3, Address.PML4_Index, Address.PML3_Index);
+   begin
+      return PML2 (Address.PML2_Index)'Access;
+   end Get_PML2_Entry;
+
+   -- PML1 --
+   function Get_PML1 (CR3 : CR3_Register; PML4_Index, PML3_Index, PML2_Index : Page_Index) return Page_Map_Level_1_Access is
+      PML2 : Page_Map_Level_2_Access := Get_PML2 (CR3, PML4_Index, PML3_Index);
+   begin
+      return To_PML1_Access(To_Address (PML2 (PML2_Index).Address));
+   end Get_PML1;
+   function Get_PML1_Entry (CR3 : CR3_Register; Address : Virtual_Address_Break) return Page_Map_Level_1_Entry_Access
+    is
+      PML1 : Page_Map_Level_1_Access := Get_PML1 (CR3, Address.PML4_Index, Address.PML3_Index, Address.PML2_Index);
+   begin
+      return PML1 (Address.PML1_Index)'Access;
+   end Get_PML1_Entry;
+
    procedure Print_Mapped_Memory (CR3 : CR3_Register) is
       Current_Region_Start : Virtual_Address_Break := Null_Address_Break;
       Current_Region : Virtual_Address_Break := Null_Address_Break;
 
-      PD : Page_Directory_Access := Get_Page_Directory (CR3);
-      PT : Page_Table_Access := null;
-      Region_Valid : Boolean := false;
+
 
       function Get_Region_Size return Storage_Count is
       begin
@@ -205,8 +208,8 @@ package body x86.vmm is
 
       function Get_Flag_String return String is
          Result : String (1 .. 3);
-         Is_Writable : Boolean := PT (Current_Region_Start.Table).Is_Writable;
-         Is_Usermode : Boolean := PT (Current_Region_Start.Table).Is_Usermode;
+         Is_Writable : Boolean := Get_PML1_Entry (CR3, Current_Region_Start).Is_Writable;
+         Is_Usermode : Boolean := Get_PML1_Entry (CR3, Current_Region_Start).Is_Usermode;
       begin
          if Is_Usermode then
             Result (1) := 'U';
@@ -225,9 +228,8 @@ package body x86.vmm is
       end Get_Flag_String;
 
       function To_Hex is new Util.To_Hex (Storage_Count);
-      procedure Print (Dir : Page_Directory_Index; Table : Page_Table_Index) is
+      procedure Print (Region_End_Address : Virtual_Address) is
          Region_Start_Address : constant Virtual_Address := From_Virtual_Address_Break (Current_Region_Start);
-         Region_End_Address :   constant Virtual_Address := From_Virtual_Address_Break ((Directory => Dir, Table => Table, Offset => 0));
       begin
          Logger.Log_Info (To_Hex (Storage_Count (Region_Start_Address), 8)      & " " &
                           To_Hex (Storage_Count (Region_End_Address), 8)        & " " &
@@ -235,44 +237,25 @@ package body x86.vmm is
                           Get_Flag_String);
       end Print;
 
-      procedure Test (Dir : Page_Directory_Index; Table : Page_Table_Index) is
-         Current_PT : Page_Table_Access := null;
+      procedure Test (Test_Address : Virtual_Address_Break) is
       begin
-         if not PD (Current_Region_Start.Directory).Present then
-            Current_Region_Start.Directory := Dir;
-            Current_Region_Start.Table := Table;
+         if not Is_Mapped (CR3, Current_Region_Start) then
+            Current_Region_Start := Test_Address;
             return;
          end if;
 
-         PT := Get_Page_Table (CR3, Current_Region_Start.Directory);
-         if not PT (Current_Region_Start.Table).Present then
-            Current_Region_Start.Directory := Dir;
-            Current_Region_Start.Table := Table;
+         if not Is_Mapped (CR3, Test_Address) then
+            Print (From_Virtual_Address_Break (Test_Address));
+            Current_Region_Start := Test_Address;
             return;
          end if;
 
-         if not PD (Dir).Present then
-            Print (Dir, Table);
-            Current_Region_Start.Directory := Dir;
-            Current_Region_Start.Table := Table;
-            return;
-         end if;
-
-         Current_PT := Get_Page_Table (CR3, Dir);
-         if not Current_PT (Table).Present then
-            Print (Dir, Table);
-            Current_Region_Start.Directory := Dir;
-            Current_Region_Start.Table := Table;
-            return;
-         end if;
-
-         if (Dir = Page_Directory'Last and Table = Page_Table'Last)                       or else
-            Current_PT (Table).Is_Usermode /= PT (Current_Region_Start.Table).Is_Usermode or else
-            Current_PT (Table).Is_Writable /= PT (Current_Region_Start.Table).Is_Writable
+         if Get_Page_Number (Test_Address) = Page_Per_PML4 - 1                                                       or else
+            Get_PML1_Entry (CR3, Test_Address).Is_Usermode /= Get_PML1_Entry (CR3, Current_Region_Start).Is_Usermode or else
+            Get_PML1_Entry (CR3, Test_Address).Is_Writable /= Get_PML1_Entry (CR3, Current_Region_Start).Is_Writable
          then
-            Print (Dir, Table);
-            Current_Region_Start.Directory := Dir;
-            Current_Region_Start.Table := Table;
+            Print (From_Virtual_Address_Break (Test_Address));
+            Current_Region_Start := Test_Address;
          end if;
       end Test;
 
@@ -281,153 +264,226 @@ package body x86.vmm is
       if Paging_Currently_Enabled then
          Disable_Paging;
       end if;
-      
-      for Dir in Page_Directory'Range loop
-         for Page in Page_Table'Range loop
-            Test (Dir, Page);
-         end loop;
+
+      for Page in 0 .. Page_Per_PML4 - 1 loop
+         Test (To_Virtual_Address_Break (System.Address (Storage_Count (Page) * PAGE_SIZE)));
       end loop;
+      
 
       if Paging_Currently_Enabled then
          Enable_Paging;
       end if;
    end Print_Mapped_Memory;
 
-   -----------------------
-   -- Create_Page_Table --
-   -----------------------
-   procedure Create_Page_Table
-     (PD          : Page_Directory_Access;
-      PD_Index    : Page_Directory_Index;
-      PT          : out Page_Table_Access;
-      Is_Writable : Boolean := False;
-      Is_Usermode : Boolean := False) is
+   ----------------
+   -- Create_CR3 --
+   ----------------
+   function Create_CR3 return CR3_register is
+      CR3 : CR3_register;
+      Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
+   begin
+      if Paging_Currently_Enabled then
+         Disable_Paging;
+      end if;
 
+      --  Used to allocate Page Directory table
+      CR3.Address := To_Page_Address (Allocate_Page);
+      CR3.PCD := True;
+      CR3.PWT := True;
+
+      --  Init the Page Directory
+      declare
+         PML4 : Page_Map_Level_4_Access := Get_PML4 (CR3);
+      begin
+         PML4.all := (others => (Present => False, others => <>));
+      end;
+
+      if Paging_Currently_Enabled then
+         Enable_Paging;
+      end if;
+
+      return CR3;
+   end Create_CR3;
+   -------------------------
+   -- Create_Page_Entries --
+   -------------------------
+   procedure Create_PLM4_Entry (CR3 : CR3_register; Destination : Virtual_Address_Break)
+   is
+      PLM4 : Page_Map_Level_4_Access := Get_PML4 (CR3);
       Page_To_Allocate : Physical_Address := Allocate_Page;
    begin
-      pragma Assert (not Is_Paging_Enabled);
-      Logger.Log_Info ("Create_Page_Table: Is_Writable" & Is_Writable'Image & " / Is_Usermode: " & Is_Usermode'Image);
-      PD.all (PD_Index).Present := True;
-      PD.all (PD_Index).Is_Writable := True;
-      PD.all (PD_Index).Is_Usermode := True;
-      PD.all (PD_Index).Write_Through := False;
-      PD.all (PD_Index).Cache_Disable := False;
-      PD.all (PD_Index).Accessed := False;
-      PD.all (PD_Index).Page_Size := False;
-      PD.all (PD_Index).Global := False;
-      PD.all (PD_Index).Address := To_Page_Address (Page_To_Allocate);
+      PLM4 (Destination.PML4_Index).Present := True;
+      PLM4 (Destination.PML4_Index).Is_Writable := True;
+      PLM4 (Destination.PML4_Index).Is_Usermode := True;
+      PLM4 (Destination.PML4_Index).Write_Through := False;
+      PLM4 (Destination.PML4_Index).Cache_Disable := False;
+      PLM4 (Destination.PML4_Index).Accessed := False;
+      PLM4 (Destination.PML4_Index).Address := To_Page_Address (Page_To_Allocate);
 
-      pragma Assert (Page_To_Allocate = To_Address (PD (PD_Index).Address));
-      -- Logger.Log_Info ("PT:" & PD.all (PD_Index)'Image);
-      PT := To_Page_Table (To_Address (PD (PD_Index).Address));
+      --  Init the Page Map Level 3
+      declare
+         PML3 : Page_Map_Level_3_Access := To_PML3_Access (To_Address (PLM4 (Destination.PML4_Index).Address));
+      begin
+         PML3.all := Page_Map_Level_3'(others => (Present => False, others => <>));
+      end;
+   end Create_PLM4_Entry;
 
-      for Index in PT.all'Range loop
-         PT (Index) := (Present => False, others => <>);
-      end loop;
-      -- PT.all := (others => (Present => False, others => <>));
-   end Create_Page_Table;
-
-   procedure Create_Page_Table
-     (PD          : Page_Directory_Access;
-      PD_Index    : Page_Directory_Index;
-      Is_Writable : Boolean := False;
-      Is_Usermode : Boolean := False)
+   procedure Create_PML3_Entry (CR3 : CR3_register; Destination : Virtual_Address_Break)
    is
-      PT : Page_Table_Access;
+      PML3 : Page_Map_Level_3_Access := Get_PML3 (CR3, Destination.PML4_Index);
+      Page_To_Allocate : Physical_Address := Allocate_Page;
    begin
-      Create_Page_Table (PD, PD_Index, PT, Is_Writable => Is_Writable, Is_Usermode => Is_Usermode);
-   end Create_Page_Table;
+      PML3 (Destination.PML3_Index).Present := True;
+      PML3 (Destination.PML3_Index).Is_Writable := True;
+      PML3 (Destination.PML3_Index).Is_Usermode := True;
+      PML3 (Destination.PML3_Index).Write_Through := False;
+      PML3 (Destination.PML3_Index).Cache_Disable := False;
+      PML3 (Destination.PML3_Index).Accessed := False;
+      PML3 (Destination.PML3_Index).Address := To_Page_Address (Page_To_Allocate);
 
-   --------------------------
-   -- Map_Page_Table_Entry --
-   --------------------------
-   procedure Map_Page_Table_Entry
-     (Page_Table       : Page_Table_Access;
-      Page_Table_Start : Page_Table_Index;
-      Address          : Page_Address;
-      Is_Writable      : Boolean := False;
-      Is_Usermode      : Boolean := False) is
-   begin
-      Page_Table.all (Page_Table_Start).Present := True;
-      Page_Table.all (Page_Table_Start).Is_Writable := Is_Writable;
-      Page_Table.all (Page_Table_Start).Is_Usermode := Is_Usermode;
-      Page_Table.all (Page_Table_Start).Write_Through := False;
-      Page_Table.all (Page_Table_Start).Cache_Disable := False;
-      Page_Table.all (Page_Table_Start).Accessed := False;
-      Page_Table.all (Page_Table_Start).Page_Size := False;
-      Page_Table.all (Page_Table_Start).Global := False;
-      Page_Table.all (Page_Table_Start).Address := Address;
-   end Map_Page_Table_Entry;
+      --  Init the Page Map Level 2
+      declare
+         PML2 : Page_Map_Level_2_Access := To_PML2_Access (To_Address (PML3 (Destination.PML3_Index).Address));
+      begin
+         PML2.all := Page_Map_Level_2'(others => (Present => False, others => <>));
+      end;
+   end Create_PML3_Entry;
 
-   ----------
-   -- Next --
-   ----------
-   procedure Next
-     (Page_Directory_Start : in out Page_Directory_Index;
-      Page_Table_Start     : in out Page_Table_Index) is
+   procedure Create_PML2_Entry (CR3 : CR3_register; Destination : Virtual_Address_Break)
+   is
+      PML2 : Page_Map_Level_2_Access := Get_PML2 (CR3, Destination.PML4_Index, Destination.PML3_Index);
+      Page_To_Allocate : Physical_Address := Allocate_Page;
    begin
-      if Page_Table_Start = Page_Table'Last then
-         Page_Table_Start := 0;
-         Page_Directory_Start := Page_Directory_Start + 1;
-      else
-         Page_Table_Start := Page_Table_Start + 1;
+      PML2 (Destination.PML2_Index).Present := True;
+      PML2 (Destination.PML2_Index).Is_Writable := True;
+      PML2 (Destination.PML2_Index).Is_Usermode := True;
+      PML2 (Destination.PML2_Index).Write_Through := False;
+      PML2 (Destination.PML2_Index).Cache_Disable := False;
+      PML2 (Destination.PML2_Index).Accessed := False;
+      PML2 (Destination.PML2_Index).Address := To_Page_Address (Page_To_Allocate);
+
+      --  Init the Page Map Level 1
+      declare
+         PML1 : Page_Map_Level_1_Access := To_PML1_Access (To_Address (PML2 (Destination.PML2_Index).Address));
+      begin
+         PML1.all := Page_Map_Level_1'(others => (Present => False, others => <>));
+      end;
+   end Create_PML2_Entry;
+
+   procedure Create_PML1_Entry (CR3 : CR3_register; Destination : Virtual_Address_Break)
+   is
+      PML1 : Page_Map_Level_1_Access := Get_PML1 (CR3, Destination.PML4_Index, Destination.PML3_Index, Destination.PML2_Index);
+      Page_To_Allocate : Physical_Address := Allocate_Page;
+   begin
+      PML1 (Destination.PML1_Index).Present := True;
+      PML1 (Destination.PML1_Index).Is_Writable := True;
+      PML1 (Destination.PML1_Index).Is_Usermode := True;
+      PML1 (Destination.PML1_Index).Write_Through := False;
+      PML1 (Destination.PML1_Index).Cache_Disable := False;
+      PML1 (Destination.PML1_Index).Accessed := False;
+      PML1 (Destination.PML1_Index).Page_Size := False;
+      PML1 (Destination.PML1_Index).Address := To_Page_Address (Page_To_Allocate);
+   end Create_PML1_Entry;
+
+   
+   procedure Create_Page_Entries
+     (CR3 : CR3_Register;
+      Destination : Virtual_Address_Break) is
+   begin
+      if not Get_PML4_Entry (CR3, Destination).Present then
+         Create_PLM4_Entry (CR3, Destination);
       end if;
-   end Next;
+
+      if not Get_PML3_Entry (CR3, Destination).Present then
+         Create_PML3_Entry (CR3, Destination);
+      end if;
+
+      if not Get_PML2_Entry (CR3, Destination).Present then
+         Create_PML2_Entry (CR3, Destination);
+      end if;
+
+      if not Get_PML1_Entry (CR3, Destination).Present then
+         Create_PML1_Entry (CR3, Destination);
+      end if;
+   end Create_Page_Entries;
+
+   function Is_Mapped
+     (CR3: CR3_Register; Destination : Virtual_Address_Break) return Boolean is
+   begin
+      if not Get_PML4_Entry (CR3, Destination).Present then
+         return False;
+      end if;
+
+      if not Get_PML3_Entry (CR3, Destination).Present then
+         return False;
+      end if;
+
+      if not Get_PML2_Entry (CR3, Destination).Present then
+         return False;
+      end if;
+
+      if not Get_PML1_Entry (CR3, Destination).Present then
+         return False;
+      end if;
+
+      return True;
+   end Is_Mapped;
+
+   procedure Set_Entry_Address
+     (CR3            : CR3_Register;
+      Destination    : Virtual_Address_Break;
+      Address_To_Map : Physical_Address) is
+      PML1_Entry : Page_Map_Level_1_Entry_Access := Get_PML1_Entry (CR3, Destination);
+   begin
+      PML1_Entry.Address := To_Page_Address (Address_To_Map);
+   end Set_Entry_Address;
+
+   procedure Set_Entry_Flags
+     (CR3         : CR3_Register;
+      Destination : Virtual_Address_Break;
+      Is_Writable : Boolean := False;
+      Is_Usermode : Boolean := False) is
+      PML1_Entry : Page_Map_Level_1_Entry_Access := Get_PML1_Entry (CR3, Destination);
+   begin
+      PML1_Entry.Is_Writable := Is_Writable;
+      PML1_Entry.Is_Usermode := Is_Usermode;
+   end Set_Entry_Flags;
 
    -----------------------
    -- Map_Physical_Page --
    -----------------------
    procedure Map_Physical_Page
-     (Page_Directory       : Page_Directory_Access;
-      Page_Directory_Start : Page_Directory_Index;
-      Page_Table_Start     : Page_Table_Index;
+     (
+      Process              : CR3_Register;
+      Destination          : Virtual_Address_Break;
       Address_To_Map       : Physical_Address;
       Is_Writable          : Boolean := False;
       Is_Usermode          : Boolean := False)
    is
-      PD_Index : Page_Directory_Index := Page_Directory_Start;
-      PT_Index : Page_Table_Index := Page_Table_Start;
    begin
-      if not Page_Directory.all (PD_Index).Present then
-         Create_Page_Table
-           (Page_Directory, PD_Index, Is_Writable => Is_Writable, Is_Usermode => Is_Usermode);
-      end if;
-      --  Logger.Log_Info
-      --    ("Mapping physical page "
-      --     & Address_To_Map'Image
-      --     & " at PD index "
-      --     & PD_Index'Image
-      --     & " PT index "
-      --     & PT_Index'Image);
-      Map_Page_Table_Entry
-        (To_Page_Table (Page_Directory.all (PD_Index)),
-         PT_Index,
-         To_Page_Address (Address_To_Map),
-         Is_Writable => Is_Writable,
-         Is_Usermode => Is_Usermode);
-
+      Create_Page_Entries (Process, Destination);
+      Set_Entry_Address   (Process, Destination, Address_To_Map);
+      Set_Entry_Flags     (Process, Destination, Is_Writable, Is_Usermode);
    end Map_Physical_Page;
 
    ----------------
    -- Unmap_Page --
    ----------------
    procedure Unmap_Page
-     (Page_Directory       : Page_Directory_Access;
-      Page_Directory_Start : Page_Directory_Index;
-      Page_Table_Start     : Page_Table_Index;
-      Free_Page            : Boolean)
+     (CR3         : CR3_Register;
+      Destination : Virtual_Address_Break;
+      Free_Page   : Boolean)
    is
-      PD_Index : Page_Directory_Index := Page_Directory_Start;
-      PT_Index : Page_Table_Index := Page_Table_Start;
+      PML1_Entry : Page_Map_Level_1_Entry_Access := Get_PML1_Entry (CR3, Destination);
    begin
-      if not Page_Directory (PD_Index).Present then
+      if not PML1_Entry.Present then
          return;
       end if;
 
       if Free_Page then
-         PMM.Free_Page (To_Address (To_Page_Table (Page_Directory (PD_Index)) (PT_Index).Address));
+         PMM.Free_Page (To_Address (PML1_Entry.Address));
       end if;
-      To_Page_Table (Page_Directory (PD_Index)) (PT_Index).Present := False;
+      PML1_Entry.Present := False;
    end Unmap_Page;
 
    ---------------------------------
@@ -436,64 +492,44 @@ package body x86.vmm is
    function Virtual_To_Physical_Address
      (CR3 : CR3_register; Address : Virtual_Address) return Physical_Address
    is
-      PD                : Page_Directory_Access := To_Page_Directory (To_Address (CR3.Address));
-      PT                : Page_Table_Access;
       Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
    begin
-      if not PD (Address_Breakdown.Directory).Present then
-         return Physical_Address'First;
-      end if;
-      PT := Get_Page_Table (CR3, Address_Breakdown.Directory);
-
-      if not PT (Address_Breakdown.Table).Present then
+      if not Is_Mapped (CR3, Address_Breakdown) then
          return Physical_Address'First;
       end if;
 
-      return To_Address (PT (Address_Breakdown.Table).Address) + Address_Breakdown.Offset;
+      return To_Address (Get_PML1_Entry (CR3, Address_Breakdown).Address) + Address_Breakdown.Offset;
    end Virtual_To_Physical_Address;
 
    ---------------
    -- Map_Range --
    ---------------
    procedure Map_Range
-     (Page_Directory             : Page_Directory_Access;
-      Page_Directory_Start       : Page_Directory_Index;
-      Page_Table_Start           : Page_Table_Index;
+     (CR3                        : CR3_Register;
+      Destination                : Virtual_Address_Break;
       Start_Address, End_Address : Physical_Address;
       Is_Writable                : Boolean := False;
       Is_Usermode                : Boolean := False)
    is
       Page_Count : Positive := Get_Number_Of_Pages (End_Address - Start_Address);
-
-      PD_Index       : Page_Directory_Index := Page_Directory_Start;
-      PT_Index       : Page_Table_Index := Page_Table_Start;
       Address_To_Map : Physical_Address := Start_Address;
+      Current_Destination : Virtual_Address_Break := Destination;
    begin
       Logger.Log_Info ("Mapping range " & Start_Address'Image & " - " & End_Address'Image);
       Logger.Log_Info ("Number of pages to map: " & Natural'Image (Page_Count));
       for i in 1 .. Page_Count loop
-         if not Page_Directory.all (PD_Index).Present then
-            Create_Page_Table
-              (Page_Directory, PD_Index, Is_Writable => Is_Writable, Is_Usermode => Is_Usermode);
-         end if;
-
-         Map_Page_Table_Entry
-           (To_Page_Table (Page_Directory.all (PD_Index)),
-            PT_Index,
-            To_Page_Address (Address_To_Map),
-            Is_Writable => Is_Writable,
-            Is_Usermode => Is_Usermode);
-         Next (PD_Index, PT_Index);
+         Create_Page_Entries (CR3, Current_Destination);
+         Set_Entry_Address (CR3, Current_Destination, Address_To_Map);
+         Set_Entry_Flags  (CR3, Current_Destination, Is_Writable, Is_Usermode);
+         Next (Current_Destination);
          Address_To_Map := Address_To_Map + Storage_Offset (4_096);
       end loop;
-
    end Map_Range;
 
    ------------------
    -- Identity_Map --
    ------------------
    procedure Identity_Map (CR3 : CR3_register) is
-      PD                  : Page_Directory_Access := Get_Page_Directory (CR3);
       Address_Breakdown   : Virtual_Address_Break := To_Virtual_Address_Break (Null_Address);
       PMM_Start_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (PMM.Get_Pmm_Start_Address);
       Kernel_Start_Break  : Virtual_Address_Break := To_Virtual_Address_Break (Kernel_Start);
@@ -506,25 +542,22 @@ package body x86.vmm is
       -- Identity map the kernel
       Logger.Log_Info ("Identity map kernel " & Kernel_Start'Image & "-" & Kernel_End'Image);
       Map_Range
-        (PD,
-         Address_Breakdown.Directory,
-         Address_Breakdown.Table,
+        (CR3,
+         Address_Breakdown,
          Null_Address,
          Kernel_Start,
          Is_Writable => False,
          Is_Usermode => False);
       Map_Range
-        (PD,
-         Kernel_Start_Break.Directory,
-         Kernel_Start_Break.Table,
+        (CR3,
+         Kernel_Start_Break,
          Kernel_Start,
          Kernel_End,
          Is_Writable => True,
          Is_Usermode => False);
       Map_Range
-        (PD,
-         PMM_Start_Breakdown.Directory,
-         PMM_Start_Breakdown.Table,
+        (CR3,
+         PMM_Start_Breakdown,
          PMM.Get_Pmm_Start_Address,
          PMM.Get_Pmm_End_Address,
          Is_Writable => False,
@@ -538,33 +571,35 @@ package body x86.vmm is
    -------------
    -- Can_Fit --
    -------------
+
+
+   function Get_Free_Space
+     (CR3 : CR3_register; Address : Virtual_Address_Break) return Storage_Count
+   is
+      Free_Space : Storage_Count := 0;
+      Current_Address : Virtual_Address_Break := Address;
+   begin
+      for Page in Get_Page_Number (Address) .. Page_Per_PML4 - 1 loop
+         if Is_Mapped (CR3, Current_Address) then
+            return Free_Space;
+         end if;
+
+         Free_Space := Free_Space + PAGE_SIZE;
+         Next (Current_Address);
+      end loop;
+
+      return Free_Space;
+   end Get_Free_Space;
+
    function Can_Fit
      (CR3 : CR3_register; Address : Virtual_Address; Size : Storage_Count) return Boolean
    is
-      PD                : Page_Directory_Access := Get_Page_Directory (CR3);
-      PT                : Page_Table_Access;
       Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
-      To_Fit            : Storage_Count := Size;
    begin
       --  Logger.Log_Info ("Can_Fit: Checking if " & To_Fit'Image & " bytes can fit at " & Address'Image);
       --  Logger.Log_Info ("Can_Fit: Address breakdown: " & Address_Breakdown'Image);
-      for PD_Index in Address_Breakdown.Directory .. Page_Directory'Last loop
-         exit when To_Fit = 0;
-         if not PD (PD_Index).Present then
-            To_Fit := To_Fit - Storage_Count'Min (To_Fit, Page_Table'Length * PMM_PAGE_SIZE);
-         else
-            PT := Get_Page_Table (CR3, PD_Index);
-            for PT_Index in Address_Breakdown.Table .. Page_Table'Last loop
-               if not PT (PT_Index).Present then
-                  To_Fit := To_Fit - Storage_Count'Min (To_Fit, PMM_PAGE_SIZE);
-               else
-                  return To_Fit = 0;
-               end if;
-            end loop;
-            Address_Breakdown.Table := 0;
-         end if;
-      end loop;
-      return To_Fit = 0;
+
+      return Get_Free_Space (CR3, Address_Breakdown) >= Size;
    end Can_Fit;
 
    -----------
@@ -577,8 +612,6 @@ package body x86.vmm is
       Is_Writable : Boolean := False;
       Is_Usermode : Boolean := False) return Boolean
    is
-      PD                : Page_Directory_Access := Get_Page_Directory (CR3);
-      PT                : Page_Table_Access;
       Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
       To_Fit : Storage_Count := Data_Size;
    begin
@@ -589,28 +622,16 @@ package body x86.vmm is
 
       while To_Fit > 0 loop
          --  Logger.Log_Info ("At: " & Address_Breakdown'Image);
-         if not PD.all (Address_Breakdown.Directory).Present then
-            Logger.Log_Info ("PTE entry not present");
-            Create_Page_Table
-              (PD,
-               Address_Breakdown.Directory,
-               Is_Writable => Is_Writable,
-               Is_Usermode => Is_Usermode);
-         end if;
+         Create_Page_Entries (CR3, Address_Breakdown);
 
-         PT := Get_Page_Table (CR3, Address_Breakdown.Directory);
-         -- Logger.Log_Info ("PT: " & PT.all'Image);
-         Map_Page_Table_Entry
-           (PT,
-            Address_Breakdown.Table,
-            To_Page_Address (Allocate_Page),
-            Is_Writable => Is_Writable,
-            Is_Usermode => Is_Usermode);
+         Set_Entry_Address (CR3, Address_Breakdown, Allocate_Page);
+         Set_Entry_Flags (CR3, Address_Breakdown, Is_Writable, Is_Usermode);
+
 
          To_Fit := To_Fit - Storage_Count'Min (To_Fit, PMM_PAGE_SIZE);
          --  Map the data
          Address_Breakdown.Offset := 0;
-         Next (Address_Breakdown.Directory, Address_Breakdown.Table);
+         Next (Address_Breakdown);
       end loop;
 
       return True;
@@ -622,30 +643,16 @@ package body x86.vmm is
    ---------------------
    function Is_Range_Mapped (CR3 : CR3_Register; Address : Virtual_Address; Size : Storage_Count) return Boolean
    is
-      PD  : Page_Directory_Access := Get_Page_Directory (CR3);
       Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
-
-      First_Page_Table : constant Page_Directory_Index := Address_Breakdown.Directory;
-      Last_Page_Table :  constant Page_Directory_Index := Page_Directory_Index (Get_Number_Of_Page_Tables (Size, Address_Breakdown.Offset) - 1);
-
       Number_Of_Pages : Natural := Get_Number_Of_Pages (Size, Address_Breakdown.Offset);
-      First_Page : Page_Table_Index := Address_Breakdown.Table;
-      Last_Page  : Page_Table_Index := Page_Table_Index (Positive'Min (Number_Of_Pages - 1, Positive (Page_Table_Index'Last)));
    begin
-      if (for some Page_Directory_Entry of PD (First_Page_Table .. Last_Page_Table) => not Page_Directory_Entry.Present) then
-         Logger.Log_Error ("One Page_Directory not present" & First_Page_Table'Image & ".." & Last_Page_Table'Image);
-         return False;
-      end if;
 
-      for Index in First_Page_Table .. Last_Page_Table loop
-         if (for some Page of Get_Page_Table (CR3, Index).all (First_Page .. Last_Page) => not Page.Present) then
-            Logger.Log_Error ("Not mapped " & Index'Image);
+      for Index in 1 .. Number_Of_Pages loop
+         if not Is_Mapped (CR3, Address_Breakdown) then
+            Logger.Log_Error ("Not mapped " & Address_Breakdown'Image);
             return False;
          end if;
-
-         Last_Page  := Page_Table_Index (Natural'Min (Number_Of_Pages - 1, Natural (Page_Table_Index'Last)));
-         Number_Of_Pages := Number_Of_Pages - Natural'Min (Number_Of_Pages, Page_Table'Length);
-         First_Page := 0;
+         Next (Address_Breakdown);
       end loop;
 
       return True;
@@ -654,24 +661,31 @@ package body x86.vmm is
    ---------------------
    -- Find_Next_Space --
    ---------------------
+   function Get_Page_Number (Address : Virtual_Address_Break) return Page_Count is
+   begin
+      return 
+         (Page_Count (Address.PML4_Index) * Page_Per_PML3) + 
+         (Page_Count (Address.PML3_Index) * Page_Per_PML2) + 
+         (Page_Count (Address.PML2_Index) * Page_Per_PML1) + 
+          Page_Count (Address.PML1_Index);
+   end Get_Page_Number;
+
+
    function Find_Next_Space
      (CR3 : CR3_register; Size : Storage_Count; Start : System.Address) return Virtual_Address_Break
    is
       Breakdown      : Virtual_Address_Break := To_Virtual_Address_Break (Start);
-      PD             : Page_Directory_Access := Get_Page_Directory (CR3);
    begin
       if Breakdown = To_Virtual_Address_Break (Null_Address) then
-         Next (Breakdown.Directory, Breakdown.Table);
+         Next (Breakdown);
       end if;
 
-      for PD_Index in Breakdown.Directory .. Page_Directory'Last loop
-         for PT_Index in Breakdown.Table .. Page_Table'Last loop
-            if Can_Fit (CR3, From_Virtual_Address_Break (Breakdown), Size) then
-               return Breakdown;
-            end if;
+      for Page in Get_Page_Number (Breakdown) .. Page_Per_PML4 - 1 loop
+         if Can_Fit (CR3, From_Virtual_Address_Break (Breakdown), Size) then
+            return Breakdown;
+         end if;
 
-            Next (Breakdown.Directory, Breakdown.Table);
-         end loop;
+         Next (Breakdown);
       end loop;
 
       return To_Virtual_Address_Break (Null_Address);
@@ -796,13 +810,12 @@ package body x86.vmm is
 
       for i in 0 .. Page_Count - 1 loop
          Map_Physical_Page (
-            Page_Directory => Get_Page_Directory (Dest_CR3),
-            Page_Directory_Start => Dest_Address.Directory,
-            Page_Table_Start => Dest_Address.Table,
+            Process => Dest_CR3,
+            Destination => Dest_Address,
             Address_To_Map => Virtual_To_Physical_Address (Source_CR3, Source_Address + Storage_Count (i * Positive (PMM_PAGE_SIZE))),
             Is_Writable => True,
             Is_Usermode => True);
-         Next (Dest_Address.Directory, Dest_Address.Table);
+         Next (Dest_Address);
       end loop;
 
       Re_Enable_Paging_If_Needed;
@@ -816,10 +829,9 @@ package body x86.vmm is
      (CR3 : CR3_register; Address : System.Address; Size : Storage_Count; Free_Page : Boolean)
    is
       Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
-      PD                       : constant Page_Directory_Access := Get_Page_Directory (CR3);
    
       Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
-      Page_Count               : constant Natural := Get_Number_Of_Pages (size, Address_Breakdown.Offset);
+      Page_Count        : constant Natural := Get_Number_Of_Pages (size, Address_Breakdown.Offset);
    
    begin
       if Paging_Currently_Enabled then
@@ -827,8 +839,8 @@ package body x86.vmm is
       end if;
 
       for i in 1 .. Page_Count loop
-         Unmap_Page (PD, Address_Breakdown.Directory, Address_Breakdown.Table, Free_Page);
-         Next (Address_Breakdown.Directory, Address_Breakdown.Table);
+         Unmap_Page (CR3, Address_Breakdown, Free_Page);
+         Next (Address_Breakdown);
       end loop;
    
       if Paging_Currently_Enabled then

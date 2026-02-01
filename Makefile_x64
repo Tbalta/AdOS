@@ -3,7 +3,7 @@
 
 OBJ = obj
 
-qemu_param = -no-reboot -boot d -serial mon:stdio -m 2G
+qemu_param = -no-reboot -boot d -D ./log.txt -d int,guest_errors,in_asm -serial mon:stdio -m 2G
 
 ifeq ($(SKIP_RAMDISK), TRUE)
 docker_make_flags = SKIP_RAMDISK=TRUE
