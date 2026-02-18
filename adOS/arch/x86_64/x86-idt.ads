@@ -57,7 +57,7 @@ package x86.idt is
       User_Mode         : Boolean := False;
       Instruction_Fetch : Boolean := False;
    end record
-   with Size => 32;
+   with Size => 64;
 
    for Page_Fault_Error_Code use
      record
@@ -110,7 +110,7 @@ package x86.idt is
       selector    : Unsigned_16;
 
       IST         : Unsigned_3;
-      zero_1      : Unsigned_4;
+      zero_1      : Unsigned_5;
       entry_type  : gate_type;
       zero_2      : Unsigned_1;
       DPL         : Cpu_Privilege_Level;
@@ -118,9 +118,9 @@ package x86.idt is
 
       offset_high : Unsigned_48;
    end record
-      with Size => 4 * 32,
-           Dynamic_Predicate => (
-            present = True and zero_1 = 0 and zero_2 = 0);
+      with Size => 4 * 32;
+         --    Dynamic_Predicate => (
+         --     present = True and zero_1 = 0 and zero_2 = 0);
 
    for idt_entry use
      record
@@ -142,7 +142,6 @@ package x86.idt is
    with
      Export,
      Alignment => 16,
-     Convention => Assembler,
      External_Name => "interrupt_descriptor_table",
      Volatile;
 

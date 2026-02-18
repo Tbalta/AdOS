@@ -29,13 +29,14 @@ with VGA.CRTC;
 with Programmable_Interval_Timer;
 with Keyboard;
 with VGA.Terminal;
-
-procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Address) is
+with Limine;
+with SSE;
+procedure Main is
    package Logger renames Loggers.Serial_Logger;
-   package VGA_Logger renames Loggers.Serial_Logger;
+   package VGA_Logger renames Loggers.VGA_Logger;
    CR3 : CR3_register;
 begin
-   VGA_Logger.Log_Info ("Starting adOS...");
+   --  VGA_Logger.Log_Info ("Starting adOS...");
    SERIAL.Init_COM (SERIAL.COM1, SERIAL.Baudrate'Last);
    Logger.Log_Info ("Starting adOS...");
 
@@ -48,50 +49,46 @@ begin
    ---- GDT and IDT initialization --
    ----------------------------------
    x86.gdt.initialize_gdt;
+   SSE.Enable_SSE;
    x86.idt.init_idt;
    Logger.Log_Ok ("GDT and IDT initialized");
 
+   Logger.Log_Ok ("SSE enabled");
    ------------------------
    -- PIC initialization --
    ------------------------
+   Logger.Log_Info ("Limine.hhdm_request.response.address: " & Limine.hhdm_request.response.all'Image);
+   Logger.Log_Info ("Limine.limine_memmap_response'Image: " & Limine.limine_memmap_response.all'Image);
    pic.init;
 
    ------------------------
    -- PMM initialization --
    ------------------------
-   --  declare
-   --     entry_map_size  : constant Storage_Count := Storage_Count (info.mmap_length);
-   --     entry_map_count : constant Integer :=
-   --       Integer (entry_map_size / (multiboot_mmap_entry'Size / Storage_Unit));
-   --     subtype multiboot_mmap_array is multiboot_mmap (1 .. Integer (entry_map_count));
+   declare
+      --  subtype multiboot_mmap_array is multiboot_mmap (1 .. Integer (entry_map_count));
 
-   --     package Conversion is new System.Address_To_Access_Conversions (multiboot_mmap_array);
-   --     entry_map : access multiboot_mmap_array := (Conversion.To_Pointer (info.mmap_addr));
+      --  package Conversion is new System.Address_To_Access_Conversions (multiboot_mmap_array);
+      --  entry_map : access multiboot_mmap_array := (Conversion.To_Pointer (info.mmap_addr));
+      procedure print_mmap (s : System.Address);
+      pragma Import (C, print_mmap, "print_mmap");
+   begin
+      Logger.Log_Info ("Number of memory map entries: " & Limine.limine_memmap_response.Entry_Map_Count'Image);
+      --  print_mmap (Mem_Map_Address);
+      x86.pmm.Init (Limine.mem_map_request.response.all);
 
-   --     procedure print_mmap (s : System.Address);
-   --     pragma Import (C, print_mmap, "print_mmap");
-   --  begin
-   --     Logger.Log_Info ("mmap_count / size: " & entry_map_count'Image & " / " & entry_map_size'Image);
-   --     print_mmap (multiboot_address);
-   --     x86.pmm.Init (entry_map.all);
-   --     Logger.Log_Info
-   --       ("Next free page: " & x86.pmm.Offset_To_Address (x86.pmm.Get_Next_Free_Page)'Image);
-   --  end;
+      Logger.Log_Info
+        ("Next free page: " & x86.pmm.Offset_To_Address (x86.pmm.Get_Next_Free_Page)'Image);
+   end;
 
    ------------------------
    -- VMM initialization --
    ------------------------
 
    Logger.Log_Info ("Initializing VMM");
-   CR3 := Create_CR3;
+   CR3 :=  Get_Current_CR3;
    Logger.Log_Info ("CR3 address: " & CR3'Image);
-   Identity_Map (CR3);
-   Load_CR3 (CR3);
    Set_Kernel_CR3 (CR3);
-   Logger.Log_Ok ("CR3 Loaded");
-   Enable_Paging;
-   Logger.Log_Ok ("Paging enabled");
-   VGA_Logger.Log_Ok ("Paging enabled");
+   Identity_Map (CR3);
 
    ---------------------
    -- Filesystem init --
@@ -124,28 +121,46 @@ begin
       end if;
    end;
 
-   VGA.load_palette ("vga_tui.hex");
+   -- VGA.load_palette ("vga_tui.hex");
 
-   --  declare
-   --     use File_System;
-   --     fd : File_System.File_Descriptor_With_Error := FD_ERROR;
+   Logger.Log_Info (Limine.framebuffer_response.all'Image);
+   Logger.Log_Info (Limine.framebuffer_response.framebuffer_count'Image & " framebuffer(s) found");
+   for i in Limine.framebuffer_response.framebuffers'Range loop
+      Logger.Log_Info ("Framebuffer " & Limine.framebuffer_response.framebuffers (i).all'Image & ":");
+      Logger.Log_Info ("  Address: " & Limine.framebuffer_response.framebuffers (i).all.address'Image);
+      Logger.Log_Info ("  Resolution: " & Limine.framebuffer_response.framebuffers (i).all.width'Image & "x" & Limine.framebuffer_response.framebuffers (i).all.height'Image);
+      Logger.Log_Info ("  Pitch: " & Limine.framebuffer_response.framebuffers (i).all.pitch'Image);
+   end loop;
+   declare
+      --  use File_System;
+      --  fd : File_System.File_Descriptor_With_Error := FD_ERROR;
 
-   --     type vga_buffer is array (Integer range 1 .. 320 * 200) of Unsigned_8 with Pack => True;
-   --     package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
+      Width : Unsigned_64 := Limine.framebuffer_response.framebuffers (1).width;
+      Height : Unsigned_64 := Limine.framebuffer_response.framebuffers (1).height;
 
-   --     Buffer : access vga_buffer := null;
-   --     count  : Integer := 0;
-   --  begin
-   --     VGA.Set_Graphic_Mode (320, 200, 256);
-   --     VGA.load_palette ("vga_gui.hex");
-   --     Buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
-   --     Buffer (1 .. 320 * 200) := (others => 5);
-   --     Buffer (1 .. 320 * 150) := (others => 70);
-   --     Buffer (1 .. 320 * 100) := (others => 90);
-   --     Buffer (1 .. 320 * 50) := (others => 250);
-   --  end;
+      type vga_buffer is array (Unsigned_64 range 1 .. Width * Height) of Unsigned_32 with Pack => True;
+      package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
+
+      Buffer : access vga_buffer := null;
+      --  count  : Integer := 0;
+
+      --  procedure libvga_switch_mode13h;
+      --  pragma Import (C, libvga_switch_mode13h, "libvga_switch_mode13h");
+   begin
+      --  libvga_switch_mode13h;
+      --  --  VGA.Set_Graphic_Mode (320, 200, 256);
+      --  --  VGA.load_palette ("vga_gui.hex");
+      Logger.Log_Info ("Switching to graphical mode...");
+      Logger.Log_Info (Width'Image & "x" & Height'Image);
+      Buffer := Conversion.To_Pointer (Limine.framebuffer_response.framebuffers (1).all.address);
+      Buffer (1 .. Width * Height) := (others => 255);
+      Buffer (1 .. (Width * Height) / 2) := (others => 70);
+      Buffer (1 .. (Width * Height) / 4) := (others => 90);
+      Buffer (1 .. (Width * Height) / 8) := (others => 250);
+   end;
    --  VGA.Set_Text_Mode (80, 25, 16);
    --  VGA.load_palette ("vga_tui.hex");
+   --  Logger.Log_Info ("Hello World!");
    --  Logger.Log_Info ("Hello World!");
    --  while True loop
    --     null;
@@ -165,7 +180,7 @@ begin
       use File_System;
       FD             : File_Descriptor_With_Error := FD_ERROR;
       Program_Header : ELF.ELF_Header;
-      File_To_Open : constant Path := Path' ("null");
+      File_To_Open : constant Path := Path' ("bin/test.elf");
       Userland_CR3 : CR3_Register := Create_CR3;
    begin
       Logger.Log_Info ("Loading file: " & String (File_To_Open));

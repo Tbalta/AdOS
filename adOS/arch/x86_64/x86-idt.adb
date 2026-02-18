@@ -35,6 +35,7 @@ package body x86.idt is
          entry_type  => type_attr,
          zero_1      => 0,
          zero_2      => 0);
+   --  Logger.Log_Info (interrupt_vector (index)'Image);
    end add_entry;
 
    procedure load_idt (idt_ptr : idt_ptr_t) is
@@ -62,10 +63,10 @@ package body x86.idt is
 
       if error_code.User_Mode then
          Logger.Log_Info ("Userland memory:");
-         x86.vmm.Print_Mapped_Memory (x86.vmm.Get_Process_CR3);
+         --  x86.vmm.Print_Mapped_Memory (x86.vmm.Get_Process_CR3);
       else
          Logger.Log_Info ("Kernel memory:");
-         x86.vmm.Print_Mapped_Memory (x86.vmm.Get_Kernel_CR3);
+         --  x86.vmm.Print_Mapped_Memory (x86.vmm.Get_Kernel_CR3);
       end if;
       Logger.Log_Error ("Page Fault at : " & To_Hex (stf.rip));
       Logger.Log_Error ("Faulting address is: " & To_Hex (faulting_address));
@@ -142,6 +143,7 @@ package body x86.idt is
       process_CR3    : x86.vmm.CR3_register := x86.vmm.Get_Current_CR3;
       syscall_result : Syscall.Syscall_Result (signed => False);
    begin
+      --  Logger.Log_Info ("Interrupt: " & interrupt_code'Image);
       x86.vmm.Set_Process_CR3 (process_CR3);
       if interrupt_code = 128 then
          Syscall.Handle_Syscall (rax, rbx, rcx, rdx, rsi, rdi, process_CR3, syscall_result);

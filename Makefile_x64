@@ -9,6 +9,8 @@ ifeq ($(SKIP_RAMDISK), TRUE)
 docker_make_flags = SKIP_RAMDISK=TRUE
 endif
 
+export x86_64 = TRUE
+
 .PHONY: userland
 
 
@@ -69,6 +71,9 @@ format:
 docker-make:
 	docker-compose -f .docker/docker-compose.yml run --rm ados make -f Makefile_x64 $(docker_make_flags)
 	qemu-system-x86_64 -cdrom main.iso $(qemu_param)
+
+docker-clean:
+	docker-compose -f .docker/docker-compose.yml run --rm ados make -f Makefile_x64 clean
 
 docker-build:
 	docker-compose -f .docker/docker-compose.yml build ados

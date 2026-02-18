@@ -9,6 +9,7 @@
 with Interfaces;              use Interfaces;
 with System;                  use System;
 with System.Address_To_Access_Conversions;
+with x86;
 with x86.pmm;                 use x86.pmm;
 with Ada.Unchecked_Conversion;
 with System.Storage_Elements;
@@ -145,8 +146,12 @@ is
       Size           : Storage_Count;
       Hint           : Virtual_Address := System.Null_Address) return Virtual_Address;
 
+
+   function To_Virtual_Address (address : Physical_Address) return Virtual_Address;
+   function To_Physical_Address (address : Virtual_Address) return Physical_Address;
+
 private
-   Paging_Enabled : Boolean := False;
+   Paging_Enabled : Boolean := True;
    PAGE_SIZE      : constant Storage_Count := 4096;
    type Page_Index     is mod 2 ** 9;
 
@@ -259,13 +264,17 @@ private
    package PML2_Conversion is new System.Address_To_Access_Conversions (Page_Map_Level_2);
    package PML1_Conversion is new System.Address_To_Access_Conversions (Page_Map_Level_1);
 
-  function To_PML4_Access (System_Address : System.Address) return Page_Map_Level_4_Access is (Page_Map_Level_4_Access (PML4_Conversion.To_Pointer (System_Address)));
-  function To_PML3_Access (System_Address : System.Address) return Page_Map_Level_3_Access is (Page_Map_Level_3_Access (PML3_Conversion.To_Pointer (System_Address)));
-  function To_PML2_Access (System_Address : System.Address) return Page_Map_Level_2_Access is (Page_Map_Level_2_Access (PML2_Conversion.To_Pointer (System_Address)));
-  function To_PML1_Access (System_Address : System.Address) return Page_Map_Level_1_Access is (Page_Map_Level_1_Access (PML1_Conversion.To_Pointer (System_Address)));
+  function To_PML4_Access (System_Address : Virtual_Address) return Page_Map_Level_4_Access is (Page_Map_Level_4_Access (PML4_Conversion.To_Pointer (System.Address (System_Address))));
+  function To_PML3_Access (System_Address : Virtual_Address) return Page_Map_Level_3_Access is (Page_Map_Level_3_Access (PML3_Conversion.To_Pointer (System.Address (System_Address))));
+  function To_PML2_Access (System_Address : Virtual_Address) return Page_Map_Level_2_Access is (Page_Map_Level_2_Access (PML2_Conversion.To_Pointer (System.Address (System_Address))));
+  function To_PML1_Access (System_Address : Virtual_Address) return Page_Map_Level_1_Access is (Page_Map_Level_1_Access (PML1_Conversion.To_Pointer (System.Address (System_Address))));
 
+  function To_PML4_Access (System_Address : Physical_Address) return Page_Map_Level_4_Access is (To_PML4_Access (To_Virtual_Address (System_Address)));
+  function To_PML3_Access (System_Address : Physical_Address) return Page_Map_Level_3_Access is (To_PML3_Access (To_Virtual_Address (System_Address)));
+  function To_PML2_Access (System_Address : Physical_Address) return Page_Map_Level_2_Access is (To_PML2_Access (To_Virtual_Address (System_Address)));
+  function To_PML1_Access (System_Address : Physical_Address) return Page_Map_Level_1_Access is (To_PML1_Access (To_Virtual_Address (System_Address)));
 
-   type Page_Count is new Long_Long_Long_Integer range 1 .. 2**64; 
+   type Page_Count is new Long_Long_Long_Integer range 0 .. (2**64 - 1);
    Page_Per_PML1 : constant Page_Count := Page_Map_Level_1'Length;
    Page_Per_PML2 : constant Page_Count := Page_Map_Level_2'Length * Page_Per_PML1;
    Page_Per_PML3 : constant Page_Count := Page_Map_Level_3'Length * Page_Per_PML2;
@@ -285,9 +294,9 @@ private
       PML1_Index => 0,
       Offset     => 0);
 
-   function To_Address (Addr : Page_Address) return System.Address;
+   function To_Address (Addr : Page_Address) return Physical_Address;
 
-   function To_Page_Address (Addr : System.Address) return Page_Address;
+   function To_Page_Address (Addr : Physical_Address) return Page_Address;
    function Can_Fit
      (CR3 : CR3_register; Address : Virtual_Address; Size : Storage_Count) return Boolean
       with Pre => not Paging_Enabled,

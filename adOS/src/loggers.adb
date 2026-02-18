@@ -18,34 +18,34 @@ package body Loggers is
    procedure Log_Message (Message : in String) is
    begin
       Serial_Logger.Log_Message (Message);
-      VGA_Logger.Log_Message (Message);
+      --  VGA_Logger.Log_Message (Message);
    end Log_Message;
 
    procedure Log_Error (Error_Message : in String) is
    
    begin
       Serial_Logger.Log_Error (Error_Message);
-      VGA_Logger.Log_Error (Error_Message);
+      --  VGA_Logger.Log_Error (Error_Message);
    end Log_Error;
 
    procedure Log_Info (Info_Message : in String) is
    
    begin
-      Serial_Logger.Log_Info (Info_Message);
-      VGA_Logger.Log_Info (Info_Message);
+   Serial_Logger.Log_Info (Info_Message);
+   --  VGA_Logger.Log_Info (Info_Message);
    end Log_Info;
 
    procedure Log_Ok (Ok_Message : in String) is
    
    begin
       Serial_Logger.Log_Ok (Ok_Message);
-      VGA_Logger.Log_Ok (Ok_Message);
+      --  VGA_Logger.Log_Ok (Ok_Message);
    end Log_Ok;
 
    procedure Log_Warning (Warning_Message : in String) is
    begin
       Serial_Logger.Log_Warning (Warning_Message);
-      VGA_Logger.Log_Warning (Warning_Message);
+      --  VGA_Logger.Log_Warning (Warning_Message);
    end Log_Warning;
 
    procedure Panic (Panic_Message : in String) is
@@ -54,7 +54,7 @@ package body Loggers is
       x86.vmm.Load_CR3 (x86.vmm.Get_Process_CR3);
       x86.vmm.Enable_Paging;
       VGA.Set_Text_Mode (80, 25, 16);
-      VGA_Logger.Log_Error (Panic_Message);
+      --  VGA_Logger.Log_Error (Panic_Message);
       while True loop
          null;
       end loop;

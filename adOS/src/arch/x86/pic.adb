@@ -11,7 +11,7 @@ with Interfaces; use Interfaces;
 with Loggers;
 
 package body pic is
-   package Logger renames Loggers.VGA_Logger;
+   package Logger renames Loggers;
 
    ----------
    -- Init --

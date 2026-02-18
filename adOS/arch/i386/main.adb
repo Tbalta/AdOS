@@ -35,8 +35,8 @@ procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Addre
    package MultiBoot_Conversion is new System.Address_To_Access_Conversions (multiboot_info);
    info : access multiboot_info := MultiBoot_Conversion.To_Pointer (multiboot_address);
 
-   package Logger renames Loggers.Serial_Logger;
-   package VGA_Logger renames Loggers.Serial_Logger;
+   package Logger renames Loggers;
+   package VGA_Logger renames Loggers.VGA_Logger;
    CR3 : CR3_register;
 begin
    VGA_Logger.Log_Info ("Starting adOS...");

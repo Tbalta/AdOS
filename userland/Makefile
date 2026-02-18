@@ -1,7 +1,14 @@
+ifeq ($(x86_64), TRUE)
+export CC = x86_64-elf-gcc
+export CFLAGS = -ffreestanding -O0 -nostdlib -fno-builtin -Wall -Wextra  -ffunction-sections -fdata-sections -fno-stack-protector -fno-zero-initialized-in-bss -I../libc -L ../libc/ -l:libc.a
+else
+export CC = i386-elf-gcc
+export CFLAGS = -ffreestanding -O0 -nostdlib -fno-builtin -Wall -Wextra  -ffunction-sections -fdata-sections -fno-stack-protector -fno-zero-initialized-in-bss -I../libc -L ../libc/ -l:libc.a
+endif
 
 BIN_DIR = bin
 
-PROJECTS = libc test snake doomgeneric/doomgeneric
+PROJECTS = libc test snake # doomgeneric/doomgeneric
 
 PROJECTS_CLEAN = $(PROJECTS:%=%.clean)
 

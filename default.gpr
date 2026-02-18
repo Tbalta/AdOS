@@ -118,17 +118,22 @@ project Default is
 
   package Linker is
     for Leading_Switches (others) use External_Object_Files;
-    for Required_Switches use (
-        "-T" & Default'Project_Dir & Linker_File,
+    Default_Switches := ("-T" & Default'Project_Dir & Linker_File,
         "-static", "-nostartfiles", "-nodefaultlibs",
         "-g", "-fno-exceptions", "-fno-rtti",
-        "-lgcc",
-         "-mcmodel=kernel"
+        "-lgcc"
         -- "-Lruntime/build/adalib"
         -- "-lgnat", 
         -- "L.",
         -- "-lk"
       );
+   case Platform is
+      when "i386-elf" =>
+         for Required_Switches use Default_Switches;
+      when "x86_64-elf" =>
+         for Required_Switches use Default_Switches & ("-mcmodel=kernel");
+      end case;
+
   end Linker;
 
   package Binder is

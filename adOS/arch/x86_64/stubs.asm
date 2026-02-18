@@ -3,12 +3,12 @@ extern handler
 section .text
 
 %macro push_register 0
-    push rdi
-    push rsi
-    push rdx
-    push rcx
-    push rbx
-    push rax
+    push QWORD rdi
+    push QWORD rsi
+    push QWORD rdx
+    push QWORD rcx
+    push QWORD rbx
+    push QWORD rax
 %endmacro
 
 %macro pop_register 0
@@ -31,7 +31,7 @@ isr_stub_%+%1:
     pop_register
     add rsp, 16
     sti
-    iret
+    iretq
 %endmacro
 
 %macro isr_err 1

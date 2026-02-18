@@ -30,6 +30,7 @@ with System.Address_To_Access_Conversions;
 with x86.vmm;
 with System.Storage_Elements;
 with File_System;
+with x86; use x86;
 
 package body VGA is
    use Standard.ASCII;

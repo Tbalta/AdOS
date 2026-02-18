@@ -21,26 +21,28 @@ package x86.pmm is
    type multiboot_mmap is array (Natural range <>) of aliased Mem_Map_Entry with Pack;
    type PMM_Bitmap_Entry is (PMM_Bitmap_Entry_Free, PMM_Bitmap_Entry_Used) with Size => 1;
 
+   type PMM_Bitmap is array (Natural range <>) of PMM_Bitmap_Entry with Component_Size => 1;
+
 
    -- pmm_map_header_entry store the lenght and base address of a free memory region
    -- This is used for converting pmm_map offsets to physical addresses
    type PMM_Header_Entry is record
       length    : Unsigned_64;
-      base_addr : System.Address;
+      base_addr : Physical_Address;
    end record
    with Convention => C;
    type PMM_Headers_Array is array (Positive range <>) of PMM_Header_Entry with Convention => C;
 
-   procedure Init (MB : multiboot_mmap);
+   procedure Init (Mem_Map : Mem_Map_Response);
 
-   type PMM_Header_Info is record
-      Bitmap_Length : Positive;
-      Header_Count  : Positive;
-      Bitmap        : System.Address;
-      Headers       : System.Address;
-   end record
-   with Convention => C;
-   package PMM_Header_Conv is new System.Address_To_Access_Conversions (PMM_Header_Info);
+   --  type PMM_Header_Info is record
+   --     Bitmap_Length : Positive;
+   --     Header_Count  : Positive;
+   --     Bitmap        : System.Address;
+   --     Headers       : System.Address;
+   --  end record
+   --  with Convention => C;
+   --  package PMM_Header_Conv is new System.Address_To_Access_Conversions (PMM_Header_Info);
 
    function check (cond : Boolean; msg : String) return Boolean;
 
@@ -55,9 +57,9 @@ package x86.pmm is
        check
          (Integer_Address ((Storage_Count (addr) / PMM_PAGE_SIZE) * PMM_PAGE_SIZE)
           = To_Integer (Offset_To_Address_Unchecked (Address_To_Offset'Result)),
-          To_Integer (addr)'Image
+          addr'Image
           & " /= "
-          & To_Integer (Offset_To_Address_Unchecked (Address_To_Offset'Result))'Image
+          & Offset_To_Address_Unchecked (Address_To_Offset'Result)'Image
           & " offset: "
           & Address_To_Offset'Result'Image);
    -----------------------
@@ -77,8 +79,8 @@ package x86.pmm is
 
    function Get_Next_Free_Page return Natural;
 
-   function Get_Pmm_Start_Address return Physical_Address;
-   function Get_Pmm_End_Address return Physical_Address;
+   function Get_Pmm_Start_Address return Virtual_Address;
+   function Get_Pmm_End_Address return Virtual_Address;
    function Is_System_Address (addr : Physical_Address) return Boolean;
 
    function Allocate_Page return Physical_Address;
@@ -92,23 +94,29 @@ package x86.pmm is
    with Pre => check (not Is_System_Address (addr) , "Free_Page: Trying to free system page"),
         Post => check (Get_Next_Free_Page <= Address_To_Offset (addr), "Free_Page: Page not freed");
 
-   generic
-      PMM_Address : System.Address;
-   package PMM_Utils is
-      PMM_Info : access PMM_Header_Info := PMM_Header_Conv.To_Pointer (PMM_Address);
-
-      subtype PMM_Headers is PMM_Headers_Array (1 .. PMM_Info.Header_Count);
-      type PMM_Bitmap is array (0 .. (PMM_Info.Bitmap_Length - 1)) of PMM_Bitmap_Entry
-         with Component_Size => 1;
-      package PMM_Header_Conv is new System.Address_To_Access_Conversions (PMM_Headers);
-      package PMM_Bitmap_Conv is new System.Address_To_Access_Conversions (PMM_Bitmap);
-
-      Headers : access PMM_Headers := PMM_Header_Conv.To_Pointer (PMM_Info.Headers);
-      Bitmap  : access PMM_Bitmap := PMM_Bitmap_Conv.To_Pointer (PMM_Info.Bitmap);
-   end PMM_Utils;
-
 private
+   type PMM_Info_Settings is record
+      Header_Count : Positive;
+      Bitmap_Length : Positive;
+   end record;
+   for PMM_Info_Settings use record
+      Header_Count at 0 range 0 .. 63;
+      Bitmap_Length at 8 range 0 .. 63;
+   end record;
+   type PMM_Info (Header_Count : Positive; Bitmap_Length : Positive) is record
+         Headers       : PMM_Headers_Array (1 .. Header_Count);
+         Bitmap        : PMM_Bitmap (1 .. Bitmap_Length);
+   end record;
+   for PMM_Info use record
+      Header_Count at 0 range 0 .. 63;
+      Bitmap_Length at 8 range 0 .. 63;
+   end record;
+   type PMM_Info_Access is access all PMM_Info;
+
    PMM_Header_Address        : System.Address;
    PMM_Bitmap_End_Address    : System.Address;
    Number_Of_Remaining_Pages : Natural;
+   PMM_Info_Ptr              : PMM_Info_Access := null;
+
+
 end x86.pmm;
