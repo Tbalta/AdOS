@@ -44,6 +44,7 @@ package body x86.vmm is
    -- To_Address --
    ----------------
    function To_Address (Addr : Page_Address) return Physical_Address is (Physical_Address (Storage_Count (Integer_Address (Addr)) * PAGE_SIZE));
+   function To_Address (Addr : Page_Address_2MB)  return Physical_Address is (Physical_Address (Storage_Count (Integer_Address (Addr)) * PAGE_SIZE_2MB));
 
    -------------------------
    -- Get_Number_Of_Pages --
@@ -206,7 +207,7 @@ package body x86.vmm is
    function Get_PML1 (CR3 : CR3_Register; PML4_Index, PML3_Index, PML2_Index : Page_Index) return Page_Map_Level_1_Access is
       PML2 : Page_Map_Level_2_Access := Get_PML2 (CR3, PML4_Index, PML3_Index);
    begin
-      return To_PML1_Access(To_Address (PML2 (PML2_Index).Address));
+      return To_PML1_Access(To_Address (PML2 (PML2_Index).PML1_Address));
    end Get_PML1;
    function Get_PML1_Entry (CR3 : CR3_Register; Address : Virtual_Address_Break) return Page_Map_Level_1_Entry_Access
     is
@@ -215,33 +216,181 @@ package body x86.vmm is
       return PML1 (Address.PML1_Index)'Access;
    end Get_PML1_Entry;
 
-   procedure Print_Mapped_Memory (CR3 : CR3_Register) is
+   --  procedure Print_Mapped_Memory (CR3 : CR3_Register) is
+   --     Current_Region_Start : Virtual_Address_Break := Null_Address_Break;
+   --     Current_Region : Virtual_Address_Break := Null_Address_Break;
+
+
+
+   --     function Get_Region_Size return Storage_Count is
+   --     begin
+   --        return From_Virtual_Address_Break (Current_Region) - From_Virtual_Address_Break (Current_Region_Start);
+   --     end Get_Region_Size;
+
+   --     function Get_Flag_String return String is
+   --        Result : String (1 .. 3);
+   --        Is_Writable : Boolean := Get_PML1_Entry (CR3, Current_Region_Start).Is_Writable;
+   --        Is_Usermode : Boolean := Get_PML1_Entry (CR3, Current_Region_Start).Is_Usermode;
+   --     begin
+   --        if Is_Usermode then
+   --           Result (1) := 'U';
+   --        else
+   --           Result (1) := '-';
+   --        end if;
+            
+   --        Result (2) := 'R';
+   --        if Is_Writable then
+   --           Result (3) := '-';
+   --        else
+   --           Result (3) := 'W';
+   --        end if;
+
+   --        return Result;
+   --     end Get_Flag_String;
+
+   --     function To_Hex is new Util.To_Hex (Storage_Count);
+   --     procedure Print (Region_End_Address : Virtual_Address) is
+   --        Region_Start_Address : constant Virtual_Address := From_Virtual_Address_Break (Current_Region_Start);
+   --     begin
+   --        Logger.Log_Info (To_Hex (Storage_Count (Region_Start_Address), 8)      & " " &
+   --                         To_Hex (Storage_Count (Region_End_Address), 8)        & " " &
+   --                         To_Hex (Region_End_Address - Region_Start_Address, 8) & " " &
+   --                         Get_Flag_String);
+   --     end Print;
+
+   --     procedure Test (Test_Address : Virtual_Address_Break) is
+   --     begin
+   --        if not Is_Mapped (CR3, Current_Region_Start) then
+   --           Current_Region_Start := Test_Address;
+   --           return;
+   --        end if;
+   --        Logger.Log_Info ("Testing " & From_Virtual_Address_Break (Test_Address)'Image);
+
+   --        if not Is_Mapped (CR3, Test_Address) then
+   --           Print (From_Virtual_Address_Break (Test_Address));
+   --           Current_Region_Start := Test_Address;
+   --           return;
+   --        end if;
+
+   --        if Get_Page_Number (Test_Address) = Page_Per_PML4 - 1                                                       or else
+   --           Get_PML1_Entry (CR3, Test_Address).Is_Usermode /= Get_PML1_Entry (CR3, Current_Region_Start).Is_Usermode or else
+   --           Get_PML1_Entry (CR3, Test_Address).Is_Writable /= Get_PML1_Entry (CR3, Current_Region_Start).Is_Writable
+   --        then
+   --           Print (From_Virtual_Address_Break (Test_Address));
+   --           Current_Region_Start := Test_Address;
+   --        end if;
+   --     end Test;
+
+   --     Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
+   --  begin
+   --     if Paging_Currently_Enabled then
+   --        Disable_Paging;
+   --     end if;
+
+   --     for Page in 0 .. Page_Per_PML4 - 1 loop
+   --        Test (To_Virtual_Address_Break (System.Address (Storage_Count (Page) * PAGE_SIZE)));
+   --     end loop;
+      
+
+   --     if Paging_Currently_Enabled then
+   --        Enable_Paging;
+   --     end if;
+   --  end Print_Mapped_Memory;
+
+   function Is_Usermode (CR3 : CR3_Register; Address : Virtual_Address_Break) return Boolean is
+      result : Boolean := True;
+   begin
+      result := result and then Get_PML4_Entry (CR3, Address).Is_Usermode;
+      if Get_PML4_Entry (CR3, Address).Page_Size then
+         return result;
+      end if;
+
+      result := result and then Get_PML3_Entry (CR3, Address).Is_Usermode;
+      if Get_PML3_Entry (CR3, Address).Page_Size then
+         return result;
+      end if;
+
+      result := result and then Get_PML2_Entry (CR3, Address).Is_Usermode;
+      if Get_PML2_Entry (CR3, Address).Page_Size then
+         return result;
+      end if;
+
+      result := result and then Get_PML1_Entry (CR3, Address).Is_Usermode;
+      return result;
+   end Is_Usermode;
+
+   function Is_Writable (CR3 : CR3_Register; Address : Virtual_Address_Break) return Boolean is
+      result : Boolean := True;
+   begin
+      result := result and then Get_PML4_Entry (CR3, Address).Is_Writable;
+      if Get_PML4_Entry (CR3, Address).Page_Size then
+         return result;
+      end if;
+
+      result := result and then Get_PML3_Entry (CR3, Address).Is_Writable;
+      if Get_PML3_Entry (CR3, Address).Page_Size then
+         return result;
+      end if;
+
+      result := result and then Get_PML2_Entry (CR3, Address).Is_Writable;
+      if Get_PML2_Entry (CR3, Address).Page_Size then
+         return result;
+      end if;
+
+      result := result and then Get_PML1_Entry (CR3, Address).Is_Writable;
+      return result;
+   end Is_Writable;
+
+   function Compute_Next_Page (CR3 : CR3_Register; Current_Address : Virtual_Address_Break) return Page_Count is
+      Next_Page : Page_Count := Get_Page_Number (Current_Address) + 1;
+   begin
+      if (not Get_PML4_Entry (CR3, Current_Address).Present) or else
+         (Get_PML4_Entry (CR3, Current_Address).Page_Size)
+      then
+         return Page_Per_PML3;
+      end if;
+
+      if (not Get_PML3_Entry (CR3, Current_Address).Present) or else
+         (Get_PML3_Entry (CR3, Current_Address).Page_Size)
+      then
+         return Page_Per_PML2;
+      end if;
+
+      if (not Get_PML2_Entry (CR3, Current_Address).Present) or else
+         (Get_PML2_Entry (CR3, Current_Address).Page_Size)
+      then
+         return Page_Per_PML1;
+      end if;
+
+      return 1;
+   end Compute_Next_Page;
+
+   procedure Print_Mapped_Memory (CR3 : CR3_Register) is 
+      Current_Page : Page_Count := 0;
+      Address_Breakdown : Virtual_Address_Break := Null_Address_Break;
+
+      function To_Hex_Addr is new Util.To_Hex (System.Address);
+
+
+
       Current_Region_Start : Virtual_Address_Break := Null_Address_Break;
-      Current_Region : Virtual_Address_Break := Null_Address_Break;
 
-
-
-      function Get_Region_Size return Storage_Count is
-      begin
-         return From_Virtual_Address_Break (Current_Region) - From_Virtual_Address_Break (Current_Region_Start);
-      end Get_Region_Size;
-
-      function Get_Flag_String return String is
+      function Get_Flag_String  return String is
          Result : String (1 .. 3);
-         Is_Writable : Boolean := Get_PML1_Entry (CR3, Current_Region_Start).Is_Writable;
-         Is_Usermode : Boolean := Get_PML1_Entry (CR3, Current_Region_Start).Is_Usermode;
+         Writable : Boolean := Is_Writable (CR3, Current_Region_Start);
+         Usermode : Boolean := Is_Usermode (CR3, Current_Region_Start);
       begin
-         if Is_Usermode then
+         if Usermode then
             Result (1) := 'U';
          else
             Result (1) := '-';
          end if;
             
          Result (2) := 'R';
-         if Is_Writable then
-            Result (3) := '-';
-         else
+         if Writable then
             Result (3) := 'W';
+         else
+            Result (3) := '-';
          end if;
 
          return Result;
@@ -251,10 +400,10 @@ package body x86.vmm is
       procedure Print (Region_End_Address : Virtual_Address) is
          Region_Start_Address : constant Virtual_Address := From_Virtual_Address_Break (Current_Region_Start);
       begin
-         Logger.Log_Info (To_Hex (Storage_Count (Region_Start_Address), 8)      & " " &
-                          To_Hex (Storage_Count (Region_End_Address), 8)        & " " &
-                          To_Hex (Region_End_Address - Region_Start_Address, 8) & " " &
-                          Get_Flag_String);
+         Logger.Log_Info (To_Hex (Storage_Count (Region_Start_Address), 16)      & " " &
+                          To_Hex (Storage_Count (Region_End_Address), 16)        & " " &
+                          To_Hex (Region_End_Address - Region_Start_Address, 16) & " " &
+                          Get_Flag_String );
       end Print;
 
       procedure Test (Test_Address : Virtual_Address_Break) is
@@ -263,6 +412,7 @@ package body x86.vmm is
             Current_Region_Start := Test_Address;
             return;
          end if;
+         --  Logger.Log_Info ("Testing " & From_Virtual_Address_Break (Test_Address)'Image);
 
          if not Is_Mapped (CR3, Test_Address) then
             Print (From_Virtual_Address_Break (Test_Address));
@@ -271,28 +421,20 @@ package body x86.vmm is
          end if;
 
          if Get_Page_Number (Test_Address) = Page_Per_PML4 - 1                                                       or else
-            Get_PML1_Entry (CR3, Test_Address).Is_Usermode /= Get_PML1_Entry (CR3, Current_Region_Start).Is_Usermode or else
-            Get_PML1_Entry (CR3, Test_Address).Is_Writable /= Get_PML1_Entry (CR3, Current_Region_Start).Is_Writable
+            Is_Usermode (CR3, Test_Address) /= Is_Usermode (CR3, Current_Region_Start) or else
+            Is_Writable (CR3, Test_Address) /= Is_Writable (CR3, Current_Region_Start)
          then
             Print (From_Virtual_Address_Break (Test_Address));
             Current_Region_Start := Test_Address;
          end if;
       end Test;
 
-      Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
    begin
-      if Paging_Currently_Enabled then
-         Disable_Paging;
-      end if;
-
-      for Page in 0 .. Page_Per_PML4 - 1 loop
-         Test (To_Virtual_Address_Break (System.Address (Storage_Count (Page) * PAGE_SIZE)));
+      while Current_Page < Page_Per_PML4 loop
+         Address_Breakdown := To_Virtual_Address_Break (System.Address (Storage_Count (Current_Page) * PAGE_SIZE));
+         Test (Address_Breakdown);
+         Current_Page := Current_Page + Compute_Next_Page (CR3, Address_Breakdown);
       end loop;
-      
-
-      if Paging_Currently_Enabled then
-         Enable_Paging;
-      end if;
    end Print_Mapped_Memory;
 
    ----------------
@@ -302,27 +444,28 @@ package body x86.vmm is
       CR3 : CR3_register;
       Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
    begin
-      if Paging_Currently_Enabled then
-         Disable_Paging;
-      end if;
+      return Duplicate_CR3 (Get_Kernel_CR3);
+      --  if Paging_Currently_Enabled then
+      --     Disable_Paging;
+      --  end if;
 
-      --  Used to allocate Page Directory table
-      CR3.Address := To_Page_Address (Allocate_Page);
-      CR3.PCD := True;
-      CR3.PWT := True;
+      --  --  Used to allocate Page Directory table
+      --  CR3.Address := To_Page_Address (Allocate_Page);
+      --  CR3.PCD := True;
+      --  CR3.PWT := True;
 
-      --  Init the Page Directory
-      declare
-         PML4 : Page_Map_Level_4_Access := Get_PML4 (CR3);
-      begin
-         PML4.all := (others => (Present => False, others => <>));
-      end;
+      --  --  Init the Page Directory
+      --  declare
+      --     PML4 : Page_Map_Level_4_Access := Get_PML4 (CR3);
+      --  begin
+      --     PML4.all := (others => (Present => False, others => <>));
+      --  end;
 
-      if Paging_Currently_Enabled then
-         Enable_Paging;
-      end if;
+      --  if Paging_Currently_Enabled then
+      --     Enable_Paging;
+      --  end if;
 
-      return CR3;
+      --  return CR3;
    end Create_CR3;
    -------------------------
    -- Create_Page_Entries --
@@ -383,12 +526,12 @@ package body x86.vmm is
       PML2 (Destination.PML2_Index).Write_Through := False;
       PML2 (Destination.PML2_Index).Cache_Disable := False;
       PML2 (Destination.PML2_Index).Accessed := False;
-      PML2 (Destination.PML2_Index).Address := To_Page_Address (Page_To_Allocate);
+      PML2 (Destination.PML2_Index).PML1_Address := To_Page_Address (Page_To_Allocate);
       --  Logger.Log_Info ("Create PLM2" & PML2 (Destination.PML2_Index)'Image);
 
       --  Init the Page Map Level 1
       declare
-         PML1 : Page_Map_Level_1_Access := To_PML1_Access (To_Address (PML2 (Destination.PML2_Index).Address));
+         PML1 : Page_Map_Level_1_Access := To_PML1_Access (To_Address (PML2 (Destination.PML2_Index).PML1_Address));
       begin
          PML1.all := Page_Map_Level_1'(others => (Present => False, others => <>));
       end;
@@ -411,6 +554,97 @@ package body x86.vmm is
       --  Logger.Log_Info ("At " & Destination'Image);
    end Create_PML1_Entry;
 
+
+   function Duplicate_PML2_Entry (PML2_Entry : Page_Map_Level_2_Entry) return Page_Map_Level_2_Entry is
+      New_PML2_Entry : Page_Map_Level_2_Entry := PML2_Entry;
+      PML1           : Page_Map_Level_1_Access := null;
+      New_PML1       : Page_Map_Level_1_Access := null;
+   begin
+      if PML2_Entry.Page_Size then
+         return New_PML2_Entry;
+      end if;
+
+      PML1 := To_PML1_Access (To_Address (PML2_Entry.PML1_Address));
+      New_PML2_Entry.PML1_Address := To_Page_Address (Allocate_Page);
+      New_PML1   := To_PML1_Access (To_Address (New_PML2_Entry.PML1_Address));
+      for Index in PML1'Range loop
+         New_PML1 (Index) := PML1 (Index);
+      end loop;
+
+      return New_PML2_Entry;
+   end Duplicate_PML2_Entry;
+
+   function Duplicate_PML3_Entry (PML3_Entry : Page_Map_Level_3_Entry) return Page_Map_Level_3_Entry is
+      New_PML3_Entry : Page_Map_Level_3_Entry := PML3_Entry;
+      PML2           : Page_Map_Level_2_Access := To_PML2_Access (To_Address (PML3_Entry.Address));
+      New_PML2       : Page_Map_Level_2_Access := null;
+   begin
+      if PML3_Entry.Page_Size then
+         return New_PML3_Entry;
+      end if;
+
+      New_PML3_Entry.Address := To_Page_Address (Allocate_Page);
+      New_PML2   := To_PML2_Access (To_Address (New_PML3_Entry.Address));
+
+      for Index in PML2'Range loop
+         New_PML2 (Index).Present := False;
+         if PML2 (Index).Present then
+            New_PML2 (Index) := Duplicate_PML2_Entry (PML2 (Index));
+         end if;
+      end loop;
+
+      return New_PML3_Entry;
+   end Duplicate_PML3_Entry;
+
+   function Duplicate_PML4_Entry (PML4_Entry : Page_Map_Level_4_Entry) return Page_Map_Level_4_Entry is
+      New_PML4_Entry : Page_Map_Level_4_Entry := PML4_Entry;
+   begin
+      if PML4_Entry.Page_Size then
+         return New_PML4_Entry;
+      end if;
+
+      declare
+         PML3           : Page_Map_Level_3_Access := To_PML3_Access (To_Address (PML4_Entry.Address));
+         New_PML3       : Page_Map_Level_3_Access := null;
+      begin
+         New_PML4_Entry.Address := To_Page_Address (Allocate_Page);
+         New_PML3   := To_PML3_Access (To_Address (New_PML4_Entry.Address));
+
+         for Index in PML3'Range loop
+            New_PML3 (Index).Present := False;
+            if PML3 (Index).Present then
+               New_PML3 (Index) := Duplicate_PML3_Entry (PML3 (Index));
+            end if;
+         end loop;
+      end;
+
+      return New_PML4_Entry;
+   end Duplicate_PML4_Entry;
+
+   function Duplicate_CR3 (CR3 : CR3_Register) return CR3_Register is
+      New_CR3        : CR3_Register := CR3;
+      PML4           : Page_Map_Level_4_Access := To_PML4_Access (To_Address (CR3.Address));
+      New_PML4       : Page_Map_Level_4_Access := null;
+   begin
+      New_CR3.Address := To_Page_Address (Allocate_Page);
+      New_PML4   := To_PML4_Access (To_Address (New_CR3.Address));
+      Logger.Log_Info (New_CR3'Image);
+      Logger.Log_Info (CR3'Image);
+      Logger.Log_Info (New_PML4'Image);
+      Logger.Log_Info (To_Address (New_CR3.Address)'Image);
+
+      for  Index in PML4'Range loop
+         if PML4 (Index).Present then
+            Logger.Log_Info ("Duplicating Index " & Index'Image);
+            New_PML4 (Index) := Duplicate_PML4_Entry (PML4 (Index));
+            Logger.Log_Info ("Finished Index " & Index'Image);
+         end if;
+      end loop;
+
+
+      return New_CR3;
+   end Duplicate_CR3;
+
    
    procedure Create_Page_Entries
      (CR3 : CR3_Register;
@@ -419,14 +653,17 @@ package body x86.vmm is
       if not Get_PML4_Entry (CR3, Destination).Present then
          Create_PLM4_Entry (CR3, Destination);
       end if;
+      pragma Assert (not Get_PML4_Entry (CR3, Destination).Page_Size);
 
       if not Get_PML3_Entry (CR3, Destination).Present then
          Create_PML3_Entry (CR3, Destination);
       end if;
+      pragma Assert (not Get_PML3_Entry (CR3, Destination).Page_Size);
 
       if not Get_PML2_Entry (CR3, Destination).Present then
          Create_PML2_Entry (CR3, Destination);
       end if;
+      pragma Assert (not Get_PML2_Entry (CR3, Destination).Page_Size);
 
       if not Get_PML1_Entry (CR3, Destination).Present then
          Create_PML1_Entry (CR3, Destination);
@@ -439,16 +676,27 @@ package body x86.vmm is
       if not Get_PML4_Entry (CR3, Destination).Present then
          return False;
       end if;
+      if Get_PML4_Entry (CR3, Destination).Page_Size then
+         return True;
+      end if;
 
       if not Get_PML3_Entry (CR3, Destination).Present then
          return False;
       end if;
+      if Get_PML3_Entry (CR3, Destination).Page_Size then
+         return True;
+      end if;
+
 
       if not Get_PML2_Entry (CR3, Destination).Present then
          return False;
       end if;
+      if Get_PML2_Entry (CR3, Destination).Page_Size then
+         return True;
+      end if;
 
       if not Get_PML1_Entry (CR3, Destination).Present then
+         --  Logger.Log_Info ("PML1 entry not present for " & Destination'Image);
          return False;
       end if;
 
@@ -522,6 +770,20 @@ package body x86.vmm is
    begin
       if not Is_Mapped (CR3, Address_Breakdown) then
          return Physical_Address'First;
+      end if;
+
+      if Get_PML4_Entry (CR3, Address_Breakdown).Page_Size then
+         return Physical_Address'First;
+      end if;
+
+      if Get_PML3_Entry (CR3, Address_Breakdown).Page_Size then
+         return To_Address (Get_PML3_Entry (CR3, Address_Breakdown).Address) +
+                To_Virtual_Address_Break_1GB (Address).Offset;
+      end if;
+
+      if Get_PML2_Entry (CR3, Address_Breakdown).Page_Size then
+         return To_Address (Get_PML2_Entry (CR3, Address_Breakdown).Address_2MB) + 
+                To_Virtual_Address_Break_2MB (Address).Offset;
       end if;
 
       return To_Address (Get_PML1_Entry (CR3, Address_Breakdown).Address) + Address_Breakdown.Offset;
@@ -661,11 +923,11 @@ package body x86.vmm is
       Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
       Number_Of_Pages : Natural := Get_Number_Of_Pages (Size, Address_Breakdown.Offset);
    begin
-      Logger.Log_Info (Address_Breakdown'Image);
-      Logger.Log_Info ("Number_Of_Pages" & Number_Of_Pages'Image);
+      --  Logger.Log_Info (Address_Breakdown'Image);
+      --  Logger.Log_Info ("Number_Of_Pages" & Number_Of_Pages'Image);
       for Index in 1 .. Number_Of_Pages loop
          if not Is_Mapped (CR3, Address_Breakdown) then
-            Logger.Log_Error ("Not mapped " & Address_Breakdown'Image);
+            Logger.Log_Error ("Not mapped " & From_Virtual_Address_Break (Address_Breakdown)'Image);
             return False;
          end if;
          Next (Address_Breakdown);
@@ -823,7 +1085,6 @@ package body x86.vmm is
       end if;
       
       Return_Address := From_Virtual_Address_Break (Dest_Address) + Offset_In_Page;
-
       for i in 0 .. Page_Count - 1 loop
          Map_Physical_Page (
             Process => Dest_CR3,

@@ -1,7 +1,6 @@
 SRC = $(wildcard *.c) $(wildcard sys/*.c)
 OBJ = $(filter-out crt0.o, $(SRC:.c=.o))
 
-
 LIB = libc.a
 
 all: $(LIB) crt0.o

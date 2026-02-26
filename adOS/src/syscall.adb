@@ -203,7 +203,9 @@ package body Syscall is
 
       declare
          Path_String : constant String := Util.Read_String_From_Address (Kernel_Path);
+         FD         : File_Descriptor_With_Error;
       begin
+         Logger.Log_Info ("Open_Syscall: Opening file: " & Path_String & " with flag: " & flag'Image);
          result.Signed_Value := Signed_Syscall_Output (open (File_System.Path (Path_String), Integer (flag)));
          Logger.Log_Info
            ("Open_Syscall: Opening file: " & Path_String & " FD: " & result.Signed_Value'Image);
@@ -311,6 +313,7 @@ package body Syscall is
               Dest_CR3       => process,
               Size           => length));
       Logger.Log_Info ("Buffer mapped at " & result.Unsigned_Value'Image);
+      --  x86.vmm.List_Mapped_Address (process);
 
    end Mmap_Syscall;
 

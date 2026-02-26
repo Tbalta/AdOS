@@ -16,23 +16,23 @@ package body x86.Userspace is
 
       --!format off
       Asm
-        ("mov $10, %%eax" & LF &
-         "push  $(4 * 8) | 3" & LF &  -- New Data Segment
-         "push %0" & LF &  -- New Stack Pointer
-         "pushf" & LF &  -- EFLAGS
-         "push $(3 * 8) | 3" & LF &  -- CS
-         "push %1" & LF &  -- Entry_Point
-         "xor %%eax, %%eax" & LF &
+        ("movq $10, %%rax" & LF &
+         "pushq  $(4 * 8) | 3" & LF &  -- New Data Segment
+         "pushq %0" & LF &  -- New Stack Pointer
+         "pushfq" & LF &  -- EFLAGS
+         "pushq $(3 * 8) | 3" & LF &  -- CS
+         "pushq %1" & LF &  -- Entry_Point
+         "xor %%rax, %%rax" & LF &
          "mov $(4 * 8) | 3, %%ax" & LF &
          "mov %%ax, %%ds" & LF &
          "mov %%ax, %%es" & LF &
          "mov %%ax, %%fs" & LF &
          "mov %%ax, %%gs" & LF &
-         "iret",
+         "iretq",
          Inputs   => (System.Address'Asm_Input ("g", New_Stack),
                       System.Address'Asm_Input ("g", Entry_Point)),
          Volatile => True,
-         Clobber  => "eax");
+         Clobber  => "rax");
       --!format on
 
       Logger.Log_Info

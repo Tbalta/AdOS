@@ -85,6 +85,7 @@ is
    ----------------
    -- Create_CR3 --
    ----------------
+   function Duplicate_CR3 (CR3 : CR3_Register) return CR3_Register;
    function Create_CR3 return CR3_register;
    
    --------------
@@ -114,7 +115,7 @@ is
    ---------------------------
    procedure Enable_Kernel_Mapping;
    procedure Print_Mapped_Memory (CR3 : CR3_Register);
-
+   --  procedure List_Mapped_Address (CR3 : CR3_Register);
    
 
    ------------------
@@ -153,18 +154,17 @@ is
 private
    Paging_Enabled : Boolean := True;
    PAGE_SIZE      : constant Storage_Count := 4096;
+   PAGE_SIZE_2MB  : constant Storage_Count := 2 ** 21;
    type Page_Index     is mod 2 ** 9;
 
 
-   type Page_Address is range 0 .. 2 ** 20 - 1;
-
-   subtype Page_Table_Address is Page_Address;
-   subtype Page_Directory_Address is Page_Address;
+   type Page_Address is range 0 .. 2 ** 40 - 1;
+   type Page_Address_2MB is range 0 .. 2 ** 31 - 1;
 
    type CR3_register is record
       PWT     : Boolean;
       PCD     : Boolean;
-      Address : Page_Directory_Address;
+      Address : Page_Address;
    end record
    with Size => 64;
    for CR3_register use
@@ -202,13 +202,48 @@ private
      end record;
    --!format on
 
+  type Page_Map_Level_2_Entry (Page_Size : Boolean := False) is record
+      Present         : Boolean := False;
+      Is_Writable     : Boolean := False;
+      Is_Usermode     : Boolean := False;
+      Write_Through   : Boolean := False;
+      Cache_Disable   : Boolean := False;
+      Accessed        : Boolean := False;
+
+      Execute_Disable : Boolean := False;
+      case Page_Size is
+         when True =>
+            Address_2MB : Page_Address_2MB;
+         when False =>
+            PML1_Address : Page_Address;
+      end case;
+   end record
+      with  Size => 64,
+            Object_Size => 64;
+
+   
+   for Page_Map_Level_2_Entry use
+     record
+       Present       at 0 range 0 .. 0;
+       Is_Writable   at 0 range 1 .. 1;
+       Is_Usermode   at 0 range 2 .. 2;
+       Write_Through at 0 range 3 .. 3;
+       Cache_Disable at 0 range 4 .. 4;
+       Accessed      at 0 range 5 .. 5;
+       Page_Size     at 0 range 7 .. 7;
+       Address_2MB   at 0 range 21 .. 51;
+       PML1_Address  at 0 range 12 .. 51;
+       Execute_Disable at 0 range 63 .. 63;
+     end record;
+
+
    type Page_Map_Level_4_Entry is new Page_Entry;
    type Page_Map_Level_4_Entry_Access is access all Page_Map_Level_4_Entry;
   
    type Page_Map_Level_3_Entry is new Page_Entry;
    type Page_Map_Level_3_Entry_Access is access all Page_Map_Level_3_Entry;
 
-   type Page_Map_Level_2_Entry is new Page_Entry;
+   --  type Page_Map_Level_2_Entry is new Page_Entry;
    type Page_Map_Level_2_Entry_Access is access all Page_Map_Level_2_Entry;
 
    type Page_Map_Level_1_Entry is new Page_Entry;
@@ -233,10 +268,48 @@ private
        PML3_Index at 0 range 30 .. 38;
        PML4_Index at 0 range 39 .. 47;
      end record;
+
+     type Virtual_Address_Break_2MB is record
+         Offset : Storage_Offset range 0 .. 2 ** 21 - 1;
+         PML2_Index : Page_Index;
+         PML3_Index : Page_Index;
+         PML4_Index : Page_Index;
+      end record
+         with Size => 64;
+      for Virtual_Address_Break_2MB use record
+         Offset at 0 range 0 .. 20;
+         PML2_Index at 0 range 21 .. 29;
+         PML3_Index at 0 range 30 .. 38;
+         PML4_Index at 0 range 39 .. 47;
+      end record;
+
+     type Virtual_Address_Break_1GB is record
+         Offset : Storage_Offset range 0 .. 2 ** 30 - 1;
+         PML2_Index : Page_Index;
+         PML3_Index : Page_Index;
+         PML4_Index : Page_Index;
+      end record
+         with Size => 64;
+      for Virtual_Address_Break_1GB use record
+         Offset     at 0 range 0 .. 29;
+         PML3_Index at 0 range 30 .. 38;
+         PML4_Index at 0 range 39 .. 47;
+      end record;
+
    function To_Virtual_Address_Break is new
      Ada.Unchecked_Conversion (Source => Virtual_Address, Target => Virtual_Address_Break);
    function From_Virtual_Address_Break is new
      Ada.Unchecked_Conversion (Source => Virtual_Address_Break, Target => Virtual_Address);
+
+   function To_Virtual_Address_Break_2MB is new
+     Ada.Unchecked_Conversion (Source => Virtual_Address, Target => Virtual_Address_Break_2MB);
+   function From_Virtual_Address_Break_2MB is new
+     Ada.Unchecked_Conversion (Source => Virtual_Address_Break_2MB, Target => Virtual_Address);
+
+   function To_Virtual_Address_Break_1GB is new
+     Ada.Unchecked_Conversion (Source => Virtual_Address, Target => Virtual_Address_Break_1GB);
+   function From_Virtual_Address_Break_1GB is new
+     Ada.Unchecked_Conversion (Source => Virtual_Address_Break_1GB, Target => Virtual_Address);
 
    type Page_Map_Level_4 is array (Page_Index) of aliased Page_Map_Level_4_Entry
       with Pack => True,

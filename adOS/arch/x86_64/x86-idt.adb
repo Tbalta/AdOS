@@ -7,6 +7,7 @@ with Loggers;
 with Ada.Interrupts;          use Ada.Interrupts;
 with Ada.Interrupts.Names;    use Ada.Interrupts.Names;
 with Syscall;
+with x86.pmm;
 with x86.vmm;
 with Ada.Unchecked_Conversion;
 with x86.Port_IO;
@@ -60,13 +61,13 @@ package body x86.idt is
       error_code       : Page_Fault_Error_Code := To_Error_Code (stf.error_code);
       faulting_address : constant Unsigned_64 := Get_CR2;
    begin
-
+      x86.pmm.Print_PMM_Info;
       if error_code.User_Mode then
          Logger.Log_Info ("Userland memory:");
-         --  x86.vmm.Print_Mapped_Memory (x86.vmm.Get_Process_CR3);
+         x86.vmm.Print_Mapped_Memory (x86.vmm.Get_Process_CR3);
       else
          Logger.Log_Info ("Kernel memory:");
-         --  x86.vmm.Print_Mapped_Memory (x86.vmm.Get_Kernel_CR3);
+         x86.vmm.Print_Mapped_Memory (x86.vmm.Get_Kernel_CR3);
       end if;
       Logger.Log_Error ("Page Fault at : " & To_Hex (stf.rip));
       Logger.Log_Error ("Faulting address is: " & To_Hex (faulting_address));

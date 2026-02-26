@@ -34,6 +34,7 @@ package x86.pmm is
    type PMM_Headers_Array is array (Positive range <>) of PMM_Header_Entry with Convention => C;
 
    procedure Init (Mem_Map : Mem_Map_Response);
+   procedure Print_PMM_Info;
 
    --  type PMM_Header_Info is record
    --     Bitmap_Length : Positive;
@@ -83,12 +84,12 @@ package x86.pmm is
    function Get_Pmm_End_Address return Virtual_Address;
    function Is_System_Address (addr : Physical_Address) return Boolean;
 
-   function Allocate_Page return Physical_Address;
-   --  with
-   --    Post =>
-   --      check (Get_Next_Free_Page'Old = Address_To_Offset (Allocate_Page'Result), "Incorrect Page allocated") and
-   --      check (Get_Next_Free_Page'Old < Get_Next_Free_Page, "No page allocated returned: " & Get_Next_Free_Page'Image & " old was " & Get_Next_Free_Page'Old'Image) and
-   --      check (not Is_System_Address (Allocate_Page'Result), "Allocate_Page: Allocating system page (" & Address_To_Offset (Allocate_Page'Result)'Image & ")");
+   function Allocate_Page return Physical_Address
+   with
+     Post =>
+       check (Get_Next_Free_Page'Old = Address_To_Offset (Allocate_Page'Result), "Incorrect Page allocated") and
+       check (Get_Next_Free_Page'Old < Get_Next_Free_Page, "No page allocated returned: " & Get_Next_Free_Page'Image & " old was " & Get_Next_Free_Page'Old'Image) and
+       check (not Is_System_Address (Allocate_Page'Result), "Allocate_Page: Allocating system page (" & Address_To_Offset (Allocate_Page'Result)'Image & ")");
 
    procedure Free_Page (addr : Physical_Address)
    with Pre => check (not Is_System_Address (addr) , "Free_Page: Trying to free system page"),

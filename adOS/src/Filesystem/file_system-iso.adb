@@ -153,7 +153,6 @@ package body File_System.ISO is
       if f_offset = f_size then
          return 0;
       end if;
-
       declare
          Atapi_Driver : Device_Driver.Driver_id renames Descriptors (fd).driver;
 

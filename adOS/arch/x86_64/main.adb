@@ -58,7 +58,7 @@ begin
    -- PIC initialization --
    ------------------------
    Logger.Log_Info ("Limine.hhdm_request.response.address: " & Limine.hhdm_request.response.all'Image);
-   Logger.Log_Info ("Limine.limine_memmap_response'Image: " & Limine.limine_memmap_response.all'Image);
+   --  Logger.Log_Info ("Limine.limine_memmap_response'Image: " & Limine.limine_memmap_response.all'Image);
    pic.init;
 
    ------------------------
@@ -78,6 +78,7 @@ begin
 
       Logger.Log_Info
         ("Next free page: " & x86.pmm.Offset_To_Address (x86.pmm.Get_Next_Free_Page)'Image);
+      x86.pmm.Print_PMM_Info;
    end;
 
    ------------------------
@@ -85,9 +86,12 @@ begin
    ------------------------
 
    Logger.Log_Info ("Initializing VMM");
+
    CR3 :=  Get_Current_CR3;
+   Print_Mapped_Memory (CR3);
    Logger.Log_Info ("CR3 address: " & CR3'Image);
    Set_Kernel_CR3 (CR3);
+   --  Print_Mapped_Memory (CR3);
    Identity_Map (CR3);
 
    ---------------------
@@ -162,9 +166,6 @@ begin
    --  VGA.load_palette ("vga_tui.hex");
    --  Logger.Log_Info ("Hello World!");
    --  Logger.Log_Info ("Hello World!");
-   --  while True loop
-   --     null;
-   --  end loop;
 
    Programmable_Interval_Timer.set_timer_period (1);
    --  Keyboard.Init;

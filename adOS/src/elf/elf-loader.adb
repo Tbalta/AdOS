@@ -55,6 +55,7 @@ package body ELF.Loader is
       Segment_Page_Offset : Storage_Offset := Storage_Offset (To_Integer (Program_Header.p_vaddr) mod 4096);
    begin
       Logger.Log_Info ("Reading segment" & Program_Header'Image);
+      pragma Assert (Program_Header'Valid_Scalars);
       Kernel_Buffer := x86.vmm.Kernel_Alloc (Kernel_CR3, Program_Header.p_memsz, Is_Writable => True, Is_Usermode => True);
       memset (Kernel_Buffer, 0, Unsigned_32 (Program_Header.p_memsz));
 

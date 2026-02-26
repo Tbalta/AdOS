@@ -57,14 +57,15 @@ package body x86.pmm is
       -- Logger.Log_Info ("Address_To_Offset_Unchecked - looking for " & addr'Image);
       --  Logger.Log_Info ("Max offset: " & Storage_Offset'Last'Image & " " & Standard'Address_Size'Image);
       for Index in PMM_Info_Ptr.Headers'Range loop
-         if addr in
-              Physical_Address (PMM_Info_Ptr.Headers (Index).base_addr)
-              .. Physical_Address
-                   (PMM_Info_Ptr.Headers (Index).base_addr + Storage_Offset (PMM_Info_Ptr.Headers (Index).length))
-         then
-            return Offset + Natural (Storage_Count (addr - PMM_Info_Ptr.Headers (Index).base_addr) / PMM_PAGE_SIZE);
-         end if;
-         Offset := Offset + Natural (Round_64 (PMM_Info_Ptr.Headers (Index).length, Unsigned_64 (PMM_PAGE_SIZE)) / Unsigned_64 (PMM_PAGE_SIZE));
+         declare
+            Start_Address : constant Physical_Address := PMM_Info_Ptr.Headers (Index).base_addr;
+            End_Address : constant Physical_Address := PMM_Info_Ptr.Headers (Index).base_addr + Storage_Offset (PMM_Info_Ptr.Headers (Index).length) - 1;
+         begin
+            if addr in Start_Address .. End_Address then
+               return Offset + Natural (Storage_Count (addr - PMM_Info_Ptr.Headers (Index).base_addr) / PMM_PAGE_SIZE);
+            end if;
+            Offset := Offset + Natural (Round_64 (PMM_Info_Ptr.Headers (Index).length, Unsigned_64 (PMM_PAGE_SIZE)) / Unsigned_64 (PMM_PAGE_SIZE));
+         end;
       end loop;
       Logger.Log_Error ("Address_To_Offset_Unchecked - unable to find Index for " & addr'Image);
       raise Constraint_Error;
@@ -117,7 +118,6 @@ package body x86.pmm is
       Offset : Natural := Get_Next_Free_Page;
       Result : Physical_Address;
    begin
-      pragma Assert (not x86.vmm.Is_Paging_Enabled);
       Result := Offset_To_Address (Offset);
       if Is_System_Address (Result) then
          Logger.Log_Error ("Allocating System_Address " & Result'Image & " at offset " & Offset'Image);
@@ -154,24 +154,21 @@ package body x86.pmm is
       pmmEntryCount     : Natural := 0;
       pmmHeaderCount    : Integer := 0;
       firstValidAddress : Unsigned_32 := 0;
-      subtype Positive_Aligned_Address is Aligned_Address
-      with Dynamic_Predicate => (To_Integer (Positive_Aligned_Address) > 0);
-      subtype Aligned_Storage_Offset is Storage_Offset
-      with Dynamic_Predicate => (Aligned_Storage_Offset mod Storage_Offset (PMM_PAGE_SIZE) = 0);
       
       function Round_64 is new Standard.Util.Round (Unsigned_64);
+      function To_Hex is new Util.To_Hex (Unsigned_64);
    begin   
       --  First step:
       --    Number of pmm entries.
       --    Number of pmm headers.
       for Index in 1 .. Mem_Map.Entry_Map_Count loop
-         Logger.Log_Info ("MB Entry: " & Mem_Map.entry_map.all (Index).all'Image);
+         --  Logger.Log_Info ("MB Entry: " & Mem_Map.entry_map.all (Index).all'Image);
          if Mem_Map.entry_map.all (Index).flags = Limine.LIMINE_MEMMAP_USABLE then
             Logger.Log_Info
               ("Found available memory at "
                & Mem_Map.entry_map.all (Index).base'Image
                & " of size "
-               & Mem_Map.entry_map.all (Index).length'Image);
+               & To_Hex (Mem_Map.entry_map.all (Index).length));
             pmmEntryCount := pmmEntryCount + Positive (Round_64 (Mem_Map.entry_map.all (Index).length, Unsigned_64 (PMM_PAGE_SIZE)) / Unsigned_64 (PMM_PAGE_SIZE));
             pmmHeaderCount := pmmHeaderCount + 1;
          end if;
@@ -243,8 +240,6 @@ package body x86.pmm is
 
       -- Fourth step:
       --   Masking already used memory.
-      --  Logger.Log_Info ("Setting pmm map.");
-
       declare
          PMM_Start : Virtual_Address  := PMM_Info_Ptr.all'Address;
          PMM_End   : Virtual_Address :=  PMM_Start + Virtual_Address ((PMM_Info_Ptr.all'Size + 7) / 8);
@@ -253,8 +248,53 @@ package body x86.pmm is
          Logger.Log_Info ("Masking " & Address_To_Offset (x86.vmm.To_Physical_Address (PMM_Start))'Image & " .. " & Address_To_Offset (x86.vmm.To_Physical_Address (PMM_End))'Image);
          PMM_Info_Ptr.Bitmap (Address_To_Offset (x86.vmm.To_Physical_Address (PMM_Start)) .. Address_To_Offset (x86.vmm.To_Physical_Address (PMM_End))) := (others => PMM_Bitmap_Entry_Used);
       end;
-
    end Init;
+
+   procedure Print_PMM_Info is
+
+      function To_Hex is new Util.To_Hex(Physical_Address);
+      function To_Hex is new Util.To_Hex(Storage_Count);
+
+      procedure Print_Region (First_Index, Last_Index : Natural) is
+         Start_Address : Physical_Address := Offset_To_Address (First_Index);
+         End_Address : Physical_Address := Offset_To_Address (Last_Index);
+         To_Hex_Size  : Natural := Physical_Address'Size / 4;
+
+      begin
+         Logger.Log_Info ("   " & To_Hex (Start_Address, To_Hex_Size) & " " & To_Hex (End_Address, To_Hex_Size) & " " & PMM_Info_Ptr.Bitmap (First_Index)'Image & " " & First_Index'Image & ".." & Last_Index'Image);
+      end Print_Region;
+
+      Total_Free : Natural := 0;
+      Total_Used : Natural := 0;
+   begin
+      Logger.Log_Info ("PMM Info:");
+      for Region in PMM_Info_Ptr.Headers'Range loop
+         declare
+            First_Index : Natural := Address_To_Offset (PMM_Info_Ptr.Headers (Region).base_addr);
+            Last_Index : Natural := Address_To_Offset (PMM_Info_Ptr.Headers (Region).base_addr + Storage_Count (PMM_Info_Ptr.Headers (Region).length) - 1);
+            Current_Index : Natural := First_Index;
+         begin
+            for Index in (Current_Index + 1) .. Last_Index loop
+               if PMM_Info_Ptr.Bitmap (Index) /= PMM_Info_Ptr.Bitmap (Current_Index) then
+                  Print_Region (Current_Index, Index - 1);
+                  Current_Index := Index;
+               end if;
+
+               if PMM_Info_Ptr.Bitmap (Index) = PMM_Bitmap_Entry_Free then
+                  Total_Free := Total_Free + 1;
+               else
+                  Total_Used := Total_Used + 1;
+               end if;
+            end loop;
+            Print_Region (Current_Index, Last_Index);
+         end;
+      end loop;
+
+      Logger.Log_Info ("Total free pages: " & Total_Free'Image);
+      Logger.Log_Info ("Total used pages: " & Total_Used'Image);
+      Logger.Log_Info ("Total memory: " & To_Hex (Storage_Count (Total_Free + Total_Used) * PMM_PAGE_SIZE));
+
+   end Print_PMM_Info;
 
    function Get_Pmm_Start_Address return Virtual_Address is
    begin

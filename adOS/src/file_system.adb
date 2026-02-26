@@ -1,7 +1,9 @@
+with File_System;
 with File_System.ISO;
 with File_System.SERIAL;
 with File_System.VGA;
 with File_System.IRQ;
+with File_System.LIMINE;
 with Loggers;
 with System.Storage_Elements; use System.Storage_Elements;
 
@@ -26,6 +28,26 @@ package body File_System is
       end loop;
       return i;
    end IndexOfString;
+
+   function Get_First_Path_Component (path : String) return String is
+      Index : Positive := IndexOfString (path, '/');
+   begin
+      if Index in path'Range then
+         return path (path'First .. Min (Index - 1, path'Last));
+      else
+         return path;
+      end if;
+   end Get_First_Path_Component;
+
+   function Get_Second_Path_Component (path : String) return String is
+      Index : Positive := IndexOfString (path, '/');
+   begin
+      if Index in path'Range then
+         return path (Min (Index + 1, path'Last) .. path'Last);
+      else
+         return "";
+      end if;
+   end Get_Second_Path_Component;
 
    function Min (a, b : Integer) return Integer
    is (if (a < b) then a else b);
@@ -78,10 +100,41 @@ package body File_System is
       end case;
    end open;
 
+   function open_dev (File_Path : Path; flag : Integer) return File_Descriptor_With_Error is
+      Driver_FD : Driver_File_Descriptor_With_Error := DRIVER_FD_ERROR;
+      FD        : File_Descriptor_With_Error := FD_ERROR;
+      folder    : constant String := Get_First_Path_Component (String (File_Path));
+      FS        : File_System_Type := INVALID_FS;
+   begin
+
+      if folder = "vga" then
+            Driver_FD := File_System.VGA.open (Path(Get_Second_Path_Component (String (File_Path))), flag);
+            FS := VGA_FS;
+      elsif folder = "limine" then
+            Driver_FD := File_System.LIMINE.open (Path (Get_Second_Path_Component (String (File_Path))), flag);
+            FS := LIMINE_FS;
+      end if;
+
+      if Driver_FD = DRIVER_FD_ERROR then
+         return FD_ERROR;
+      end if;
+
+      FD := Add_File (FS, Driver_FD);
+      if FD = FD_ERROR then
+         close (FS, Driver_FD);
+      end if;
+
+      return FD;
+   end open_dev;
+
    function open (file_path : Path; flag : Integer) return File_Descriptor_With_Error is
       Driver_FD : Driver_File_Descriptor_With_Error := DRIVER_FD_ERROR;
       FD        : File_Descriptor_With_Error := FD_ERROR;
+      folder    : constant String := Get_First_Path_Component (String (file_path));
    begin
+      if folder = "dev" then
+         return open_dev (Path (Get_Second_Path_Component (String (file_path))), flag);
+      end if;
 
       for File_System in SERIAL_FS .. PIT_FS loop
          Driver_FD := Open (File_System, File_Path, Flag);
@@ -95,9 +148,7 @@ package body File_System is
 
          exit when FD /= FD_ERROR;
       end loop;
-
       return FD;
-
    end open;
 
    function read (fd : File_Descriptor; Buffer : access Read_Type) return Integer is
@@ -106,6 +157,7 @@ package body File_System is
 
       function Iso_Read is new File_System.ISO.read (Read_Type);
       function Pit_Read is new File_System.IRQ.read (Read_Type);
+      function Limine_Read is new File_System.LIMINE.read (Read_Type);
    begin
       File := Descriptors (fd);
       if not File.Valid then
@@ -122,6 +174,9 @@ package body File_System is
 
          when PIT_FS =>
             Result := Pit_Read (File.File_System_Decriptor, Buffer);
+         
+         when LIMINE_FS =>
+            Result := Limine_Read (File.File_System_Decriptor, Buffer);
 
          when others =>
             Result := -1;
@@ -133,7 +188,7 @@ package body File_System is
    function write (fd : File_Descriptor; Buffer : access Write_Type) return Integer is
       function Serial_Write is new File_System.SERIAL.write (Write_Type);
       function VGA_Write is new File_System.VGA.write (Write_Type);
-
+      function Limine_Write is new File_System.LIMINE.write (Write_Type);
       File : VFS_File := Descriptors (fd);
    begin
       if not File.Valid then
@@ -149,6 +204,9 @@ package body File_System is
 
          when VGA_FS =>
             return VGA_Write (File.File_System_Decriptor, Buffer);
+         
+         when LIMINE_FS =>
+            return Limine_Write (File.File_System_Decriptor, Buffer);
 
          when others =>
             return -1;
@@ -251,6 +309,9 @@ package body File_System is
 
          when VGA_FS =>
             return File_System.VGA.mmap (File.File_System_Decriptor, size);
+         
+         when LIMINE_FS =>
+            return File_System.LIMINE.mmap (File.File_System_Decriptor, size);
 
          when others =>
             return System.Null_Address;

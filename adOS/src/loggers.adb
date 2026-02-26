@@ -51,13 +51,13 @@ package body Loggers is
    procedure Panic (Panic_Message : in String) is
    begin
       Serial_Logger.Log_Error (Panic_Message);
+      while True loop
+         null;
+      end loop;
       x86.vmm.Load_CR3 (x86.vmm.Get_Process_CR3);
       x86.vmm.Enable_Paging;
       VGA.Set_Text_Mode (80, 25, 16);
       --  VGA_Logger.Log_Error (Panic_Message);
-      while True loop
-         null;
-      end loop;
    end Panic;
 
    procedure Log_C_Char (c : Interfaces.C.char) is

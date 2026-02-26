@@ -6,15 +6,21 @@
 #include <stdbool.h>
 #include <syscall.h>
 #include <vga.h>
+#include <framebuffer.h>
+#include <bmp.h>
+
+static rgba_pixel_t ados_bmp_rgb[320 * 200];
 
 
 int main() {
-    write(0, "Hello World!", 13);
-    int tty = 0;
-    int vga = set_vga_mode (320, 200, 256);
-    if (vga == -1)
+    printf("Hello World!\n");
+    int framebuffer = open_framebuffer();
+    framebuffer_information_t info;
+    get_framebuffer_info(&info);
+
+    if (framebuffer == -1)
     {
-        write (tty, "Unable to open vga", 19);
+        printf("Unable to open framebuffer\n");
         while (true)
         {
             /* code */
@@ -25,21 +31,38 @@ int main() {
     char bmp_header[14];
     char read_buffer[100];
 
-    printf ("Starting AdOS");
+    printf ("Starting AdOS\n");
 
+    bmp_image_t ados_bmp;
+    open_bmp("ados.bmp", &ados_bmp);
+    bmp_to_rgba(&ados_bmp, ados_bmp_rgb);
+    // int ados = open("ados.bmp", 0);
+    // read (ados, bmp_header, sizeof (bmp_header));
     
-    int ados = open("ados.bmp", 0);
-    read (ados, bmp_header, sizeof (bmp_header));
+    // int start = *(int*)(bmp_header + 10);
+    // printf ("bmp_start: %d\n", start);
+    // lseek (ados, start, SEEK_SET);
+
+    // for (int i = 0; i < info.height; i++)
+    // {
+    //     for (int j = 0; j < info.width * (info.bpp / 8); j++)
+    //     {
+    //         write(framebuffer, "\x00", 1);
+    //         // vga_line[j] = 0;
+    //     }
+    //     // int count = read(ados, vga_line, sizeof(vga_line));
+    //     // write(framebuffer, vga_line, count);
+    // }
     
-    int start = *(int*)(bmp_header + 10);
-    int n = snprintf (read_buffer, sizeof(read_buffer), "bmp_start: %d\n", start);
-    write(tty, read_buffer, n);
-    lseek (ados, start, SEEK_SET);
-    
-    char *vga_buff = mmap(NULL, 320*200, 0, 0, vga, 0);
-    for (int i = 0; i < 200; i++)
+    rgba_pixel_t *screen = mmap(NULL, info.width * info.height * (info.bpp / 8), 0, 0, framebuffer, 0);
+    printf("Framebuffer mapped at %d\n", screen);
+
+    for (int w = 0; w < 320; w++)
     {
-        int count = read(ados, vga_buff + (i * 320), sizeof(vga_line));
+        for (int h = 0; h < 200; h++)
+        {
+            screen[w + (h * info.width)] = ados_bmp_rgb[w + (h * 320)];
+        }
     }
 
     while (1)

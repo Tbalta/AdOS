@@ -1,5 +1,10 @@
 #include "syscall.h"
 
+#include <stdint.h>
+
+
+#if defined(__i386__)
+#error "i386 architecture is not supported yet"
 #define syscall_3(num, arg1, arg2, arg3, ret) ({ \
     asm volatile ( \
         "mov $" #num ", %%eax\n"        /* syscall number */ \
@@ -29,6 +34,37 @@
         : "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"\
     ); \
 })
+#elif defined(__x86_64__)
+#define syscall_3(num, arg1, arg2, arg3, ret) ({ \
+    register long long rbx asm("rbx") = (long long)arg1; \
+    register long long rcx asm("rcx") = (long long)arg2; \
+    register long long rdx asm("rdx") = (long long)arg3; \
+    asm volatile ( \
+        "movq $" #num ", %%rax\n"        /* syscall number */ \
+        "int $0x80\n"           /* call kernel */ \
+        "movq %%rax, %0\n"       /* return value in ret */ \
+        : "=m" (ret) \
+        : "r" (rbx), "r" (rcx), "r" (rdx) \
+        : "%rax" \
+    ); \
+})
+
+#define syscall_5(num, arg1, arg2, arg3, arg4, arg5, ret) ({ \
+    register long long rbx asm("rbx") = arg1; \
+    register long long rcx asm("rcx") = arg2; \
+    register long long rdx asm("rdx") = arg3; \
+    register long long rsi asm("rsi") = arg4; \
+    register long long rdi asm("rdi") = arg5; \
+    asm volatile ( \
+        "movq $" #num ", %%rax\n"/* syscall number */ \
+        "int $0x80\n"           /* syscall */ \
+        "movq %%rax, %0\n"       /* ret */ \
+        : "=m" (ret) \
+        : "r" (rbx), "r" (rcx), "r"(rdx), "r"(rsi), "r"(rdi) \
+        : "%rax"\
+    ); \
+})
+#endif
 
 
 int write (int fd, const void *buf, unsigned int count)
@@ -59,7 +95,7 @@ int close (int fd)
     syscall_3(6, fd, zero, zero, ret);
     return ret;
 }
-int open (const char *pathname, int flags)
+int open (const char *pathname, long long flags)
 {
     int ret;
     int zero = 0;

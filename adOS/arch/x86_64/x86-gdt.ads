@@ -12,13 +12,23 @@ package x86.gdt is
       access_byte : Unsigned_8;
       flags       : Unsigned_8);
 
+      -- Figure 3-8. Segment Descriptor
+--    +-------------------+-----+------------+------------+---------------+
+--    |31               24|23 20|19        16|15         8|7             0|  4
+--    |     base[31:24]   |flags|limit[19:16]|    access  |  base[23:16]  |
+--    +-------------------+-----+------------+------------+---------------+
+
+--    +---------------------------------+---------------------------------+
+--    |31                             16|15                              0|  0
+--    |              base[15:00]        |     limit[15:0]                 |  
+--    +-------------------------------------------------------------------+
    type segment_descriptor is record
       limit_low   : Unsigned_16;
       base_low    : Unsigned_16;
       base_mid    : Unsigned_8;
       access_byte : Unsigned_8;
-      limit_high  : Unsigned_8 range 0 .. 3;
-      flags       : Unsigned_8 range 0 .. 3;
+      limit_high  : Unsigned_4;
+      flags       : Unsigned_4;
       base_high   : Unsigned_8;
    end record
    with Size => 64;
@@ -33,35 +43,82 @@ package x86.gdt is
        flags at 0 range 52 .. 55;
        base_high at 0 range 56 .. 63;
      end record;
+   -- Figure 9-4. Format of TSS and LDT Descriptors in 64-bit Mode
 
-   --  type TSS_Entry is record
-   --     prev_tss : System.Address := 0;
-   --     esp0     : System.Address := 0;
-   --     ss0      : Unsigned_16 := 0;
-   --     IOPB     : Unsigned_16 := 0;
-   --  end record
-   --  with Size => 16#68# * 8;
+--    +-----------------------------------+----------+--------------------+
+--    |31                               13|12       8|7                  0|  4
+--    |              reserved             | zero     |     reserved       |  
+--    +-----------------------------------+----------+--------------------+
 
-   --  for TSS_Entry use
-   --    record
-   --      prev_tss at 0 range 0 .. 31;
-   --      esp0 at 4 range 0 .. 31;
-   --      ss0 at 8 range 0 .. 15;
+--    +---------------------------------+---------------------------------+
+--    |31                                                                0|  0
+--    |              base[63:32]                                          |  
+--    +-------------------------------------------------------------------+
+     type TSS_Descriptor_High is record
+        base_high : Unsigned_32;
+        zero : Unsigned_4 := 0;
+     end record
+       with Size => 64,
+            Dynamic_Predicate => zero = 0;
+   for TSS_Descriptor_High use
+       record
+         base_high at 0 range 0 .. 31;
+         zero at 4 range 8 .. 12;
+       end record;
 
-   --    end record;
+   type TSS_Entry is record
+      RSP0     : System.Address := 0;
+      RSP1     : System.Address := 0;
+      RSP2     : System.Address := 0;
+      IST1     : System.Address := 0;
+      IST2     : System.Address := 0;
+      IST3     : System.Address := 0;
+      IST4     : System.Address := 0;
+      IST5     : System.Address := 0;
+      IST6     : System.Address := 0;
+      IST7     : System.Address := 0;
+      IOPB     : Unsigned_16 := 0;
+   end record
+   with Size => 104 * 8;
 
-   --  tss : TSS_Entry
-   --  with Export => True, Convention => C, External_Name => "tss_entry";
+   for TSS_Entry use
+     record
+         RSP0 at 4  range 0 .. 63;
+         RSP1 at 12 range 0 .. 63;
+         RSP2 at 20 range 0 .. 63;
+         IST1 at 36 range 0 .. 63;
+         IST2 at 44 range 0 .. 63;
+         IST3 at 52 range 0 .. 63;
+         IST4 at 60 range 0 .. 63;
+         IST5 at 68 range 0 .. 63;
+         IST6 at 76 range 0 .. 63;
+         IST7 at 84 range 0 .. 63;
+         IOPB at 100 range 15 .. 31;
+     end record;
 
-   --  stack : aliased array (1 .. 8192) of aliased Unsigned_8
-   --  with Export => True,
-   --       Convention => C,
-   --       External_Name => "tss_stack",
-   --       Size => 8192 * 8;
+   tss : TSS_Entry
+   with Export => True, Convention => C, External_Name => "tss_entry";
+
+   stack : aliased array (1 .. 8192) of aliased Unsigned_8
+   with Export => True,
+        Convention => C,
+        External_Name => "tss_stack",
+        Size => 8192 * 8;
 
    -- Null, Kernel Code, Kernel Data, User Code, User Data, TSS
-   GDT_ENTRY_COUNT         : constant Integer := 5;
-   type Global_Descriptor_Table_T is array (0 .. (GDT_ENTRY_COUNT - 1)) of segment_descriptor;
+   type Descriptor_Entry (TSS_Second_Part : Boolean) is record
+      case TSS_Second_Part is
+         when False =>
+            descriptor : segment_descriptor;
+         when True =>
+            tss_descriptor : TSS_Descriptor_High;
+      end case;
+   end record
+      with Size => 64;
+   pragma Unchecked_Union (Descriptor_Entry);
+
+   GDT_ENTRY_COUNT         : constant Integer := 7;
+   type Global_Descriptor_Table_T is array (0 .. (GDT_ENTRY_COUNT - 1)) of Descriptor_Entry (False);
    Global_Descriptor_Table : Global_Descriptor_Table_T
    with Alignment => 16;
 
