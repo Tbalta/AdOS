@@ -153,6 +153,11 @@ package body File_System.ISO is
       if f_offset = f_size then
          return 0;
       end if;
+
+      if Read_Type'Size <= 0 then
+         Logger.Log_Error ("Invalid read size:" & Read_Type'Size'Image);
+      end if;
+      Logger.Log_Info ("Reading: " & Read_Type'Size'Image);
       declare
          Atapi_Driver : Device_Driver.Driver_id renames Descriptors (fd).driver;
 

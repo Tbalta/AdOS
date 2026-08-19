@@ -19,8 +19,16 @@ struct framebuffer_information
     uint8_t blue_mask_size;
     uint8_t blue_mask_shift;
 }__attribute__((packed));
-
 typedef struct framebuffer_information framebuffer_information_t;
+
+struct box
+{
+    int x;
+    int y;
+    int width;
+    int height;
+};
+typedef struct box box_t;
 
 int open_framebuffer();
 int get_framebuffer_info(framebuffer_information_t *info);

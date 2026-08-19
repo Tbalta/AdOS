@@ -2,6 +2,8 @@ with Interfaces;              use Interfaces;
 with System;
 with System.Storage_Elements; use System.Storage_Elements;
 with x86;   use x86;
+with Interfaces.C;
+with Interfaces.C.Strings;
 package Limine is
    pragma Preelaborate;
 
@@ -203,6 +205,22 @@ package Limine is
       response at 40 range 0 .. 63;
    end record;
 
+   --
+   type limine_executable_cmdline_response is record
+      revision : aliased Unsigned_64;
+      cmdline : Interfaces.C.Strings.chars_ptr;
+   end record
+   with Convention => C_Pass_By_Copy;
+   type Executable_Cmdline_Response_Access is access all limine_executable_cmdline_response;
+   pragma Convention (C, Executable_Cmdline_Response_Access);
+
+   type limine_executable_cmdline_request is record
+      id : aliased limine_id;
+      revision : aliased Unsigned_64;
+      response : Executable_Cmdline_Response_Access;
+   end record
+   with Convention => C_Pass_By_Copy;
+
 
 
    -------------------------------
@@ -220,7 +238,9 @@ package Limine is
    pragma Import (C, framebuffer_request, "framebuffer_request");
    framebuffer_response : Framebuffer_Response_Access renames framebuffer_request.response;
 
-
+   executable_cmdline_request : constant limine_executable_cmdline_request;
+   pragma Import (C, executable_cmdline_request, "executable_cmdline_request");
+   executable_cmdline_response : Executable_Cmdline_Response_Access renames executable_cmdline_request.response;
 
 
 

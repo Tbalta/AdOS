@@ -8,7 +8,7 @@ with Loggers;
 with x86.vmm;
 with Util;
 with Limine;
-
+with Loggers;
 package body x86.vmm is
    use Standard.ASCII;
    pragma Assertion_Policy (Assert => Check);
@@ -28,14 +28,22 @@ package body x86.vmm is
 
    function To_Virtual_Address (Address : Physical_Address) return Virtual_Address is
       use Limine;
+      function To_Hex is new Util.To_Hex(Physical_Address);
    begin
+      if not Is_Physical_Address (Address) then
+         Logger.Log_Error (To_Hex (Address) & " is not a valid Physical Address");
+      end if;
       pragma Assert (Is_Physical_Address (Address));
       return Virtual_Address (Address + hhdm_response.offset);
    end To_Virtual_Address;
 
    function To_Physical_Address (Address : Virtual_Address) return Physical_Address is
       use Limine;
+      function To_Hex is new Util.To_Hex(Virtual_Address);
    begin
+      if not Is_Virtual_Address (Address) then
+         Logger.Log_Error (To_Hex (Address) & " is not a valid virtual address");
+      end if;
       pragma Assert (Is_Virtual_Address (Address));
       return Physical_Address (Address - hhdm_response.offset);
    end To_Physical_Address;
@@ -50,7 +58,13 @@ package body x86.vmm is
    -- Get_Number_Of_Pages --
    -------------------------
    function Get_Number_Of_Pages (Size : Storage_Count; Offset : Storage_Offset := 0) return Positive
-   is (Positive ((Size + Storage_Count (PAGE_SIZE - 1 + Offset)) / PAGE_SIZE));
+   is begin
+      if (Size + Storage_Count (PAGE_SIZE - 1 + Offset)) / PAGE_SIZE <= 0 then
+         Logger.Log_Error(Size'Image & ", " & Offset'Image);
+      end if;
+
+    return (Positive ((Size + Storage_Count (PAGE_SIZE - 1 + Offset)) / PAGE_SIZE));
+   end Get_Number_Of_Pages;
 
 
 
@@ -183,6 +197,7 @@ package body x86.vmm is
    function Get_PML3 (CR3 : CR3_Register; PML4_Index : Page_Index) return Page_Map_Level_3_Access is
       PLM4 : Page_Map_Level_4_Access := Get_PML4 (CR3);
    begin
+      pragma Assert (not PLM4 (PML4_Index).Page_Size and PLM4 (PML4_Index).Present);
       return To_PML3_Access (To_Address (PLM4 (PML4_Index).Address));
    end Get_PML3;
    function Get_PML3_Entry (CR3 : CR3_Register; Address : Virtual_Address_Break) return Page_Map_Level_3_Entry_Access is
@@ -540,7 +555,6 @@ package body x86.vmm is
    procedure Create_PML1_Entry (CR3 : CR3_register; Destination : Virtual_Address_Break)
    is
       PML1 : Page_Map_Level_1_Access := Get_PML1 (CR3, Destination.PML4_Index, Destination.PML3_Index, Destination.PML2_Index);
-      Page_To_Allocate : Physical_Address := Allocate_Page;
    begin
       PML1 (Destination.PML1_Index).Present := True;
       PML1 (Destination.PML1_Index).Is_Writable := True;
@@ -549,7 +563,7 @@ package body x86.vmm is
       PML1 (Destination.PML1_Index).Cache_Disable := False;
       PML1 (Destination.PML1_Index).Accessed := False;
       PML1 (Destination.PML1_Index).Page_Size := False;
-      PML1 (Destination.PML1_Index).Address := To_Page_Address (Page_To_Allocate);
+      PML1 (Destination.PML1_Index).Address := To_Page_Address (Physical_Address (0));
       --  Logger.Log_Info ("Create PML1" & PML1 (Destination.PML1_Index)'Image);
       --  Logger.Log_Info ("At " & Destination'Image);
    end Create_PML1_Entry;
@@ -750,8 +764,20 @@ package body x86.vmm is
    is
       PML1_Entry : Page_Map_Level_1_Entry_Access := Get_PML1_Entry (CR3, Destination);
    begin
+      if Get_PML4_Entry (CR3, Destination).Page_Size then
+         raise Program_Error with "Cannot unmap PML4 entry";
+      end if;
+
+      if Get_PML3_Entry (CR3, Destination).Page_Size then
+         raise Program_Error with "Cannot unmap PML3 entry";
+      end if;
+
+      if Get_PML2_Entry (CR3, Destination).Page_Size then
+         raise Program_Error with "Cannot unmap PML2 entry";
+      end if;
+
       if not PML1_Entry.Present then
-         return;
+         raise Program_Error with "PML1 entry not present";
       end if;
 
       if Free_Page then
@@ -789,6 +815,29 @@ package body x86.vmm is
       return To_Address (Get_PML1_Entry (CR3, Address_Breakdown).Address) + Address_Breakdown.Offset;
    end Virtual_To_Physical_Address;
 
+   function Get_Offset (CR3 : CR3_Register; Address : Virtual_Address) return Storage_Offset
+   is
+      Address_Breakdown_1KB : Virtual_Address_Break := To_Virtual_Address_Break (Address);
+   begin
+      if not Is_Mapped (CR3, Address_Breakdown_1KB) then
+         return Address_Breakdown_1KB.Offset;
+      end if;
+
+      if Get_PML4_Entry (CR3, Address_Breakdown_1KB).Page_Size then
+         raise Program_Error;
+      end if;
+
+      if Get_PML3_Entry (CR3, Address_Breakdown_1KB).Page_Size then
+         return To_Virtual_Address_Break_1GB (Address).Offset;
+      end if;
+
+      if Get_PML2_Entry (CR3, Address_Breakdown_1KB).Page_Size then
+         return To_Virtual_Address_Break_2MB (Address).Offset;
+      end if;
+
+      return Address_Breakdown_1KB.Offset;
+   end Get_Offset;
+
    ---------------
    -- Map_Range --
    ---------------
@@ -799,6 +848,7 @@ package body x86.vmm is
       Is_Writable                : Boolean := False;
       Is_Usermode                : Boolean := False)
    is
+      pragma Assert (Start_Address < End_Address);
       Page_Count : Positive := Get_Number_Of_Pages (End_Address - Start_Address);
       Address_To_Map : Physical_Address := Start_Address;
       Current_Destination : Virtual_Address_Break := Destination;
@@ -921,7 +971,7 @@ package body x86.vmm is
    function Is_Range_Mapped (CR3 : CR3_Register; Address : Virtual_Address; Size : Storage_Count) return Boolean
    is
       Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
-      Number_Of_Pages : Natural := Get_Number_Of_Pages (Size, Address_Breakdown.Offset);
+      Number_Of_Pages : Natural := Get_Number_Of_Pages (Size, Get_Offset (CR3, Address));
    begin
       --  Logger.Log_Info (Address_Breakdown'Image);
       --  Logger.Log_Info ("Number_Of_Pages" & Number_Of_Pages'Image);
@@ -1030,7 +1080,8 @@ package body x86.vmm is
    is
       Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
       Offset_In_Page        : constant Virtual_Address_Offset := To_Virtual_Address_Break (Source_Address).Offset;
-      Page_Count              : constant Positive := Get_Number_Of_Pages (Size + Storage_Count (Offset_In_Page));
+      pragma Assert (Size'Valid_Scalars);
+      Page_Count              : constant Positive := Get_Number_Of_Pages (Size, Offset_In_Page);
 
       Return_Address        : System.Address;
       Dest_Address          : Virtual_Address_Break;
@@ -1108,7 +1159,7 @@ package body x86.vmm is
       Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
    
       Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
-      Page_Count        : constant Natural := Get_Number_Of_Pages (size, Address_Breakdown.Offset);
+      Page_Count        : constant Positive := Get_Number_Of_Pages (size, Address_Breakdown.Offset);
    
    begin
       if Paging_Currently_Enabled then

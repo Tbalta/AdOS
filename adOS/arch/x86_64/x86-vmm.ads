@@ -160,6 +160,7 @@ private
 
    type Page_Address is range 0 .. 2 ** 40 - 1;
    type Page_Address_2MB is range 0 .. 2 ** 31 - 1;
+   type Page_Address_1GB is range 0 .. 2 ** 22 - 1;
 
    type CR3_register is record
       PWT     : Boolean;
@@ -220,8 +221,6 @@ private
    end record
       with  Size => 64,
             Object_Size => 64;
-
-   
    for Page_Map_Level_2_Entry use
      record
        Present       at 0 range 0 .. 0;
@@ -235,12 +234,43 @@ private
        PML1_Address  at 0 range 12 .. 51;
        Execute_Disable at 0 range 63 .. 63;
      end record;
+  type Page_Map_Level_3_Entry (Page_Size : Boolean := False) is record
+      Present         : Boolean := False;
+      Is_Writable     : Boolean := False;
+      Is_Usermode     : Boolean := False;
+      Write_Through   : Boolean := False;
+      Cache_Disable   : Boolean := False;
+      Accessed        : Boolean := False;
+
+      Execute_Disable : Boolean := False;
+      case Page_Size is
+         when True =>
+            Address_1GB : Page_Address_1GB;
+         when False =>
+            Address : Page_Address;
+      end case;
+   end record
+      with  Size => 64,
+            Object_Size => 64;
+   for Page_Map_Level_3_Entry use
+     record
+       Present       at 0 range 0 .. 0;
+       Is_Writable   at 0 range 1 .. 1;
+       Is_Usermode   at 0 range 2 .. 2;
+       Write_Through at 0 range 3 .. 3;
+       Cache_Disable at 0 range 4 .. 4;
+       Accessed      at 0 range 5 .. 5;
+       Page_Size     at 0 range 7 .. 7;
+       Address_1GB   at 0 range 30 .. 51;
+       Address       at 0 range 12 .. 51;
+       Execute_Disable at 0 range 63 .. 63;
+     end record;
 
 
    type Page_Map_Level_4_Entry is new Page_Entry;
    type Page_Map_Level_4_Entry_Access is access all Page_Map_Level_4_Entry;
   
-   type Page_Map_Level_3_Entry is new Page_Entry;
+   --  type Page_Map_Level_3_Entry is new Page_Entry;
    type Page_Map_Level_3_Entry_Access is access all Page_Map_Level_3_Entry;
 
    --  type Page_Map_Level_2_Entry is new Page_Entry;

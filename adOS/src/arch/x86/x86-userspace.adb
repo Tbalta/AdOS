@@ -32,7 +32,7 @@ package body x86.Userspace is
          Inputs   => (System.Address'Asm_Input ("g", New_Stack),
                       System.Address'Asm_Input ("g", Entry_Point)),
          Volatile => True,
-         Clobber  => "rax");
+         Clobber  => "rax, rsp");
       --!format on
 
       Logger.Log_Info

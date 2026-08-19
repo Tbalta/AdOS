@@ -10,6 +10,7 @@ with Atapi;
 with Ada.Unchecked_Conversion;
 with Interfaces;              use Interfaces;
 with Interfaces.C;            use Interfaces.C;
+with Interfaces.C.Strings;    use Interfaces.C.Strings;
 with System.Address_To_Access_Conversions;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
@@ -33,7 +34,6 @@ with Limine;
 with SSE;
 procedure Main is
    package Logger renames Loggers.Serial_Logger;
-   package VGA_Logger renames Loggers.VGA_Logger;
    CR3 : CR3_register;
 begin
    --  VGA_Logger.Log_Info ("Starting adOS...");
@@ -75,6 +75,8 @@ begin
       Logger.Log_Info ("Number of memory map entries: " & Limine.limine_memmap_response.Entry_Map_Count'Image);
       --  print_mmap (Mem_Map_Address);
       x86.pmm.Init (Limine.mem_map_request.response.all);
+
+      Logger.Log_Info ("cmdline: " & Value (Limine.executable_cmdline_response.cmdline));
 
       Logger.Log_Info
         ("Next free page: " & x86.pmm.Offset_To_Address (x86.pmm.Get_Next_Free_Page)'Image);
@@ -125,8 +127,6 @@ begin
       end if;
    end;
 
-   -- VGA.load_palette ("vga_tui.hex");
-
    Logger.Log_Info (Limine.framebuffer_response.all'Image);
    Logger.Log_Info (Limine.framebuffer_response.framebuffer_count'Image & " framebuffer(s) found");
    for i in Limine.framebuffer_response.framebuffers'Range loop
@@ -136,9 +136,6 @@ begin
       Logger.Log_Info ("  Pitch: " & Limine.framebuffer_response.framebuffers (i).all.pitch'Image);
    end loop;
    declare
-      --  use File_System;
-      --  fd : File_System.File_Descriptor_With_Error := FD_ERROR;
-
       Width : Unsigned_64 := Limine.framebuffer_response.framebuffers (1).width;
       Height : Unsigned_64 := Limine.framebuffer_response.framebuffers (1).height;
 
@@ -146,14 +143,7 @@ begin
       package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
 
       Buffer : access vga_buffer := null;
-      --  count  : Integer := 0;
-
-      --  procedure libvga_switch_mode13h;
-      --  pragma Import (C, libvga_switch_mode13h, "libvga_switch_mode13h");
    begin
-      --  libvga_switch_mode13h;
-      --  --  VGA.Set_Graphic_Mode (320, 200, 256);
-      --  --  VGA.load_palette ("vga_gui.hex");
       Logger.Log_Info ("Switching to graphical mode...");
       Logger.Log_Info (Width'Image & "x" & Height'Image);
       Buffer := Conversion.To_Pointer (Limine.framebuffer_response.framebuffers (1).all.address);
@@ -162,10 +152,6 @@ begin
       Buffer (1 .. (Width * Height) / 4) := (others => 90);
       Buffer (1 .. (Width * Height) / 8) := (others => 250);
    end;
-   --  VGA.Set_Text_Mode (80, 25, 16);
-   --  VGA.load_palette ("vga_tui.hex");
-   --  Logger.Log_Info ("Hello World!");
-   --  Logger.Log_Info ("Hello World!");
 
    Programmable_Interval_Timer.set_timer_period (1);
    --  Keyboard.Init;
@@ -181,7 +167,7 @@ begin
       use File_System;
       FD             : File_Descriptor_With_Error := FD_ERROR;
       Program_Header : ELF.ELF_Header;
-      File_To_Open : constant Path := Path' ("bin/test.elf");
+      File_To_Open : constant Path := Path (String' (Value (Limine.executable_cmdline_response.cmdline)));
       Userland_CR3 : CR3_Register := Create_CR3;
    begin
       Logger.Log_Info ("Loading file: " & String (File_To_Open));

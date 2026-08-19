@@ -31,6 +31,7 @@ package x86.idt is
       end case;
    end record
    with Pack => True, Volatile;
+   pragma Unchecked_Union(stack_frame);
 
    --!format off
    for stack_frame use

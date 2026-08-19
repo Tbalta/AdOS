@@ -12,7 +12,6 @@ with Interfaces;              use Interfaces;
 with System;
 with System.Storage_Elements; use System.Storage_Elements;
 with Arch; use Arch;
-
 package Syscall is
    pragma Preelaborate;
 

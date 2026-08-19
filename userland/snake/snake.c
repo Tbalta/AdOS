@@ -2,8 +2,8 @@
 #include <stdbool.h>
 #include <syscall.h>
 #include "snake.h"
-#include <vga.h>
-
+#include <bmp.h>
+#include <framebuffer.h>
 
 void draw_box (void *buffer, int x, int y, int w, int h, int color)
 {
@@ -16,23 +16,68 @@ void draw_box (void *buffer, int x, int y, int w, int h, int color)
     }
 }
 
-void draw_image (void *buffer, const char *image, dimensions_t buffer_dims, dimensions_t image_dims, point_t buffer_position, point_t image_position, dimensions_t crop)
-{
-    int buffer_start = (buffer_position.y * buffer_dims.width) + buffer_position.x;
-    int image_start =  (image_position.y * image_dims.width) + image_position.x;
+// void draw_image (void *buffer, const char *image, dimensions_t buffer_dims, dimensions_t image_dims, point_t buffer_position, point_t image_position, dimensions_t crop)
+// {
+//     int buffer_start = (buffer_position.y * buffer_dims.width) + buffer_position.x;
+//     int image_start =  (image_position.y * image_dims.width) + image_position.x;
 
-    for (int row = 0; row < crop.height; row++)
+//     for (int row = 0; row < crop.height; row++)
+//     {
+//         int buffer_line_start  = buffer_start + (row * buffer_dims.width);
+//         int image_line_start = image_start + (row * image_dims.width);
+//         memcpy (buffer + buffer_line_start, image + image_line_start, crop.width);
+//     }
+// }
+
+static  inline int min(int a, int b)
+{
+    if (a < b)
+        return a;
+
+    return b;
+}
+
+void draw_image (void *buffer, const bmp_image_t *image, const framebuffer_information_t *fb_info, box_t buffer_destination, box_t crop)
+{
+    int buffer_offset = (buffer_destination.y * fb_info->width) + buffer_destination.x;
+    int image_offset  =  (crop.y * image->width) + crop.x;
+    
+    int scale_factor = min(buffer_destination.width / crop.width, buffer_destination.height / crop.height);
+
+    for (int row = 0; row < crop.height * scale_factor; row++)
     {
-        int buffer_line_start  = buffer_start + (row * buffer_dims.width);
-        int image_line_start = image_start + (row * image_dims.width);
-        memcpy (buffer + buffer_line_start, image + image_line_start, crop.width);
+        for (int w = 0; w < crop.width; w++)
+        {
+            int buffer_line_start  = (buffer_offset + (row * fb_info->width) + (w * scale_factor)) * (fb_info->bpp / 8);
+            int image_line_start   = (image_offset + ((row / scale_factor) * image->width) + w) * (fb_info->bpp / 8);
+            for (int i = 0; i < scale_factor; i++)
+            {
+                memcpy (buffer + buffer_line_start + (i * (fb_info->bpp / 8)), ((void*)image->rgba_buffer) + image_line_start, (fb_info->bpp / 8));
+            }
+        }
     }
 }
 
-void copy_image (void *buffer, const char *image, dimensions_t buffer_dims)
+static inline box_t get_image_box (const bmp_image_t *image)
 {
-    draw_image (buffer, image, buffer_dims, buffer_dims,  (point_t){0, 0}, (point_t){0, 0}, buffer_dims);
+    return (box_t){
+        .x = 0,
+        .y = 0,
+        .width = image->width,
+        .height = image->height,
+    };
 }
+
+
+void draw_at (void *buffer, const bmp_image_t *image, const framebuffer_information_t *fb_info, box_t buffer_destination)
+{
+    draw_image(buffer, image, fb_info, buffer_destination, get_image_box(image));
+}
+
+// void copy_image (void *buffer, const char *image, dimensions_t buffer_dims)
+// {
+//     draw_image (buffer, image, buffer_dims, buffer_dims,  (point_t){0, 0}, (point_t){0, 0}, buffer_dims);
+// }
 
 
 void busy_wait_ms (int systick_fd, int ms)
@@ -62,20 +107,20 @@ int rand(void) // RAND_MAX assumed to be 32767
     return (unsigned int)(next/65536) % 32768;
 }
 
-void rotate_left (char *dest, const char *image, int width, int height)
-{
-    for (int col = 0; col < width; col++)
-    {
-        for (int row = 0; row < height; row++)
-        {
-            int src_index = (row * width) + col;
-            int dest_line = (width - 1 ) - col;
-            int dest_col = row;
-            int dest_index = (dest_line * width) + dest_col;
-            dest[dest_index] = image[src_index];
-        }
-    }
-}
+// void rotate_left (char *dest, const char *image, int width, int height)
+// {
+//     for (int col = 0; col < width; col++)
+//     {
+//         for (int row = 0; row < height; row++)
+//         {
+//             int src_index = (row * width) + col;
+//             int dest_line = (width - 1 ) - col;
+//             int dest_col = row;
+//             int dest_index = (dest_line * width) + dest_col;
+//             dest[dest_index] = image[src_index];
+//         }
+//     }
+// }
 
 int next_mod (int a, int mod)
 {
@@ -87,20 +132,23 @@ int prev_mod (int a, int mod)
 }
 
 
-static char head_bmp_down[10*10];
-static char head_bmp_right[10*10];
-static char head_bmp_up[10*10];
-static char head_bmp_left[10*10];
-static char head_dead_bmp_down[10*10];
-static char head_dead_bmp_right[10*10];
-static char head_dead_bmp_up[10*10];
-static char head_dead_bmp_left[10*10];
-static char body_bmp [10*10];
-static char body_boom_bmp [10*10];
-static char apple_bmp [10*10];
+static bmp_image_t head_bmp_down;
+static bmp_image_t head_bmp_right;
+static bmp_image_t head_bmp_up;
+static bmp_image_t head_bmp_left;
+static bmp_image_t head_dead_bmp_down;
+static bmp_image_t head_dead_bmp_right;
+static bmp_image_t head_dead_bmp_up;
+static bmp_image_t head_dead_bmp_left;
+static bmp_image_t body_bmp;
+static bmp_image_t body_boom_bmp;
+static bmp_image_t apple_bmp;
+static bmp_image_t lost_bmp;
 
-static char garden[320*200];
-static char press_to_play_bmp[320 * 50];
+static bmp_image_t garden_bmp;
+static bmp_image_t press_to_play_bmp;
+
+static bmp_image_t start_bmp;
 
 bool are_directions_opposite (direction_t dir1, direction_t dir2)
 {
@@ -152,18 +200,23 @@ direction_t get_next_direction (int keyboard_fd, direction_t prev_direction)
     return prev_direction;
 }
 
-int main() {
-    char* snake_heads[] = {
-        head_bmp_down,
-        head_bmp_up,
-        head_bmp_left,
-        head_bmp_right,
+int map(int value, int from_low, int from_high, int to_low, int to_high)
+{
+    return (value - from_low) * (to_high - to_low) / (from_high - from_low) + to_low;
+}
+
+int main() {   
+    bmp_image_t *snake_heads[] = {
+        &head_bmp_down,
+        &head_bmp_up,
+        &head_bmp_left,
+        &head_bmp_right,
     };
-    char* snake_dead_heads[] = {
-        head_dead_bmp_down,
-        head_dead_bmp_up,
-        head_dead_bmp_left,
-        head_dead_bmp_right,
+    bmp_image_t *snake_dead_heads[] = {
+        &head_dead_bmp_down,
+        &head_dead_bmp_up,
+        &head_dead_bmp_left,
+        &head_dead_bmp_right,
     };
     
     int tty = 0;
@@ -171,25 +224,35 @@ int main() {
     {
     }
 
-    int vga = set_vga_mode (320, 200, 256);
-    if (vga == -1)
+    int framebuffer_fd = open_framebuffer();
+    if (framebuffer_fd == -1)
     {
-        write (tty, "Unable to open vga", 19);
+        printf ("Unable to open framebuffer\n");
+        while (true)
+        {
+            /* code */
+        }
+    }
+ 
+    framebuffer_information_t fb_info;
+    if (get_framebuffer_info(&fb_info) == -1)
+    {
+        printf ("Unable to get framebuffer info\n");
+        while (true)        {
+            /* code */
+        }
+     }
+
+    char *framebuffer = mmap(NULL, fb_info.width * fb_info.height * (fb_info.bpp / 8), 0, 0, framebuffer_fd, 0);
+    if (framebuffer == NULL)
+    {
+        printf ("Unable to map framebuffer\n");
         while (true)
         {
             /* code */
         }
     }
 
-    char *vga_buff = mmap(NULL, 320*200, 0, 0, vga, 0);
-    if (vga_buff == NULL)
-    {
-        write (tty, "Unable to map vga_buff", 23);
-        while (true)
-        {
-            /* code */
-        }
-    }
 
     int systick_fd = open("systick", 0);
     if (systick_fd == -1)
@@ -209,29 +272,55 @@ int main() {
         }
     }
 
-    load_image (head_bmp_down, "head.bmp", 10, 10);
-    rotate_left (head_bmp_right, head_bmp_down, 10, 10);
-    rotate_left (head_bmp_up, head_bmp_right, 10, 10);
-    rotate_left (head_bmp_left, head_bmp_up, 10, 10);
+    open_bmp ("head.bmp", &head_bmp_down);
+    load_rgba(&head_bmp_down);
 
-    load_image (head_dead_bmp_down, "dead.bmp", 10, 10);
-    rotate_left (head_dead_bmp_right, head_dead_bmp_down, 10, 10);
-    rotate_left (head_dead_bmp_up, head_dead_bmp_right, 10, 10);
-    rotate_left (head_dead_bmp_left, head_dead_bmp_up, 10, 10);
+    rotate_left (&head_bmp_right, &head_bmp_down);
+    rotate_left (&head_bmp_up, &head_bmp_right);
+    rotate_left (&head_bmp_left, &head_bmp_up);
+
+    open_bmp ("dead.bmp", &head_dead_bmp_down);
+    load_rgba(&head_dead_bmp_down);
+    rotate_left (&head_dead_bmp_right, &head_dead_bmp_down);
+    rotate_left (&head_dead_bmp_up, &head_dead_bmp_right);
+    rotate_left (&head_dead_bmp_left, &head_dead_bmp_up);
     
-    load_image (body_bmp, "body.bmp", 10, 10);
-    load_image (body_boom_bmp, "boom.bmp", 10, 10);
-    load_image (apple_bmp, "apple.bmp", 10, 10);
-    load_image (garden, "garden.bmp", 320, 200);
-    load_image (press_to_play_bmp, "text.bmp", 320, 50);
+    open_bmp ("body.bmp", &body_bmp);
+    load_rgba(&body_bmp);
 
+    open_bmp ("boom.bmp", &body_boom_bmp);
+    load_rgba(&body_boom_bmp);
+
+    open_bmp ("apple.bmp", &apple_bmp);
+    load_rgba(&apple_bmp);
+
+    open_bmp ("garden.bmp", &garden_bmp);
+    load_rgba(&garden_bmp);
+
+    open_bmp ("text.bmp", &press_to_play_bmp);
+    load_rgba(&press_to_play_bmp);
+
+    open_bmp ("start.bmp", &start_bmp);
+    load_rgba(&start_bmp);
+    
+    open_bmp ("lost.bmp", &lost_bmp);
+    load_rgba(&lost_bmp);
 
 
     dimensions_t garden_dims = {.width = 320, .height = 200};
-    dimensions_t body_part_dims = {.width = 10, .height = 10};
+    int scale_factor = min(fb_info.width / garden_dims.width, fb_info.height / garden_dims.height);
 
+    dimensions_t body_part_dims = {
+        .width = 10 * scale_factor,
+        .height = 10 * scale_factor
+    };
 
-    char buff[256];
+    box_t framebuffer_box = {
+        .height = fb_info.height,
+        .width  = fb_info.width,
+        .x = 0,
+        .y = 0,
+    };
 
     int tick = 0;
     int x = 0;
@@ -254,25 +343,38 @@ int main() {
         .y = y,
     };
     
-    point_t fruit;
+    box_t fruit = {
+        .x = 0,
+        .y = 0,
+        .width = body_part_dims.width,
+        .height = body_part_dims.height
+    };
     bool fruit_valid = false;
-    int step = 10;
+    int step = 10 * scale_factor;
 
     int key = -1;
+
     while (1)
     {
         // main game loop
-        load_image (vga_buff, "start.bmp", 320, 200);
+        // display_rgba (&start_bmp, &fb_info, framebuffer, framebuffer_box);
+        draw_at (framebuffer, &start_bmp, &fb_info, framebuffer_box);
+            // while (1)
+            // {
+            // busy_wait_ms (systick_fd, 750);
+            // }
+
         while (1)
         {
-            draw_image (vga_buff, press_to_play_bmp, garden_dims, (dimensions_t){320, 50}, (point_t){0, 150}, (point_t){0, 0}, (dimensions_t){320, 50});
+            display_rgba(&press_to_play_bmp, &fb_info, framebuffer, (box_t){.x = (fb_info.width - press_to_play_bmp.width) / 2, .y = fb_info.height - press_to_play_bmp.height, .width = press_to_play_bmp.width, .height = press_to_play_bmp.height});
+            // draw_image (vga_buff, press_to_play_bmp, garden_dims, (dimensions_t){320, 50}, (point_t){0, 150}, (point_t){0, 0}, (dimensions_t){320, 50});
             busy_wait_ms (systick_fd, 750);
             while (read (keyboard_fd, &key, sizeof (int)) != -1 && key != 57 && key != -1);
             if (key == 57)
             {
                 break;
             }
-            draw_box (vga_buff, 0, 150, 320, 50, 153);
+            // draw_box (vga_buff, 0, 150, 320, 50, 153);
             busy_wait_ms (systick_fd, 500);
             while (read (keyboard_fd, &key, sizeof (int)) != -1 && key != 57 && key != -1);
             if (key == 57)
@@ -280,11 +382,12 @@ int main() {
                 break;
             }
         }
-
+        
+        printf("continue\n");
         
         // init
         x = 0;
-        y = 10;
+        y = step;
         head = 0;
         tail = 0;
         fruit_valid = false;
@@ -296,7 +399,8 @@ int main() {
         };
         prev_direction = RIGHT;
         direction = RIGHT;
-        copy_image (vga_buff, garden, garden_dims);    
+        // copy_image (vga_buff, garden, garden_dims);
+        display_rgba(&garden_bmp, &fb_info, framebuffer, framebuffer_box);    
         while (1)
         {
 
@@ -304,10 +408,8 @@ int main() {
 
             if (next_fruit <= 0 && !fruit_valid)
             {
-                fruit = (point_t){
-                    .x = (((rand() % (320 - step)) + step - 1) / step) * step,
-                    .y = (((rand() % (200 - step)) + step - 1) / step) * step,
-                };
+                fruit.x = (((rand() % (fb_info.width - step)) + step - 1) / step) * step;
+                fruit.y = (((rand() % (fb_info.height - step)) + step - 1) / step) * step;
                 fruit_valid = true;
             }
             
@@ -357,7 +459,7 @@ int main() {
             {
                 break;
             }
-            if (y >= 200 || x >= 320)
+            if (y >= fb_info.height || x >= fb_info.width)
             {
                 break;
             }
@@ -378,16 +480,16 @@ int main() {
             };
             if (fruit_valid)
             {
-                draw_image (vga_buff, apple_bmp, garden_dims, body_part_dims, fruit, (point_t){0, 0}, body_part_dims);
+                draw_at (framebuffer, &apple_bmp, &fb_info, fruit);
             }
 
-            draw_image (vga_buff, snake_heads [prev_direction], garden_dims, body_part_dims, body[head], (point_t){0, 0}, body_part_dims);
+            draw_at (framebuffer, snake_heads [prev_direction], &fb_info, (box_t){.x = body[head].x, .y = body[head].y, .width = body_part_dims.width, .height = body_part_dims.height});
 
             
             if (next_mod (tail, MAX_BODY_PART) != head)
             {
                 int body_position = prev_mod (head, MAX_BODY_PART);
-                draw_image (vga_buff, body_bmp, garden_dims, body_part_dims, body[body_position], (point_t){0, 0}, body_part_dims);
+                draw_at (framebuffer, &body_bmp, &fb_info, (box_t){.x = body[body_position].x, .y = body[body_position].y, .width = body_part_dims.width, .height = body_part_dims.height});
             }
 
 
@@ -396,7 +498,21 @@ int main() {
                 fruit_valid = false;
                 next_fruit = (rand() % 10) + 1;
             } else {
-                draw_image (vga_buff, garden, garden_dims, garden_dims, body[tail], body[tail], body_part_dims);
+                // draw_image (vga_buff, garden, garden_dims, garden_dims, body[tail], body[tail], body_part_dims);
+                box_t destination = (box_t){
+                    .y = body[tail].y,
+                    .x = body[tail].x,
+                    .height = body_part_dims.height,
+                    .width  = body_part_dims.width,
+                };
+                box_t source = (box_t){
+                    .y = body[tail].y / scale_factor,
+                    .x = body[tail].x / scale_factor,
+                    .height = 10,
+                    .width  = 10,
+                };
+                
+                draw_image(framebuffer, &garden_bmp, &fb_info, destination, source);
                 tail = (tail + 1) % MAX_BODY_PART;
             }
 
@@ -408,23 +524,36 @@ int main() {
     }
     
 lost:
-    draw_image (vga_buff, snake_dead_heads [prev_direction], garden_dims, body_part_dims, body[head],  (point_t){0, 0}, body_part_dims);
+    draw_at (framebuffer, snake_dead_heads [prev_direction], &fb_info, (box_t){.x = body[head].x, .y = body[head].y, .width = body_part_dims.width, .height = body_part_dims.height});
     busy_wait_ms (systick_fd, 1000);
 
     for (int i = tail; i != head; i = next_mod (i, MAX_BODY_PART))
     {
-        draw_image (vga_buff, body_boom_bmp, garden_dims, body_part_dims, body[i],  (point_t){0, 0}, body_part_dims);
+        draw_at (framebuffer, &body_boom_bmp, &fb_info, (box_t){.x = body[i].x, .y = body[i].y, .width = body_part_dims.width, .height = body_part_dims.height});
         busy_wait_ms (systick_fd, 250);
     }
     
     for (int i = tail; i != head; i = next_mod (i, MAX_BODY_PART))
     {
-        draw_image (vga_buff, garden, garden_dims, garden_dims, body[i], body[i], body_part_dims);
+        // draw_image (vga_buff, garden, garden_dims, garden_dims, body[i], body[i], body_part_dims);
+        box_t destination = (box_t){
+            .y = body[i].y,
+            .x = body[i].x,
+            .height = body_part_dims.height,
+            .width  = body_part_dims.width,
+        };
+        box_t source = (box_t){
+            .y = body[i].y / scale_factor,
+            .x = body[i].x / scale_factor,
+            .height = 10,
+            .width  = 10,
+        };
+        draw_image(framebuffer, &garden_bmp, &fb_info, destination, source);    
         busy_wait_ms (systick_fd, 250);
     }
 
-
-    load_image (vga_buff, "lost.bmp", 320, 200);
+    display_rgba(&lost_bmp, &fb_info, framebuffer, framebuffer_box);
+    // load_image (vga_buff, "lost.bmp", 320, 200);
     busy_wait_ms (systick_fd, 2000);
 }
     while (1)

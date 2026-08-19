@@ -131,7 +131,7 @@ void *malloc(size_t size)
     slot_header_t *slot = find_slot_for_size(to_allocate);
     alloc_in_slot(to_allocate, slot);
     
-    // print_info();
+    print_info();
     return (void*)((char*)slot + sizeof (slot_header_t));
 }
 

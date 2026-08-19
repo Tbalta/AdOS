@@ -23,4 +23,3 @@ int get_framebuffer_info(framebuffer_information_t *info)
 
     return 0;
 }
-

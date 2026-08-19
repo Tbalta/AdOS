@@ -18,7 +18,7 @@ with System.Machine_Code;
 
 package body Syscall is
    package Logger renames Loggers;
-
+   -- Kernel_Map_Hint : System.Address := System.Null_Address;
    --------------------
    -- Handle Syscall --
    --------------------
@@ -153,8 +153,6 @@ package body Syscall is
       fd : File_System.File_Descriptor;
    begin
       pragma Assert (byte_array'Size = count * 8);
-      --  Logger.Log_Info
-      --    ("Read_Syscall: arg1=" & arg1'Image & " buffer=" & buffer'Image & " count=" & count'Image);
       -- Check --
       if not File_System.Is_File_Descriptor (Integer (arg1)) then
          Logger.Log_Error ("Read_Syscall: Invalid file descriptor: " & fd'Image);
@@ -292,7 +290,6 @@ package body Syscall is
       if flags = 1 then
          Logger.Log_Info ("Trying to call mmap with flags 1");
          result.Unsigned_Value := Unsigned_Syscall_Output (x86.vmm.Kernel_Alloc (CR3 => process, Size => length, Is_Writable => True, Is_Usermode => True));
-         x86.vmm.Print_Mapped_Memory (Kernel_CR3);
          return;
       end if;
 

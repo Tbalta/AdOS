@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <framebuffer.h>
 
 struct rgba_pixel {
     uint8_t b;
@@ -24,7 +25,8 @@ typedef struct bmp_palette_entry bmp_palette_entry_t;
 
 
 struct bmp_image {
-    uint8_t *bmp_buffer;
+    uint8_t      *bmp_buffer;
+    rgba_pixel_t *rgba_buffer;
     int width;
     int height;
     bmp_palette_entry_t *palette;
@@ -54,6 +56,47 @@ struct bmp_info_header {
 } __attribute__((packed));
 typedef struct bmp_info_header bmp_info_header_t;
 
+struct CIEXYZ {
+    uint32_t ciexyzX;
+    uint32_t ciexyzY;
+    uint32_t ciexyzZ;
+};
+typedef struct CIEXYZ CIEXYZ;
+struct CIEXYZTRIPLE {
+    CIEXYZ ciexyzRed;
+    CIEXYZ ciexyzGreen;
+    CIEXYZ ciexyzBlue;
+};
+typedef struct CIEXYZTRIPLE CIEXYZTRIPLE_t;
+struct bmp_info_header_v5{
+  int32_t         V5Width;
+  int32_t         bV5Height;
+  uint16_t        bV5Planes;
+  uint16_t        bV5BitCount;
+  uint32_t        bV5Compression;
+  uint32_t        bV5SizeImage;
+  int32_t         bV5XPelsPerMeter;
+  int32_t         bV5YPelsPerMeter;
+  uint32_t        bV5ClrUsed;
+  uint32_t        bV5ClrImportant;
+  uint32_t        bV5RedMask;
+  uint32_t        bV5GreenMask;
+  uint32_t        bV5BlueMask;
+  uint32_t        bV5AlphaMask;
+  uint32_t        bV5CSType;
+  CIEXYZTRIPLE_t  bV5Endpoints;
+  uint32_t        bV5GammaRed;
+  uint32_t        bV5GammaGreen;
+  uint32_t        bV5GammaBlue;
+  uint32_t        bV5Intent;
+  uint32_t        bV5ProfileData;
+  uint32_t        bV5ProfileSize;
+  uint32_t        bV5Reserved;
+}__attribute__((packed));
+typedef struct bmp_info_header_v5 bmp_info_header_v5_t;
+
+
+
 
 
 struct DIB_Header
@@ -62,6 +105,7 @@ struct DIB_Header
     union
     {
         bmp_info_header_t BITMAPINFOHEADER;
+        bmp_info_header_v5_t BITMAPV5HEADER;
     };
     
 } __attribute__((packed));
@@ -80,7 +124,8 @@ typedef struct DIB_Header DIB_Header_t;
 #define BI_CMYKRLE4 13
 
 
-void bmp_to_rgba(bmp_image_t const *image, rgba_pixel_t *rgba_buffer);
+void load_rgba(bmp_image_t *image);
 int open_bmp(const char *path, bmp_image_t *image);
-
+int display(bmp_image_t const *image, framebuffer_information_t const *fb_info, rgba_pixel_t *rgba_buffer);
+int display_rgba(bmp_image_t const *image, framebuffer_information_t const *fb_info, rgba_pixel_t* framebuffer, box_t dest_box);
 #endif /* __BMP_H */

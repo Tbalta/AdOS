@@ -8,7 +8,7 @@ endif
 
 BIN_DIR = bin
 
-PROJECTS = libc test snake # doomgeneric/doomgeneric
+PROJECTS = libc test snake doomgeneric/doomgeneric
 
 PROJECTS_CLEAN = $(PROJECTS:%=%.clean)
 

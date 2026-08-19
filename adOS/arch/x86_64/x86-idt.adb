@@ -45,6 +45,27 @@ package body x86.idt is
         ("lidt (%0)", Inputs => System.Address'Asm_Input ("r", idt_ptr'Address), Volatile => True);
    end load_idt;
 
+   procedure Print_Stack_Frame (stf : access Stack_Frame)
+   is
+   begin
+      Logger.Log_Info ("rax:" & stf.rax'Image);
+      Logger.Log_Info ("rbx:" & stf.rbx'Image);
+      Logger.Log_Info ("rcx:" & stf.rcx'Image);
+      Logger.Log_Info ("rdx:" & stf.rdx'Image);
+      Logger.Log_Info ("rsi:" & stf.rsi'Image);
+      Logger.Log_Info ("rdi:" & stf.rdi'Image);
+      Logger.Log_Info ("interrupt_code:" & stf.interrupt_code'Image);
+      Logger.Log_Info ("error_code:" & stf.error_code'Image);
+
+      Logger.Log_Info ("rip:" & stf.rip'Image);
+      Logger.Log_Info ("cs:" & stf.cs'Image);
+      Logger.Log_Info ("rflags:" & stf.rflags'Image);
+
+      Logger.Log_Info ("old_rsp:" & stf.old_esp'Image);
+      Logger.Log_Info ("old_ss:" & stf.old_ss'Image);
+
+   end Print_Stack_Frame;
+
    procedure handle_page_fault (stf : access stack_frame) is
       function To_Error_Code is new Ada.Unchecked_Conversion (Unsigned_64, Page_Fault_Error_Code);
       function To_Hex is new Util.To_Hex (Unsigned_64);
@@ -62,9 +83,10 @@ package body x86.idt is
       faulting_address : constant Unsigned_64 := Get_CR2;
    begin
       x86.pmm.Print_PMM_Info;
+      Print_Stack_Frame (stf);
       if error_code.User_Mode then
          Logger.Log_Info ("Userland memory:");
-         x86.vmm.Print_Mapped_Memory (x86.vmm.Get_Process_CR3);
+         x86.vmm.Print_Mapped_Memory (x86.vmm.Get_Current_CR3);
       else
          Logger.Log_Info ("Kernel memory:");
          x86.vmm.Print_Mapped_Memory (x86.vmm.Get_Kernel_CR3);
@@ -95,13 +117,23 @@ package body x86.idt is
 
    end handle_page_fault;
 
+   procedure Handle_Debug (stf : access stack_frame) is
+   begin
+      Print_Stack_Frame (stf);
+      while True loop
+         null;
+      end loop;
+   end Handle_Debug;
+
    procedure init_idt is
       procedure timer_callback;
       procedure keyboard_callback;
       procedure syscall;
+      procedure debug;
       pragma Import (C, timer_callback, "isr_stub_32");
       pragma Import (C, keyboard_callback, "isr_stub_33");
       pragma Import (C, syscall, "isr_stub_128");
+      pragma Import (C, debug, "isr_stub_129");
       idt_ptr : idt_ptr_t;
    begin
       for i in error_vector_t'Range loop
@@ -110,6 +142,7 @@ package body x86.idt is
       add_entry (TIMER_INTERRUPT, timer_callback'Address, 8, CPL3, interrupt_64_bits);
       add_entry (KEYBOARD_INTERRUPT, keyboard_callback'Address, 8, CPL3, interrupt_64_bits);
       add_entry (SYSCALL_INTERRUPT, syscall'Address, 8, CPL3, interrupt_64_bits);
+      add_entry (129, debug'Address, 8, CPL3, interrupt_64_bits);
       idt_ptr.base := interrupt_vector'Address;
       idt_ptr.limit := interrupt_vector'Size / 8 - 1;
 
@@ -163,6 +196,10 @@ package body x86.idt is
       if interrupt_code = 33 then
          handle_keyboard;
          Pic.Send_EOI (Pic.IRQ_Number (interrupt_code));
+      end if;
+
+      if interrupt_code = 129 then
+         Handle_Debug (stf);
       end if;
 
 

@@ -84,6 +84,8 @@ isr_no_err 32
 isr_no_err 33
 isr_no_err 128
 
+isr_no_err 129
+
 
 section .rodata
 global x86_handler_vector

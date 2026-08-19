@@ -15,15 +15,6 @@ struct dimensions
 };
 typedef struct dimensions dimensions_t;
 
-struct box
-{
-    int x;
-    int y;
-    int width;
-    int height;
-};
-typedef struct box box_t;
-
 
 enum direction {
     DOWN,

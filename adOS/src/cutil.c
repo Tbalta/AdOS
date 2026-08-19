@@ -21,12 +21,12 @@ void printcmdline(multiboot_info_t *mbi)
 }
 
 struct stackframe_t {
-    unsigned int eax, ebx, ecx, edx, esi, edi;
-    unsigned int int_no;
-    unsigned int err_code;
-    unsigned int eip;
-    unsigned int cs;
-    unsigned int eflags;
+    uint64_t eax, ebx, ecx, edx, esi, edi;
+    uint64_t int_no;
+    uint64_t err_code;
+    uint64_t eip;
+    uint64_t cs;
+    uint64_t eflags;
 } __attribute__((packed));
 
 
@@ -131,6 +131,7 @@ static void hcf(void) {
 void loader_x64(void) {
     extern void adainit(void);
     extern void _ada_main(struct limine_memmap_response *memmap_response);
+
     LOG("Hello from adOS kernel!");
     adainit();
     LOG("Ada runtime initialized.");
