@@ -87,11 +87,10 @@ int display_indexed(bmp_image_t const *image, framebuffer_information_t const *f
     bool keep_aspect_ratio = true;
     
     int image_pixel_size = min(dest_box.width / image->width, dest_box.height / image->height);
-    char* framebuffer_start = (dest_box.y * fb_info->width) + dest_box.x;
-
+    int framebuffer_start = (dest_box.y * fb_info->width) + dest_box.x;
     for (int h = 0; h < dest_box.height; h++)
     {
-        char *buffer_line_start = framebuffer_start + (h * fb_info->width);
+        char *buffer_line_start = framebuffer +framebuffer_start + (h * fb_info->width);
         char *image_line_start = image->bmp_buffer + ((h / image_pixel_size) * image->width);
         for (int w = 0; w < image->width; w++)
         {

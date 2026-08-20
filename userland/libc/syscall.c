@@ -4,7 +4,7 @@
 
 
 #if defined(__i386__)
-#error "i386 architecture is not supported yet"
+// #error "i386 architecture is not supported yet"
 #define syscall_3(num, arg1, arg2, arg3, ret) ({ \
     asm volatile ( \
         "mov $" #num ", %%eax\n"        /* syscall number */ \

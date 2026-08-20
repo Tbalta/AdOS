@@ -178,7 +178,7 @@ package body x86.pmm is
       Logger.Log_Info ("Found " & pmmHeaderCount'Image & " PMM headers.");
 
       -- Second step:
-      --   Searching pmm start      
+      --   Searching pmm start
       Logger.Log_Info ("Setting pmm header.");
       declare
          subtype Current_PMM_Header is PMM_Info (Header_Count => pmmHeaderCount, Bitmap_Length => pmmEntryCount);

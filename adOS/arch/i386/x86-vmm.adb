@@ -12,10 +12,17 @@ package body x86.vmm is
    pragma Assertion_Policy (Assert => Check);
    package Logger renames Loggers;
 
+
+   function To_Virtual_Address (Addr : Physical_Address) return Virtual_Address is
+   begin
+      -- Only valid because of identity mapping
+      return Virtual_Address (Addr);
+   end To_Virtual_Address;
+
    ----------------
    -- To_Address --
    ----------------
-   function To_Address (Addr : Page_Address) return System.Address is (System.Address (Integer_Address (Addr) * 4_096));
+   function To_Address (Addr : Page_Address) return Physical_Address is (Physical_Address (Integer_Address (Addr) * 4_096));
 
    -------------------------
    -- Get_Number_Of_Pages --
@@ -44,8 +51,8 @@ package body x86.vmm is
    ---------------------
    -- To_Page_Address --
    ---------------------
-   function To_Page_Address (Addr : System.Address) return Page_Address is
-    (Page_Address (Integer_Address (Addr) / 4_096));
+   function To_Page_Address (Addr : Physical_Address) return Page_Address is
+    (Page_Address (Storage_Count (Integer_Address (Addr)) / PAGE_SIZE));
 
    ------------------------
    -- Get_Page_Directory --
@@ -503,9 +510,9 @@ package body x86.vmm is
    ------------------
    procedure Identity_Map (CR3 : CR3_register) is
       PD                  : Page_Directory_Access := Get_Page_Directory (CR3);
-      Address_Breakdown   : Virtual_Address_Break := To_Virtual_Address_Break (Null_Address);
-      PMM_Start_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (PMM.Get_Pmm_Start_Address);
-      Kernel_Start_Break  : Virtual_Address_Break := To_Virtual_Address_Break (Kernel_Start);
+      Address_Breakdown   : Virtual_Address_Break := To_Virtual_Address_Break (Virtual_Address (Null_Address));
+      PMM_Start_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (To_Virtual_Address (PMM.Get_Pmm_Start_Address));
+      Kernel_Start_Break  : Virtual_Address_Break := To_Virtual_Address_Break (To_Virtual_Address (Kernel_Start));
       Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
    begin
       if Paging_Currently_Enabled then
@@ -518,7 +525,7 @@ package body x86.vmm is
         (PD,
          Address_Breakdown.Directory,
          Address_Breakdown.Table,
-         Null_Address,
+         Physical_Address (Null_Address),
          Kernel_Start,
          Is_Writable => False,
          Is_Usermode => False);

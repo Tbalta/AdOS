@@ -147,6 +147,7 @@ is
 
 private
    Paging_Enabled : Boolean := False;
+   PAGE_SIZE      : constant Storage_Count := 4096;
 
    type Page_Address is range 0 .. 2 ** 20 - 1;
    subtype Page_Table_Address is Page_Address;
@@ -260,15 +261,15 @@ private
    package Address_to_Page_Directory is new System.Address_To_Access_Conversions (Page_Directory);
    subtype Page_Directory_Access is Address_to_Page_Directory.Object_Pointer;
    function To_Page_Directory (Addr : Physical_Address) return Page_Directory_Access
-   is (Address_to_Page_Directory.To_Pointer (Addr));
+   is (Address_to_Page_Directory.To_Pointer (System.Address (Addr)));
 
    Null_Address_Break : constant Virtual_Address_Break := (Directory => 0, Table => 0, Offset => 0);
 
-   function To_Address (Addr : Page_Address) return System.Address;
+   function To_Address (Addr : Page_Address) return Physical_Address;
 
    function To_Page_Table_Address (Addr : System.Address) return Page_Table_Address;
    function To_Page_Directory_Address (Addr : System.Address) return Page_Directory_Address;
-   function To_Page_Address (Addr : System.Address) return Page_Address;
+   function To_Page_Address (Addr : Physical_Address) return Page_Address;
    function Can_Fit
      (CR3 : CR3_register; Address : Virtual_Address; Size : Storage_Count) return Boolean
       with Pre => not Paging_Enabled,
@@ -300,12 +301,9 @@ private
       with Pre => not Paging_Enabled,
            Post => Paging_Enabled'Old = Paging_Enabled;
 
-   function To_Page_Table (Addr : Physical_Address) return Page_Table_Access
-   is (Address_to_Page_Table.To_Pointer (Addr));
-   function To_Page_Table (PDE : Page_Directory_Entry) return Page_Table_Access
-   is (To_Page_Table (To_Address (PDE.Address)));
-   function To_Page_Table_Access (Page_Table_Addr : Page_Table_Address) return Page_Table_Access
-   is (Address_to_Page_Table.To_Pointer (To_Address (Page_Table_Addr)));
+   function To_Page_Table (Addr : Physical_Address) return Page_Table_Access is (Address_to_Page_Table.To_Pointer (System.Address (Addr)));
+   function To_Page_Table (PDE : Page_Directory_Entry) return Page_Table_Access is (To_Page_Table (To_Address (PDE.Address)));
+   function To_Page_Table_Access (Page_Table_Addr : Page_Table_Address) return Page_Table_Access  is (Address_to_Page_Table.To_Pointer (System.Address (To_Address (Page_Table_Addr))));
 
    Last_Virtual_Address_Break : constant Virtual_Address_Break :=
      (Directory => Page_Directory_Index'Last, Table => Page_Table_Index'Last, Offset => 0);

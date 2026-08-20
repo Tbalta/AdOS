@@ -56,6 +56,9 @@ docker-build:
 docker-run:
 	docker-compose -f .docker/docker-compose.yml run --rm ados
 
+docker-clean:
+	docker-compose -f .docker/docker-compose.yml run --rm ados make clean -f Makefile_i386
+
 docker-debug:
 	docker-compose -f .docker/docker-compose.yml run --rm ados make
 	qemu-system-i386.exe -cdrom main.iso $(qemu_param) -s -S

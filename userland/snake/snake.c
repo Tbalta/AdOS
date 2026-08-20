@@ -52,7 +52,11 @@ void draw_image (void *buffer, const bmp_image_t *image, const framebuffer_infor
             int image_line_start   = (image_offset + ((row / scale_factor) * image->width) + w) * (fb_info->bpp / 8);
             for (int i = 0; i < scale_factor; i++)
             {
-                memcpy (buffer + buffer_line_start + (i * (fb_info->bpp / 8)), ((void*)image->rgba_buffer) + image_line_start, (fb_info->bpp / 8));
+                #if defined(__i386__)
+                    memcpy (buffer + buffer_line_start + i, ((void*)image->bmp_buffer) + image_line_start, 1);
+                #elif defined(__x86_64__)
+                    memcpy (buffer + buffer_line_start + (i * (fb_info->bpp / 8)), ((void*)image->rgba_buffer) + image_line_start, (fb_info->bpp / 8));
+                #endif
             }
         }
     }
@@ -366,7 +370,11 @@ int main() {
 
         while (1)
         {
-            display_rgba(&press_to_play_bmp, &fb_info, framebuffer, (box_t){.x = (fb_info.width - press_to_play_bmp.width) / 2, .y = fb_info.height - press_to_play_bmp.height, .width = press_to_play_bmp.width, .height = press_to_play_bmp.height});
+            #if defined(__i386__)
+                display_indexed(&press_to_play_bmp, &fb_info, (char*)framebuffer, (box_t){.x = (fb_info.width - press_to_play_bmp.width) / 2, .y = fb_info.height - press_to_play_bmp.height, .width = press_to_play_bmp.width, .height = press_to_play_bmp.height});
+            #elif defined(__x86_64__)
+                display_rgba(&press_to_play_bmp, &fb_info, framebuffer, (box_t){.x = (fb_info.width - press_to_play_bmp.width) / 2, .y = fb_info.height - press_to_play_bmp.height, .width = press_to_play_bmp.width, .height = press_to_play_bmp.height});
+            #endif
             // draw_image (vga_buff, press_to_play_bmp, garden_dims, (dimensions_t){320, 50}, (point_t){0, 150}, (point_t){0, 0}, (dimensions_t){320, 50});
             busy_wait_ms (systick_fd, 750);
             while (read (keyboard_fd, &key, sizeof (int)) != -1 && key != 57 && key != -1);
@@ -399,8 +407,12 @@ int main() {
         };
         prev_direction = RIGHT;
         direction = RIGHT;
-        // copy_image (vga_buff, garden, garden_dims);
-        display_rgba(&garden_bmp, &fb_info, framebuffer, framebuffer_box);    
+
+        #if defined(__i386__)
+            display_indexed(&garden_bmp, &fb_info, (char*)framebuffer, framebuffer_box);
+        #elif defined(__x86_64__)
+            display_rgba(&garden_bmp, &fb_info, framebuffer, framebuffer_box);
+        #endif
         while (1)
         {
 
@@ -551,9 +563,11 @@ lost:
         draw_image(framebuffer, &garden_bmp, &fb_info, destination, source);    
         busy_wait_ms (systick_fd, 250);
     }
-
-    display_rgba(&lost_bmp, &fb_info, framebuffer, framebuffer_box);
-    // load_image (vga_buff, "lost.bmp", 320, 200);
+    #if defined(__i386__)
+        display_indexed(&lost_bmp, &fb_info, (char*)framebuffer, framebuffer_box);
+    #elif defined(__x86_64__)
+        display_rgba(&lost_bmp, &fb_info, framebuffer, framebuffer_box);
+    #endif
     busy_wait_ms (systick_fd, 2000);
 }
     while (1)

@@ -36,15 +36,6 @@ package x86.pmm is
    procedure Init (Mem_Map : Mem_Map_Response);
    procedure Print_PMM_Info;
 
-   --  type PMM_Header_Info is record
-   --     Bitmap_Length : Positive;
-   --     Header_Count  : Positive;
-   --     Bitmap        : System.Address;
-   --     Headers       : System.Address;
-   --  end record
-   --  with Convention => C;
-   --  package PMM_Header_Conv is new System.Address_To_Access_Conversions (PMM_Header_Info);
-
    function check (cond : Boolean; msg : String) return Boolean;
 
    -----------------------

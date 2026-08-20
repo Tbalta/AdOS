@@ -32,10 +32,6 @@ int main() {
             /* code */
         }
     }
-    
-    unsigned char vga_line[320] = {0};
-    char bmp_header[14];
-    char read_buffer[100];
 
     printf ("Starting AdOS\n");
 
@@ -47,15 +43,12 @@ int main() {
     rgba_pixel_t *screen = mmap(NULL, info.width * info.height * (info.bpp / 8), 0, 0, framebuffer, 0);
     printf("Framebuffer mapped at %d\n", screen);
 
-    display_rgba(&ados_bmp, &info, screen, framebuffer_box);
+    #if defined(__i386__)
+        display_indexed(&ados_bmp, &info, (char*)screen, framebuffer_box);
+    #elif defined(__x86_64__)
+        display_rgba(&ados_bmp, &info, screen, framebuffer_box);
+    #endif
 
-    // for (int w = 0; w < 320; w++)
-    // {
-    //     for (int h = 0; h < 200; h++)
-    //     {
-    //         screen[w + (h * info.width)] = ados_bmp_rgb[w + (h * 320)];
-    //     }
-    // }
 
     while (1)
     {

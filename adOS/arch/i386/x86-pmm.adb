@@ -96,7 +96,7 @@ package body x86.pmm is
    is (Offset_To_Address_Unchecked (paroffset));
 
    function Is_System_Address (addr : Physical_Address) return Boolean
-      is (addr < Physical_Address ((Storage_Count (Get_Pmm_End_Address + PMM_PAGE_SIZE - Storage_Count (1)) / PMM_PAGE_SIZE) * PMM_PAGE_SIZE));
+      is (addr < Physical_Address (((Storage_Count (Get_Pmm_End_Address) + PMM_PAGE_SIZE - Storage_Count (1)) / PMM_PAGE_SIZE) * PMM_PAGE_SIZE));
 
    function Get_Next_Free_Page return Natural is
       use all type System.Address;
@@ -171,11 +171,13 @@ package body x86.pmm is
       
       function Round_64 is new Standard.Util.Round (Unsigned_64);
    begin
+
+      --  First step:
+         --    Number of pmm entries.
+         --    Number of pmm headers.
       PMM_Header_Address := To_Address (Kernel_End);
       Logger.Log_Info ("PMM_Header_Address: " & PMM_Header_Address'Image);
-      --  Computing pmm map entry count.
       for Index in MB'Range loop
-         --  Logger.Log_Info ("MB Entry: " & MB (Index)'Image);
          if MB (Index).entry_type = MULTIBOOT_MEMORY_AVAILABLE then
             Logger.Log_Info
               ("Found available memory at "
@@ -191,7 +193,8 @@ package body x86.pmm is
       Logger.Log_Info ("Setting pmm header.");
       Logger.Log_Info ("kernel_end: " & Kernel_End'Image);
 
-      ------------------------------------------------------------------------
+      -- Second step:
+         --   Searching pmm start
       declare
          -- Setting pmm header.
          PMM_Header_Array_Start : System.Address :=
@@ -237,13 +240,8 @@ package body x86.pmm is
          use Util;
       begin
          PMM_Bitmap_End_Address := Align (PMM_Bitmap_Address + Storage_Count ((PMM_Bitmap'Size + 7) / 8));
-         Logger.Log_Info
-           ("Address_To_Offset"
-            & Address_To_Offset (Physical_Address (PMM_Bitmap_End_Address))'Image
-            & " "
-            & Offset_To_Address (Address_To_Offset (To_Address (4_098)))'Image);
+
          --  Masking the kernel memory.
-         
          for Index in Util.Bitmap'Range loop
             Util.Bitmap (Index) := PMM_Bitmap_Entry_Free;
          end loop;
@@ -269,7 +267,7 @@ package body x86.pmm is
 
    function Get_Pmm_Start_Address return Physical_Address is
    begin
-      return PMM_Header_Address;
+      return Physical_Address (PMM_Header_Address);
    end Get_Pmm_Start_Address;
 
    function Get_Pmm_End_Address return Physical_Address is
