@@ -70,9 +70,9 @@ package body ELF.Loader is
          Logger.Log_Error ("Unable to allocate segment for " & Program_Header'Image);
          raise Program_Error with "Unable to allocate elf segment";
       end if;
-      -- Kernel_Segment.Data := (others => 0);
-      -- Kernel_Segment.Padding := (others => 0);
-      -- Kernel_Segment.Remaining := (others => 0);
+      Kernel_Segment.Data := (others => 0);
+      Kernel_Segment.Padding := (others => 0);
+      Kernel_Segment.Remaining := (others => 0);
 
       Logger.Log_Info ("Allocated segment at " & Conversion.To_Address (Kernel_Segment)'Image & " with size " & Integer (Segment'Size / 8)'Image & " bytes");
       

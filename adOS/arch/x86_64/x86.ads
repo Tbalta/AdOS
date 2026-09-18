@@ -20,6 +20,7 @@ package x86 is
    function To_Integer (Address : Physical_Address) return Integer_Address;
    --  function To_Integer (Address : Virtual_Address) return Integer_Address;
    function "+"(Address : Physical_Address; SC : Storage_Count) return Physical_Address is (Physical_Address (Storage_Count (Address) + SC));
+
    function "+"(Address : Virtual_Address; SC : Storage_Count) return Virtual_Address is (Virtual_Address (Storage_Count (Address) + SC));
    function "-"(A,B : Physical_Address) return Storage_Count;
    function "-"(A : Virtual_Address; B : Storage_Offset) return Virtual_Address is (Virtual_Address (Storage_Count (A) - Storage_Count (B)));

@@ -1,6 +1,7 @@
 with System.Machine_Code; use System.Machine_Code;
 with SERIAL;
 with Loggers;
+with x86; use x86;
 package body x86.Userspace is
    use Standard.ASCII;
    package Logger renames Loggers;
@@ -29,7 +30,7 @@ package body x86.Userspace is
          "mov %%ax, %%fs" & LF &
          "mov %%ax, %%gs" & LF &
          "iret",
-         Inputs   => (System.Address'Asm_Input ("g", New_Stack),
+         Inputs   => (System.Address'Asm_Input ("g", To_Address (New_Stack)),
                       System.Address'Asm_Input ("g", To_Address (Entry_Point))),
          Volatile => True,
          Clobber  => "eax");

@@ -131,19 +131,23 @@ is
       Is_Writable : Boolean := False;
       Is_Usermode : Boolean := False) return Virtual_Address
          with Post => Is_Paging_Enabled'Old = Is_Paging_Enabled;
+   function User_Alloc  (CR3         : CR3_register;
+      Size        : Storage_Count;
+      Is_Writable : Boolean := False;
+      Is_Usermode : Boolean := False) return Virtual_Address renames Kernel_Alloc;
 
    ------------------
    -- Memory_Unmap --
    ------------------
    procedure Memory_Unmap
-     (CR3 : CR3_register; Address : System.Address; Size : Storage_Count; Free_Page : Boolean)
+     (CR3 : CR3_register; Address : Virtual_Address; Size : Storage_Count; Free_Page : Boolean)
      with Post => Is_Paging_Enabled'Old = Is_Paging_Enabled;
    function Process_To_Process_Map
      (Source_CR3     : CR3_register;
       Source_Address : Virtual_Address;
       Dest_CR3       : CR3_register;
       Size           : Storage_Count;
-      Hint           : Virtual_Address := System.Null_Address) return Virtual_Address;
+      Hint           : Virtual_Address := Virtual_Address'First) return Virtual_Address;
 
 private
    Paging_Enabled : Boolean := False;
@@ -293,7 +297,7 @@ private
 
    
    function Find_Next_Space
-     (CR3 : CR3_register; Size : Storage_Count; Start : System.Address) return Virtual_Address_Break
+     (CR3 : CR3_register; Size : Storage_Count; Start : Virtual_Address) return Virtual_Address_Break
       with Pre => not Paging_Enabled,
            Post => Paging_Enabled'Old = Paging_Enabled;
 

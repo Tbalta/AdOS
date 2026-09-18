@@ -92,7 +92,7 @@ begin
    ------------------------
 
    Logger.Log_Info ("Initializing VMM");
-   CR3 := "Create_CR3";
+   CR3 := Create_CR3;
    Logger.Log_Info ("CR3 address: " & CR3'Image);
    Identity_Map (CR3);
    Load_CR3 (CR3);
@@ -194,7 +194,7 @@ begin
          Logger.Log_Ok ("ELF file closed successfully");
       end if;
 
-      Logger.Log_Info ("Entry point: " & To_Integer (Program_Header.e_entry)'Image);
+      Logger.Log_Info ("Entry point: " & Program_Header.e_entry'Image);
       Jump_To_Userspace (Program_Header.e_entry, Userland_CR3);
    end;
 

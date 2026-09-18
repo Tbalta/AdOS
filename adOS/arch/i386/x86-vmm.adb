@@ -671,12 +671,12 @@ package body x86.vmm is
    -- Find_Next_Space --
    ---------------------
    function Find_Next_Space
-     (CR3 : CR3_register; Size : Storage_Count; Start : System.Address) return Virtual_Address_Break
+     (CR3 : CR3_register; Size : Storage_Count; Start : Virtual_Address) return Virtual_Address_Break
    is
       Breakdown      : Virtual_Address_Break := To_Virtual_Address_Break (Start);
       PD             : Page_Directory_Access := Get_Page_Directory (CR3);
    begin
-      if Breakdown = To_Virtual_Address_Break (Null_Address) then
+      if Breakdown = To_Virtual_Address_Break (Virtual_Address'First) then
          Next (Breakdown.Directory, Breakdown.Table);
       end if;
 
@@ -690,7 +690,7 @@ package body x86.vmm is
          end loop;
       end loop;
 
-      return To_Virtual_Address_Break (Null_Address);
+      return To_Virtual_Address_Break (Virtual_Address'First);
    end;
 
    ------------------
@@ -702,15 +702,15 @@ package body x86.vmm is
       Is_Writable : Boolean := False;
       Is_Usermode : Boolean := False) return Virtual_Address
    is
-      Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Null_Address);
+      Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Virtual_Address'First);
       Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
       Success : Boolean := True;
    begin
       if Paging_Currently_Enabled then
          Disable_Paging;
       end if;
-      Address_Breakdown := Find_Next_Space (CR3, Size, Null_Address);
-      if Address_Breakdown = To_Virtual_Address_Break (Null_Address) then
+      Address_Breakdown := Find_Next_Space (CR3, Size, Virtual_Address'First);
+      if Address_Breakdown = To_Virtual_Address_Break (Virtual_Address'First) then
          Logger.Log_Error ("No more free space in the Page Directory");
          Success := False;
       end if;
@@ -739,7 +739,7 @@ package body x86.vmm is
          return From_Virtual_Address_Break (Address_Breakdown);
       end if; 
 
-      return Null_Address;
+      return Virtual_Address'First;
    end Kernel_Alloc;
 
    ----------------------------
@@ -750,13 +750,13 @@ package body x86.vmm is
       Source_Address : Virtual_Address;
       Dest_CR3       : CR3_register;
       Size           : Storage_Count;
-      Hint           : Virtual_Address := System.Null_Address) return Virtual_Address
+      Hint           : Virtual_Address := Virtual_Address'First) return Virtual_Address
    is
       Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
       Offset_In_Page        : constant Virtual_Address_Offset := To_Virtual_Address_Break (Source_Address).Offset;
       Page_Count              : constant Positive := Get_Number_Of_Pages (Size + Storage_Count (Offset_In_Page));
 
-      Return_Address        : System.Address;
+      Return_Address        : Virtual_Address;
       Dest_Address          : Virtual_Address_Break;
 
       --------------------------
@@ -764,10 +764,10 @@ package body x86.vmm is
       --------------------------
       function Compute_Dest_Address return Virtual_Address_Break is
          begin
-         if Hint /= System.Null_Address then
+         if Hint /= Virtual_Address'First then
             return  To_Virtual_Address_Break (Hint);
          else
-           return Find_Next_Space (Dest_CR3, Size + Storage_Count (Offset_In_Page), Null_Address);
+           return Find_Next_Space (Dest_CR3, Size + Storage_Count (Offset_In_Page), Virtual_Address'First);
          end if;
       end Compute_Dest_Address;
 
@@ -798,14 +798,14 @@ package body x86.vmm is
       if not Is_Range_Mapped (Source_CR3, Source_Address, Size) then
          Logger.Log_Error ("Address is not mapped");
          Re_Enable_Paging_If_Needed;
-         return Null_Address;
+         return Virtual_Address'First;
       end if;
 
       Dest_Address := Compute_Dest_Address;
       if Dest_Address = Null_Address_Break or else not Can_Fit (Dest_CR3, From_Virtual_Address_Break (Dest_Address), Size) then
          Logger.Log_Error ("Map_Process_Memory: Could not find space in destination process");
          Re_Enable_Paging_If_Needed;
-         return Null_Address;
+         return Virtual_Address'First;
       end if;
       
       Return_Address := From_Virtual_Address_Break (Dest_Address) + Offset_In_Page;
@@ -829,7 +829,7 @@ package body x86.vmm is
    -- Memory_Unmap --
    ------------------
    procedure Memory_Unmap
-     (CR3 : CR3_register; Address : System.Address; Size : Storage_Count; Free_Page : Boolean)
+     (CR3 : CR3_register; Address : Virtual_Address; Size : Storage_Count; Free_Page : Boolean)
    is
       Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
       PD                       : constant Page_Directory_Access := Get_Page_Directory (CR3);
