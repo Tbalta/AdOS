@@ -7,7 +7,6 @@
 #include <stdbool.h>
 
 
-
 void __gnat_last_chance_handler()
 {
     while (1)
@@ -15,13 +14,9 @@ void __gnat_last_chance_handler()
 }
 
 extern void printf(const char *fmt, ...);
-void printcmdline(multiboot_info_t *mbi)
-{
-    printf("plouf");
-}
 
 struct stackframe_t {
-    uint64_t eax, ebx, ecx, edx, esi, edi;
+    uint64_t eax, ebx, ecx, edx, esi, edi, r8, r9, r10, r11, r12, r13, r14, r15;
     uint64_t int_no;
     uint64_t err_code;
     uint64_t eip;
@@ -56,6 +51,11 @@ void PANIC(const char *msg)
     LOG("PANIC: %s", msg);
     while (1)
         asm volatile("hlt");
+}
+
+void print_debug(const char *msg)
+{
+    LOG("DEBUG: %s", msg);
 }
 
 
@@ -128,9 +128,46 @@ static void hcf(void) {
 // The following will be our kernel's entry point.
 // If renaming kmain() to something else, make sure to change the
 // linker script accordingly.
+volatile struct limine_framebuffer_response framebuffer_response;
+volatile struct limine_memmap_response memmap_response;
+volatile struct limine_hhdm_response hhdm_response;
+volatile struct limine_executable_cmdline_response executable_cmdline_response;
+volatile struct limine_executable_address_response executable_address_response;
+// static char astack[4096 * 15] __attribute__((aligned(16)));
+
+// void stack_check(void) {
+//     for (int i = 0; i < sizeof (astack); i++) {
+//         if (astack[i] != 0xA) {
+//             LOG("max stack usage: %d bytes", sizeof (astack) - i);
+//             return;
+//         }
+//     }
+// }
+
 void loader_x64(void) {
     extern void adainit(void);
     extern void _ada_main(struct limine_memmap_response *memmap_response);
+    extern struct limine_framebuffer_request framebuffer_request;
+    extern struct limine_memmap_request memmap_request;
+    extern struct limine_hhdm_request hhdm_request;
+    extern struct limine_executable_cmdline_request executable_cmdline_request;
+    extern struct limine_executable_address_request executable_address_request;
+
+    framebuffer_response = *framebuffer_request.response;
+    memmap_response = *memmap_request.response;
+    hhdm_response = *hhdm_request.response;
+    executable_cmdline_response = *executable_cmdline_request.response;
+    executable_address_response = *executable_address_request.response;
+    // for (int i = 0; i < 4096 * 15; i++) {
+    //     astack[i] = 0xA;
+    // }
+
+    //     asm volatile (
+    //     "mov %[stack_top], %%rsp\n\t"
+    //     "xor %%rbp, %%rbp\n\t"
+    //     :
+    //     : [stack_top] "r" ((uintptr_t)astack + sizeof(astack) - 1)
+    // );
 
     LOG("Hello from adOS kernel!");
     adainit();

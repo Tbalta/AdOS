@@ -92,7 +92,7 @@ begin
    ------------------------
 
    Logger.Log_Info ("Initializing VMM");
-   CR3 := Create_CR3;
+   CR3 := "Create_CR3";
    Logger.Log_Info ("CR3 address: " & CR3'Image);
    Identity_Map (CR3);
    Load_CR3 (CR3);

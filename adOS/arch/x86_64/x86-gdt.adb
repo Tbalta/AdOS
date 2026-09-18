@@ -3,6 +3,7 @@ with SERIAL;                  use SERIAL;
 with System.Machine_Code;     use System.Machine_Code;
 with x86.gdt;
 with Loggers;
+with Util;
 
 package body x86.gdt is
    use Standard.ASCII;
@@ -66,7 +67,7 @@ package body x86.gdt is
          & tss'Address'Image
          & " Size: "
          & Integer ((tss'Size / 8) - 1)'Image);
-      tss.RSP0 := stack'Address + Storage_Count (stack'Size / 8); -- Stack for kernel mode
+      --  tss.RSP0 := stack'Address + Storage_Count (stack'Size / 8); -- Stack for kernel mode
       --  tss.prev_tss := 0;
       --  tss.esp0 := stack'Address + Storage_Count (8192); -- Stack for kernel mode
       --  tss.ss0 := 16#10#; -- Kernel Data Segment
@@ -103,4 +104,12 @@ package body x86.gdt is
       flush_tss;
       Logger.Log_Ok ("tss flushed");
    end initialize_gdt;
+
+   procedure Set_Interrupt_Stack (Address : Virtual_Address; Size : Storage_Count) is
+      function To_Hex is new Util.To_Hex (Virtual_Address);
+   begin
+      Logger.Log_Info ("Setting Interrupt stack at: " & To_Hex (Address + Size));
+      tss.RSP0 := To_Address (Address) + Size;
+   end Set_Interrupt_Stack;
+
 end x86.gdt;

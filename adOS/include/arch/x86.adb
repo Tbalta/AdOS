@@ -13,14 +13,19 @@ package body x86 is
       return To_Integer (System.Address (Address));
    end To_Integer;
 
-   function "+"(Address : Physical_Address; SC : Storage_Count) return Physical_Address is
-   begin
-      return Physical_Address (Storage_Count (Address) + SC);
-   end "+";
-   
    function "-"(A,B : Physical_Address) return Storage_Count is
    begin
       return Storage_Count (To_Integer (A - B));
    end "-";
+
+   function To_Address (Address : Virtual_Address) return System.Address is
+   begin
+
+      if Address >= 16#8000_0000_0000# then
+            return System.Address (Address or 16#FFFF_0000_0000_0000#);
+         end if;
+
+      return System.Address (Address);
+   end To_Address;
    
 end x86;

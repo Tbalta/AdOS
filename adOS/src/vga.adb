@@ -67,18 +67,18 @@ package body VGA is
       CR3 : x86.vmm.CR3_register := x86.vmm.Get_Kernel_CR3;
       package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
    begin
-      if save_buffer_address = System.Null_Address then
+      if save_buffer_address = Virtual_Address'First then
          save_buffer_address :=
            x86.vmm.Kernel_Alloc (Size => 320 * 200, CR3 => CR3, Is_Writable => True);
       end if;
 
-      if save_buffer_address = System.Null_Address then
+      if save_buffer_address = Virtual_Address'First then
          Logger.Log_Error ("Unable to allocate vga save buffer");
          return;
       end if;
 
       declare
-         buffer             : access vga_buffer := Conversion.To_Pointer (save_buffer_address);
+         buffer             : access vga_buffer := Conversion.To_Pointer (To_Address (save_buffer_address));
          current_vga_buffer : access vga_buffer := Conversion.To_Pointer (Get_Frame_Buffer);
       begin
          buffer.all := current_vga_buffer.all;
@@ -94,13 +94,13 @@ package body VGA is
       use all type System.Address;
       package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
    begin
-      if save_buffer_address = System.Null_Address then
+      if save_buffer_address = Virtual_Address'First then
          Logger.Log_Error ("save buffer is not allocated");
          return;
       end if;
 
       declare
-         buffer             : access vga_buffer := Conversion.To_Pointer (save_buffer_address);
+         buffer             : access vga_buffer := Conversion.To_Pointer (To_Address (save_buffer_address));
          current_vga_buffer : access vga_buffer := Conversion.To_Pointer (Get_Frame_Buffer);
       begin
          current_vga_buffer.all := buffer.all;

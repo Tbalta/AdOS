@@ -1,6 +1,6 @@
 with Interfaces; use Interfaces;
 with System;     use System;
-
+with System.Storage_Elements; use System.Storage_Elements;
 package x86.gdt is
    pragma Preelaborate;
 
@@ -99,12 +99,6 @@ package x86.gdt is
    tss : TSS_Entry
    with Export => True, Convention => C, External_Name => "tss_entry";
 
-   stack : aliased array (1 .. 8192) of aliased Unsigned_8
-   with Export => True,
-        Convention => C,
-        External_Name => "tss_stack",
-        Size => 8192 * 8;
-
    -- Null, Kernel Code, Kernel Data, User Code, User Data, TSS
    type Descriptor_Entry (TSS_Second_Part : Boolean) is record
       case TSS_Second_Part is
@@ -136,6 +130,8 @@ package x86.gdt is
 
    gdt_pointer : Global_Descriptor_Pointer_T
    with Export => True, Convention => C, External_Name => "gdt_pointer";
+
+   procedure Set_Interrupt_Stack (Address : Virtual_Address; Size : Storage_Count);
 private
    procedure load_gdt (gdtptr_loc : Interfaces.Unsigned_64)
    with Import => True, Convention => C, External_Name => "load_gdt";

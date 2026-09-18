@@ -14,6 +14,15 @@ package x86.idt is
       rdx            : Unsigned_64;
       rsi            : Unsigned_64;
       rdi            : Unsigned_64;
+      r8             : Unsigned_64;
+      r9             : Unsigned_64;
+      r10            : Unsigned_64;
+      r11            : Unsigned_64;
+      r12            : Unsigned_64;
+      r13            : Unsigned_64;
+      r14            : Unsigned_64;
+      r15            : Unsigned_64;
+
       interrupt_code : Unsigned_64;
       error_code     : Unsigned_64;
 
@@ -42,13 +51,21 @@ package x86.idt is
        rdx at 24 range 0 .. 63;
        rsi at 32 range 0 .. 63;
        rdi at 40 range 0 .. 63;
-       interrupt_code at 48 range 0 .. 63;
-       error_code at 56 range 0 .. 63;
-       rip at 64 range 0 .. 63;
-       cs at 72 range 0 .. 63;
-       rflags at 80 range 0 .. 63;
-       old_esp at 88 range 0 .. 63;
-       old_ss at 96 range 0 .. 63;
+       r8  at 48 range 0 .. 63;
+       r9  at 56 range 0 .. 63;
+       r10 at 64 range 0 .. 63;
+       r11 at 72 range 0 .. 63;
+       r12 at 80 range 0 .. 63;
+       r13 at 88 range 0 .. 63;
+       r14 at 96 range 0 .. 63;
+       r15 at 104 range 0 .. 63;
+       interrupt_code at 112 range 0 .. 63;
+       error_code at 120 range 0 .. 63;
+       rip at 128 range 0 .. 63;
+       cs at 136 range 0 .. 63;
+       rflags at 144 range 0 .. 63;
+       old_esp at 152 range 0 .. 63;
+       old_ss at 160 range 0 .. 63;
      end record;
    --!format on
 

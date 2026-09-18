@@ -30,7 +30,7 @@ package body x86.Userspace is
          "mov %%ax, %%gs" & LF &
          "iret",
          Inputs   => (System.Address'Asm_Input ("g", New_Stack),
-                      System.Address'Asm_Input ("g", Entry_Point)),
+                      System.Address'Asm_Input ("g", To_Address (Entry_Point))),
          Volatile => True,
          Clobber  => "eax");
       --!format on

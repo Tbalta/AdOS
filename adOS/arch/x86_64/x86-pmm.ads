@@ -11,12 +11,13 @@ with System;
 with System.Storage_Elements; use System.Storage_Elements;
 with System.Address_To_Access_Conversions;
 with Interfaces;              use Interfaces;
+with config;                  use config;
 
 package x86.pmm is
    pragma Preelaborate;
    use all type System.Address;
 
-   PMM_PAGE_SIZE : constant Storage_Count := 4_096;
+   PMM_PAGE_SIZE : constant := 4_096;
 
    type multiboot_mmap is array (Natural range <>) of aliased Mem_Map_Entry with Pack;
    type PMM_Bitmap_Entry is (PMM_Bitmap_Entry_Free, PMM_Bitmap_Entry_Used) with Size => 1;
@@ -71,19 +72,15 @@ package x86.pmm is
 
    function Get_Next_Free_Page return Natural;
 
-   function Get_Pmm_Start_Address return Virtual_Address;
-   function Get_Pmm_End_Address return Virtual_Address;
-   function Is_System_Address (addr : Physical_Address) return Boolean;
-
    function Allocate_Page return Physical_Address
    with
      Post =>
        check (Get_Next_Free_Page'Old = Address_To_Offset (Allocate_Page'Result), "Incorrect Page allocated") and
        check (Get_Next_Free_Page'Old < Get_Next_Free_Page, "No page allocated returned: " & Get_Next_Free_Page'Image & " old was " & Get_Next_Free_Page'Old'Image) and
-       check (not Is_System_Address (Allocate_Page'Result), "Allocate_Page: Allocating system page (" & Address_To_Offset (Allocate_Page'Result)'Image & ")");
+       check (not Is_Kernel_Address (Allocate_Page'Result), "Allocate_Page: Allocating system page (" & Address_To_Offset (Allocate_Page'Result)'Image & ")");
 
    procedure Free_Page (addr : Physical_Address)
-   with Pre => check (not Is_System_Address (addr) , "Free_Page: Trying to free system page"),
+   with Pre => check (not Is_Kernel_Address (addr) , "Free_Page: Trying to free system page"),
         Post => check (Get_Next_Free_Page <= Address_To_Offset (addr), "Free_Page: Page not freed");
 
 private
@@ -105,8 +102,6 @@ private
    end record;
    type PMM_Info_Access is access all PMM_Info;
 
-   PMM_Header_Address        : System.Address;
-   PMM_Bitmap_End_Address    : System.Address;
    Number_Of_Remaining_Pages : Natural;
    PMM_Info_Ptr              : PMM_Info_Access := null;
 

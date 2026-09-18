@@ -47,17 +47,26 @@ library project Runtime is
         "-gnatg",
          "-Wl,--gc-sections",
         "-g",
+        -- "-mno-sse",
+        "-mno-red-zone",
         "-fno-exceptions");
       
       x86_64_Switches := (
         "-mno-sse2",
         "-mno-red-zone",
-        "-mcmodel=kernel"
+        "-mcmodel=kernel",
+        "-fno-stack-protector",
+        "-fno-stack-check",
+        "-fno-lto",
+        "-fno-PIC",
+        "-m64",
+        "-march=x86-64",
+        "-mabi=sysv",
+        "-mno-80387",
+        "-mno-mmx"
       );
 
       i386_Switches := (
-        "-mno-sse",
-        "-mno-red-zone"
       );
 
       case Platform is

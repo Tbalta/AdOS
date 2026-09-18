@@ -221,31 +221,49 @@ package Limine is
    end record
    with Convention => C_Pass_By_Copy;
 
+   -- limine executable address request
+   type limine_executable_address_response is record
+      revision : aliased Unsigned_64;
+      physical_base : aliased System.Address;
+      virtual_base : aliased System.Address;
+   end record
+   with Convention => C_Pass_By_Copy;
+   for limine_executable_address_response use record
+      revision at 0 range 0 .. 63;
+      physical_base at 8 range 0 .. 63;
+      virtual_base at 16 range 0 .. 63;
+   end record;
+   type Executable_Address_Response_Access is access all limine_executable_address_response;
+   pragma Convention (C, Executable_Address_Response_Access);
+
 
 
    -------------------------------
    -- Limine Requests Instances --
    -------------------------------
-   hhdm_request : constant limine_hhdm_request;
-   pragma Import (C, hhdm_request, "hhdm_request");
-   hhdm_response : hhdm_response_access renames hhdm_request.response;
+   --  hhdm_request : constant limine_hhdm_request;
+   --  pragma Import (C, hhdm_request, "hhdm_request");
+   hhdm_response : limine_hhdm_response;
+   pragma Import (C, hhdm_response, "hhdm_response");
 
-   mem_map_request : constant limine_memmap_request;
-   pragma Import (C, mem_map_request, "memmap_request");
-   limine_memmap_response : Mem_Map_Response_Access renames mem_map_request.response;
+   -- mem_map_request : constant limine_memmap_request;
+   --  pragma Import (C, mem_map_request, "memmap_request");
+   memmap_response : Mem_Map_Response (1);
+   pragma Import (C, memmap_response, "memmap_response");
 
-   framebuffer_request : constant limine_framebuffer_request;
-   pragma Import (C, framebuffer_request, "framebuffer_request");
-   framebuffer_response : Framebuffer_Response_Access renames framebuffer_request.response;
+   -- framebuffer_request : constant limine_framebuffer_request;
+   -- pragma Import (C, framebuffer_request, "framebuffer_request");
+   framebuffer_response : limine_framebuffer_response (1);
+   pragma Import (C, framebuffer_response, "framebuffer_response");
 
-   executable_cmdline_request : constant limine_executable_cmdline_request;
-   pragma Import (C, executable_cmdline_request, "executable_cmdline_request");
-   executable_cmdline_response : Executable_Cmdline_Response_Access renames executable_cmdline_request.response;
+   -- executable_cmdline_request : constant limine_executable_cmdline_request;
+   -- pragma Import (C, executable_cmdline_request, "executable_cmdline_request");
+   executable_cmdline_response : limine_executable_cmdline_response;
+   pragma Import (C, executable_cmdline_response, "executable_cmdline_response");
+
+   executable_address_response : limine_executable_address_response;
+   pragma Import (C, executable_address_response, "executable_address_response");
 
 
-
-   --  package Mem_Map_Entry_Conversions is new
-   --     System.Address_To_Access_Conversions (Mem_Map_Entry);
-   --  function To_Mem_Map_Access (Addr : System.Address) return Mem_Map_Entry_Access is (Mem_Map_Entry_Access (Mem_Map_Entry_Conversions.To_Pointer (Addr)));
-
+   function Get_HHDM_Offset return Virtual_Address is (To_Virtual_Address (System.Address (hhdm_response.offset)));
 end Limine;

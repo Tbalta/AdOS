@@ -22,17 +22,33 @@ volatile struct limine_memmap_request memmap_request = {
     .revision = 0
 };
 
+
 __attribute__((used, section(".limine_requests")))
 volatile struct limine_hhdm_request hhdm_request = {
     .id = LIMINE_HHDM_REQUEST_ID,
     .revision = 0
 };
 
+
 __attribute__((used, section(".limine_requests")))
 volatile struct limine_executable_cmdline_request executable_cmdline_request = {
     .id = LIMINE_EXECUTABLE_CMDLINE_REQUEST_ID,
     .revision = 0
 };
+
+__attribute__((used, section(".limine_requests")))
+volatile struct limine_executable_address_request executable_address_request = {
+    .id = LIMINE_EXECUTABLE_ADDRESS_REQUEST_ID,
+    .revision = 0
+};
+
+// __attribute__((used, section(".limine_requests")))
+// volatile struct limine_stack_size_request executable_stack_size_request = {
+//     .id = LIMINE_STACK_SIZE_REQUEST_ID,
+//     .revision = 0,
+//     .stack_size = 4096 * 10
+// };
+
 
 // Finally, define the start and end markers for the Limine requests.
 // These can also be moved anywhere, to any .c file, as seen fit.

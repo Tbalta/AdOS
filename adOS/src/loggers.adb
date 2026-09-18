@@ -8,6 +8,9 @@
 ------------------------------------------------------------------------------
 with VGA;
 with x86.vmm;
+with System.Secondary_Stack;
+with System.Machine_Code;     use System.Machine_Code;
+
 package body Loggers is
 
    procedure Serial_Send_Line (Message : in String) is
@@ -48,8 +51,19 @@ package body Loggers is
       --  VGA_Logger.Log_Warning (Warning_Message);
    end Log_Warning;
 
-   procedure Panic (Panic_Message : in String) is
+   procedure Log_Debug (Debug_Message : in String) is
    begin
+      if Debug_Enabled then
+         Serial_Logger.Log_Debug (Debug_Message);
+         --  VGA_Logger.Log_Debug (Debug_Message);
+      end if;
+   end Log_Debug;
+
+   procedure Panic (Panic_Message : in String) is
+      procedure Print_Secondary_Stack is new System.Secondary_Stack.SS_Info (Put_Line => Log_Message);
+   begin
+      System.Machine_Code.Asm (Template => "cli", Volatile => True);
+      Print_Secondary_Stack;
       Serial_Logger.Log_Error (Panic_Message);
       while True loop
          null;
@@ -57,6 +71,7 @@ package body Loggers is
       x86.vmm.Load_CR3 (x86.vmm.Get_Process_CR3);
       x86.vmm.Enable_Paging;
       VGA.Set_Text_Mode (80, 25, 16);
+
       --  VGA_Logger.Log_Error (Panic_Message);
    end Panic;
 

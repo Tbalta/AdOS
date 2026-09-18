@@ -32,9 +32,9 @@ package body Programmable_Interval_Timer is
    begin
       Systick := Systick + 1;
 
-      if Systick mod 1000 = 0 then
-         Logger.Log_Info ("Systick: " & Positive (Systick / 1000)'Image);
-      end if;
+      --  if Systick mod 1000 = 0 then
+      --     Logger.Log_Info ("Systick: " & Positive (Systick / 1000)'Image);
+      --  end if;
    end Handle_Systick;
 
    function Get_Systick return Systick_Type is

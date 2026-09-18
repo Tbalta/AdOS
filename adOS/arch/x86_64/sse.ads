@@ -10,5 +10,5 @@ private
            Component_Size => 8,
            Convention => C;
 
-   fxsave_region : SSE_Save_Area;
+   fxsave_region : aliased SSE_Save_Area;
 end SSE;

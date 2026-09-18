@@ -1,5 +1,7 @@
+with config;
 with SERIAL;
 with VGA.GTF;
+with x86;
 with x86.gdt;
 with x86.idt;
 with x86.pmm;                 use x86.pmm;
@@ -35,16 +37,17 @@ with SSE;
 procedure Main is
    package Logger renames Loggers.Serial_Logger;
    CR3 : CR3_register;
+
+   function To_Hex is new Util.To_Hex (Integer_Address);
+   function To_Hex is new Util.To_Hex (System.Address);
 begin
-   --  VGA_Logger.Log_Info ("Starting adOS...");
    SERIAL.Init_COM (SERIAL.COM1, SERIAL.Baudrate'Last);
    Logger.Log_Info ("Starting adOS...");
-
-   ------------------------------------
-   --  Multiboot information display --
-   ------------------------------------
-
-
+   Logger.Log_Ok ("AdOS is loaded at");
+   
+   Logger.Log_Info ("   Virtual:  " & To_Hex (config.Kernel_Start) & " - " & To_Hex (config.Kernel_End));
+   Logger.Log_Info ("   Physical: " & To_Hex (Limine.executable_address_response.physical_base) & " - " & To_Hex (Limine.executable_address_response.physical_base + config.Kernel_Size));
+   Logger.Log_Info ("HHDM at: " & To_Hex (Integer_Address (Limine.hhdm_response.offset), 16));
    ----------------------------------
    ---- GDT and IDT initialization --
    ----------------------------------
@@ -53,48 +56,34 @@ begin
    x86.idt.init_idt;
    Logger.Log_Ok ("GDT and IDT initialized");
 
-   Logger.Log_Ok ("SSE enabled");
    ------------------------
    -- PIC initialization --
    ------------------------
-   Logger.Log_Info ("Limine.hhdm_request.response.address: " & Limine.hhdm_request.response.all'Image);
-   --  Logger.Log_Info ("Limine.limine_memmap_response'Image: " & Limine.limine_memmap_response.all'Image);
+   declare
+      RSP : System.Address := 0;
+   begin
+      Asm ("movq %%rsp, %0", Outputs => (System.Address'Asm_Output ("=r", RSP)), Volatile => True);
+      Logger.Log_Info ("RSP: " & To_Hex (Integer_Address (RSP), 16));
+   end;
    pic.init;
 
    ------------------------
    -- PMM initialization --
    ------------------------
-   declare
-      --  subtype multiboot_mmap_array is multiboot_mmap (1 .. Integer (entry_map_count));
-
-      --  package Conversion is new System.Address_To_Access_Conversions (multiboot_mmap_array);
-      --  entry_map : access multiboot_mmap_array := (Conversion.To_Pointer (info.mmap_addr));
-      procedure print_mmap (s : System.Address);
-      pragma Import (C, print_mmap, "print_mmap");
-   begin
-      Logger.Log_Info ("Number of memory map entries: " & Limine.limine_memmap_response.Entry_Map_Count'Image);
-      --  print_mmap (Mem_Map_Address);
-      x86.pmm.Init (Limine.mem_map_request.response.all);
-
-      Logger.Log_Info ("cmdline: " & Value (Limine.executable_cmdline_response.cmdline));
-
-      Logger.Log_Info
-        ("Next free page: " & x86.pmm.Offset_To_Address (x86.pmm.Get_Next_Free_Page)'Image);
-      x86.pmm.Print_PMM_Info;
-   end;
+   Logger.Log_Info ("Number of memory map entries: " & Limine.memmap_response.Entry_Map_Count'Image);
+   x86.pmm.Init (Limine.memmap_response);
+   Logger.Log_Info ("Next free page: " & x86.pmm.Offset_To_Address (x86.pmm.Get_Next_Free_Page)'Image);
+   x86.pmm.Print_PMM_Info;
 
    ------------------------
    -- VMM initialization --
    ------------------------
 
    Logger.Log_Info ("Initializing VMM");
-
    CR3 :=  Get_Current_CR3;
-   Print_Mapped_Memory (CR3);
-   Logger.Log_Info ("CR3 address: " & CR3'Image);
    Set_Kernel_CR3 (CR3);
-   --  Print_Mapped_Memory (CR3);
-   Identity_Map (CR3);
+   -- Identity_Map (CR3);
+   x86.gdt.Set_Interrupt_Stack (Kernel_Alloc (CR3, 8192 * 2, Is_Writable => True), 8192 * 2);
 
    ---------------------
    -- Filesystem init --
@@ -102,35 +91,11 @@ begin
    Logger.Log_Info ("Atapi setup");
    Atapi.discoverAtapiDevices;
    File_System.ISO.init;
-   declare
-      use File_System;
-      FD : File_Descriptor_With_Error := FD_ERROR;
 
-      subtype Read_Type is String (1 .. 512);
-      buffer : aliased Read_Type;
-      read   : Integer;
-      function Read_Char is new File_System.read (Read_Type => Read_Type);
-   begin
-      Logger.Log_Info ("ISO filesystem initialized");
-      FD := open ("test2.txt", 0);
-      if FD = FD_ERROR then
-         Logger.Log_Error ("Error opening file test2.txt");
-         goto Init_End;
-      end if;
-
-      read := Read_Char (FD, buffer'Access);
-      Logger.Log_Info ("read:" & buffer (1 .. read));
-      if close (FD) = 0 then
-         Logger.Log_Ok ("File closed successfully");
-      else
-         Logger.Log_Error ("Error closing file");
-      end if;
-   end;
-
-   Logger.Log_Info (Limine.framebuffer_response.all'Image);
+   Logger.Log_Info (Limine.framebuffer_response'Image);
    Logger.Log_Info (Limine.framebuffer_response.framebuffer_count'Image & " framebuffer(s) found");
    for i in Limine.framebuffer_response.framebuffers'Range loop
-      Logger.Log_Info ("Framebuffer " & Limine.framebuffer_response.framebuffers (i).all'Image & ":");
+      Logger.Log_Info ("Framebuffer (" & i'Image & ")");
       Logger.Log_Info ("  Address: " & Limine.framebuffer_response.framebuffers (i).all.address'Image);
       Logger.Log_Info ("  Resolution: " & Limine.framebuffer_response.framebuffers (i).all.width'Image & "x" & Limine.framebuffer_response.framebuffers (i).all.height'Image);
       Logger.Log_Info ("  Pitch: " & Limine.framebuffer_response.framebuffers (i).all.pitch'Image);
@@ -144,8 +109,6 @@ begin
 
       Buffer : access vga_buffer := null;
    begin
-      Logger.Log_Info ("Switching to graphical mode...");
-      Logger.Log_Info (Width'Image & "x" & Height'Image);
       Buffer := Conversion.To_Pointer (Limine.framebuffer_response.framebuffers (1).all.address);
       Buffer (1 .. Width * Height) := (others => 255);
       Buffer (1 .. (Width * Height) / 2) := (others => 70);
@@ -159,10 +122,12 @@ begin
    System.Machine_Code.Asm (Template => "sti", Volatile => True);
    PIC.Clear_Mask (0);
    PIC.Clear_Mask (1);
+   Pic.Send_EOI (Pic.IRQ_Number (32));
 
    -----------------
    -- ELF Loading --
    -----------------
+   Logger.Log_Info ("Preparing userland jump");
    declare
       use File_System;
       FD             : File_Descriptor_With_Error := FD_ERROR;
@@ -187,7 +152,7 @@ begin
          Logger.Log_Ok ("ELF file closed successfully");
       end if;
 
-      Logger.Log_Info ("Entry point: " & To_Integer (Program_Header.e_entry)'Image);
+      Logger.Log_Info ("Entry point: " & Program_Header.e_entry'Image);
       Jump_To_Userspace (Program_Header.e_entry, Userland_CR3);
    end;
 

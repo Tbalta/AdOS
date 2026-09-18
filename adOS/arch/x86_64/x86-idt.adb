@@ -152,13 +152,11 @@ package body x86.idt is
    end init_idt;
 
    procedure handle_timer is
-      procedure outb is new x86.Port_Io.Outb (Unsigned_8);
    begin
       Programmable_Interval_Timer.Handle_Systick;
    end handle_timer;
 
    procedure handle_keyboard is
-      procedure outb is new x86.Port_Io.Outb (Unsigned_8);
    begin
       Keyboard.Handle_Keyboard;
    end handle_keyboard;
@@ -184,6 +182,13 @@ package body x86.idt is
          rax := syscall_result.Unsigned_Value;
       end if;
 
+      if interrupt_code = 42 then
+         Logger.Log_Error ("Stack Segment Fault at : ");
+         while True loop
+            ASM ("hlt", Volatile => True);
+         end loop;
+      end if;
+   
       if interrupt_code = 14 then
          handle_page_fault (stf);
       end if;

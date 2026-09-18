@@ -45,4 +45,12 @@ package body Generic_Logger is
    begin
       Print_Function (WARNING & " " & Warning_Message);
    end Log_Warning;
+
+   ---------------
+   -- Log_Debug --
+   ---------------
+   procedure Log_Debug (Debug_Message : in String) is
+   begin
+      Print_Function (DEBUG & " " & Debug_Message);
+   end Log_Debug;
 end Generic_Logger;

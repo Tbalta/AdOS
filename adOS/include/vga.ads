@@ -14,7 +14,7 @@ with x86.Port_IO;
 with System;
 with Interfaces; use Interfaces;
 with File_System;
-
+with x86; use x86;
 package VGA is
    pragma Preelaborate;
 
@@ -80,7 +80,7 @@ package VGA is
 
    type vga_buffer is array (Positive range 1 .. 320 * 200) of aliased Unsigned_8 with Pack => True;
 
-   save_buffer_address : System.Address := System.Address'First;
+   save_buffer_address : Virtual_Address := Virtual_Address'First;
 
    procedure load_palette (p : File_System.Path);
 
