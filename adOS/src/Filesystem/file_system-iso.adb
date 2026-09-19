@@ -102,7 +102,7 @@ package body File_System.ISO is
          return null;
       end Locate_File;
 
-      file : iso_dir_ptr := Locate_File (To_Upper (String (File_Path)), root_lba, root_dirsize);
+      file : iso_dir_ptr := Locate_File (To_Upper (To_String (File_Path)), root_lba, root_dirsize);
 
       FD : Driver_File_Descriptor_With_Error;
    begin

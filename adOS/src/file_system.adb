@@ -103,15 +103,15 @@ package body File_System is
    function open_dev (File_Path : Path; flag : Integer) return File_Descriptor_With_Error is
       Driver_FD : Driver_File_Descriptor_With_Error := DRIVER_FD_ERROR;
       FD        : File_Descriptor_With_Error := FD_ERROR;
-      folder    : constant String := Get_First_Path_Component (String (File_Path));
+      folder    : constant String := Get_First_Path_Component (To_String (File_Path));
       FS        : File_System_Type := INVALID_FS;
    begin
 
       if folder = "vga" then
-            Driver_FD := File_System.VGA.open (Path(Get_Second_Path_Component (String (File_Path))), flag);
+            Driver_FD := File_System.VGA.open (To_Path (Get_Second_Path_Component (To_String (File_Path))), flag);
             FS := VGA_FS;
       elsif folder = "limine" then
-            Driver_FD := File_System.LIMINE.open (Path (Get_Second_Path_Component (String (File_Path))), flag);
+            Driver_FD := File_System.LIMINE.open (To_Path (Get_Second_Path_Component (To_String (File_Path))), flag);
             FS := LIMINE_FS;
       end if;
 
@@ -130,10 +130,10 @@ package body File_System is
    function open (file_path : Path; flag : Integer) return File_Descriptor_With_Error is
       Driver_FD : Driver_File_Descriptor_With_Error := DRIVER_FD_ERROR;
       FD        : File_Descriptor_With_Error := FD_ERROR;
-      folder    : constant String := Get_First_Path_Component (String (file_path));
+      folder    : constant String := Get_First_Path_Component (To_String (file_path));
    begin
       if folder = "dev" then
-         return open_dev (Path (Get_Second_Path_Component (String (file_path))), flag);
+         return open_dev (To_Path (Get_Second_Path_Component (To_String (file_path))), flag);
       end if;
 
       for File_System in SERIAL_FS .. PIT_FS loop

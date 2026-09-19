@@ -56,6 +56,8 @@ package body VGA.DAC is
    -- Load_File --
    ---------------
    procedure Load_File (file : Path) is
+      use File_System;
+      use Bounded_Path;
       type File_Entry is record
          Red   : String (1 .. 2);
          Green : String (1 .. 2);
@@ -84,7 +86,7 @@ package body VGA.DAC is
 
       fd := open (file, 0);
       if fd = FD_ERROR then
-         Logger.Log_Error ("Unable to open palette file " & String (file));
+         Logger.Log_Error ("Unable to open palette file " & To_String (file));
          return;
       end if;
 
@@ -94,7 +96,7 @@ package body VGA.DAC is
          seek (fd, 1, SEEK_CUR);
       end loop;
 
-      Logger.Log_Ok ("Loaded palette file: " & String (file));
+      Logger.Log_Ok ("Loaded palette file: " & To_String (file));
       close (fd);
    end Load_File;
 

@@ -87,7 +87,6 @@ package body Atapi is
 
    procedure addAtapiDevice (Controller : ATA_CONTROLLER; Device : ATA_DEVICE) is
    begin
-      --  Store device information
       for i in Devices'Range loop
          if not Devices (i).Present then
             Logger.Log_Info
@@ -96,11 +95,10 @@ package body Atapi is
                & " device "
                & Device'Image
                & " at ID "
-               & ATAPI_Device_ID'Image (i));
+               & i'Image);
             Devices (i).Present := True;
             Devices (i).Controller := Controller;
             Devices (i).Device := Device;
-            Logger.Log_Info (Devices (i)'Image);
             exit;
          end if;
       end loop;

@@ -116,9 +116,8 @@ begin
       Buffer (1 .. (Width * Height) / 8) := (others => 250);
    end;
 
-   Programmable_Interval_Timer.set_timer_period (1);
-   --  Keyboard.Init;
-   -- ?? sti here
+   Programmable_Interval_Timer.set_timer_period (1);   
+   -- Enable interrupts then PIT IRQ lines
    System.Machine_Code.Asm (Template => "sti", Volatile => True);
    PIC.Clear_Mask (0);
    PIC.Clear_Mask (1);
@@ -130,16 +129,17 @@ begin
    Logger.Log_Info ("Preparing userland jump");
    declare
       use File_System;
+      use Bounded_Path;
       FD             : File_Descriptor_With_Error := FD_ERROR;
       Program_Header : ELF.ELF_Header;
-      File_To_Open : constant Path := Path (String' (Value (Limine.executable_cmdline_response.cmdline)));
+      File_To_Open : constant Path := Path (To_Path (Value (Limine.executable_cmdline_response.cmdline)));
       Userland_CR3 : CR3_Register := Create_CR3;
    begin
-      Logger.Log_Info ("Loading file: " & String (File_To_Open));
+      Logger.Log_Info ("Loading file: " & To_String (File_To_Open));
       Identity_Map (Userland_CR3);
       FD := open (File_To_Open, 0);
       if FD = FD_ERROR then
-         Logger.Log_Error ("Error opening ELF file: " & String (File_To_Open));
+         Logger.Log_Error ("Error opening ELF file: " & To_String (File_To_Open));
          goto Init_End;
       end if;
 

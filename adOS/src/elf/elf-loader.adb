@@ -42,8 +42,8 @@ package body ELF.Loader is
       Kernel_CR3 : x86.vmm.CR3_register := x86.vmm.Get_Kernel_CR3;
       Read_Count : Integer;
 
-
       subtype Segment_Data is Storage_Array (1 .. Program_Header.p_filesz);
+      --  type Storage_Array_Access is access all Storage_Array;
    
       Segment_Page_Offset : constant Storage_Offset := Storage_Offset (Program_Header.p_vaddr mod 4096);
 
@@ -60,7 +60,7 @@ package body ELF.Loader is
       User_Allocated_Buffer : System.Address;
       function Read_Segment_Data is new File_System.read (Segment_Data);
    begin
-      Logger.Log_Info ("Reading segment" & Program_Header'Image);
+      Logger.Log_Info ("Reading segment");
       pragma Assert (Program_Header'Valid_Scalars);
       pragma Assert (Segment'Size / 8 = Program_Header.p_memsz + Segment_Page_Offset);
       
@@ -70,16 +70,24 @@ package body ELF.Loader is
          Logger.Log_Error ("Unable to allocate segment for " & Program_Header'Image);
          raise Program_Error with "Unable to allocate elf segment";
       end if;
-      Kernel_Segment.Data := (others => 0);
-      Kernel_Segment.Padding := (others => 0);
-      Kernel_Segment.Remaining := (others => 0);
+
+      -- This way we ensure the stack usage for this function is bounded
+      for I in Kernel_Segment.Data'Range loop
+         Kernel_Segment.Data (I) := 0;
+      end loop;
+      for I in Kernel_Segment.Padding'Range loop
+         Kernel_Segment.Padding (I) := 0;
+      end loop;
+      for I in Kernel_Segment.Remaining'Range loop
+         Kernel_Segment.Remaining (I) := 0;
+      end loop;
+
 
       Logger.Log_Info ("Allocated segment at " & Conversion.To_Address (Kernel_Segment)'Image & " with size " & Integer (Segment'Size / 8)'Image & " bytes");
       
       File_System.Seek (File, Program_Header.p_offset, File_System.SEEK_SET);
       Logger.Log_Debug ("Reading " & Integer(Segment_Data'Size / 8)'Image & " bytes from file offset " & Program_Header.p_offset'Image);
 
-      -- Stack overflow here somehow
       Read_Count := Read_Segment_Data (File, Kernel_Segment.Data'Access);
       pragma Assert (Read_Count = Integer (Program_Header.p_filesz));
 

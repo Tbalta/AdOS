@@ -8,7 +8,6 @@ with Ada.Assertions;
 with Loggers;
 with x86.vmm;
 with Util;
-with Loggers;
 package body x86.vmm is
    use Standard.ASCII;
 
@@ -171,10 +170,6 @@ package body x86.vmm is
    -------------------------
    function Get_Number_Of_Pages (Size : Storage_Count; Offset : Storage_Offset := 0) return Positive
    is begin
-      if (Size + Storage_Count (PAGE_SIZE - 1 + Offset)) / PAGE_SIZE <= 0 then
-         Logger.Log_Error(Size'Image & ", " & Offset'Image);
-      end if;
-
     return (Positive ((Size + Storage_Count (PAGE_SIZE - 1 + Offset)) / PAGE_SIZE));
    end Get_Number_Of_Pages;
 
@@ -524,7 +519,9 @@ package body x86.vmm is
       declare
          PML3 : Page_Map_Level_3_Access := To_PML3_Access (Page_To_Allocate);
       begin
-         PML3.all := Page_Map_Level_3'(others => (Present => False, others => <>));
+         for I in PML3'Range loop
+            PML3 (I) := (Present => False, others => <>);
+         end loop;
       end;
 
       PML4 (Destination.PML4_Index).Present := True;
@@ -547,7 +544,9 @@ package body x86.vmm is
       declare
          PML2 : Page_Map_Level_2_Access := To_PML2_Access (Page_To_Allocate);
       begin
-         PML2.all := Page_Map_Level_2'(others => (Present => False, others => <>));
+         for I in PML2'Range loop
+            PML2 (I) := (Present => False, others => <>);
+         end loop;
       end;
 
       PML3 (Destination.PML3_Index).Present := True;
@@ -571,7 +570,9 @@ package body x86.vmm is
       declare
          PML1 : Page_Map_Level_1_Access := To_PML1_Access (Page_To_Allocate);
       begin
-         PML1.all := Page_Map_Level_1'(others => (Present => False, others => <>));
+         for I in PML1'Range loop
+            PML1 (I) := (Present => False, others => <>);
+         end loop;
       end;
 
       PML2 (Destination.PML2_Index).Present := True;

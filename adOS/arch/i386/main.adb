@@ -118,7 +118,7 @@ begin
       function Read_Char is new File_System.read (Read_Type => Read_Type);
    begin
       Logger.Log_Info ("ISO filesystem initialized");
-      FD := open ("test2.txt", 0);
+      FD := open (To_Path ("test2.txt"), 0);
       if FD = FD_ERROR then
          Logger.Log_Error ("Error opening file test2.txt");
          goto Init_End;
@@ -133,7 +133,7 @@ begin
       end if;
    end;
 
-   VGA.load_palette ("vga_tui.hex");
+   VGA.load_palette (File_System.To_Path ("vga_tui.hex"));
 
    --  declare
    --     use File_System;
@@ -172,16 +172,17 @@ begin
    -----------------
    declare
       use File_System;
+      use Bounded_Path;
       FD             : File_Descriptor_With_Error := FD_ERROR;
       Program_Header : ELF.ELF_Header;
-      File_To_Open : constant Path := Path (Util.Read_String_From_Address (info.cmdline));
+      File_To_Open : constant Path := To_Path (Util.Read_String_From_Address (info.cmdline));
       Userland_CR3 : CR3_Register := Create_CR3;
    begin
-      Logger.Log_Info ("Loading file: " & String (File_To_Open));
+      Logger.Log_Info ("Loading file: " & To_String (File_To_Open));
       Identity_Map (Userland_CR3);
       FD := open (File_To_Open, 0);
       if FD = FD_ERROR then
-         Logger.Log_Error ("Error opening ELF file: " & String (File_To_Open));
+         Logger.Log_Error ("Error opening ELF file: " & To_String (File_To_Open));
          goto Init_End;
       end if;
 

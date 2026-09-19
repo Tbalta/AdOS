@@ -72,7 +72,7 @@ package body Syscall is
       Process : in x86.vmm.CR3_Register) is
    begin
       VGA.Set_Text_Mode (80, 25, 16);
-      VGA.load_palette ("vga_tui.hex");
+      VGA.load_palette (File_System.To_Path ("vga_tui.hex"));
       Logger.Log_Info ("Process exited with status " & Status'Image);
       while True loop
          System.Machine_Code.Asm (Template => "hlt", Volatile => True);
@@ -187,6 +187,7 @@ package body Syscall is
       result    : out Syscall_Result)
    is
       use File_System;
+      use Bounded_Path;
       use all type System.Address;
       Max_Length : constant := 256;
       Kernel_CR3  : constant x86.vmm.CR3_register := x86.vmm.Get_Kernel_CR3;
@@ -201,13 +202,13 @@ package body Syscall is
       end if;
 
       declare
-         Path_String : constant String := Util.Read_String_From_Address (To_Address (Kernel_Path));
+         Path_String : constant Path := To_Path (Util.Read_String_From_Address (To_Address (Kernel_Path)));
          FD         : File_Descriptor_With_Error;
       begin
-         Logger.Log_Info ("Open_Syscall: Opening file: " & Path_String & " with flag: " & flag'Image);
-         result.Signed_Value := Signed_Syscall_Output (open (File_System.Path (Path_String), Integer (flag)));
+         Logger.Log_Info ("Open_Syscall: Opening file: " & To_String (Path_String) & " with flag: " & flag'Image);
+         result.Signed_Value := Signed_Syscall_Output (open (Path_String, Integer (flag)));
          Logger.Log_Info
-           ("Open_Syscall: Opening file: " & Path_String & " FD: " & result.Signed_Value'Image);
+           ("Open_Syscall: Opening file: " & To_String (Path_String) & " FD: " & result.Signed_Value'Image);
       end;
 
       x86.vmm.Memory_Unmap (Kernel_CR3, Kernel_Path, Max_Length, False);
@@ -254,6 +255,7 @@ package body Syscall is
       fd := File_System.File_Descriptor (arg1);
 
       if not File_System.Is_Valid_Whence (Integer (arg3)) then
+         Logger.Log_Error ("not in SEEK_SET .. SEEK_END" & arg3'Image);
          Logger.Log_Error (arg3'Image & "not in SEEK_SET .. SEEK_END");
          result.Signed_Value := -1;
       end if;
