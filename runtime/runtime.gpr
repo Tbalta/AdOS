@@ -13,7 +13,14 @@ library project Runtime is
    --  second is to function as the run-time library's spec includes.
    for Source_Dirs use ("build/adainclude/**", "libc/**");
    --  The directory used for build artifacts.
-   for Object_Dir use "obj";
+
+   case Platform is
+      when "i386-elf" =>
+         for Object_Dir use "obj/i386";
+      when "x86_64-elf" =>
+         for Object_Dir use "obj/x64";
+   end case;
+
  
    for Languages use (
      "Ada",

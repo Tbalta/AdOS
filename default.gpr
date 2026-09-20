@@ -16,12 +16,13 @@ project Default is
     case Platform is
       when "i386-elf" =>
         for Source_Dirs use Ados_Source_Dirs & ("./adOS/arch/i386/**"); 
+        for Object_Dir  use  "obj/i386";
       when "x86_64-elf" =>
         for Source_Dirs use Ados_Source_Dirs & ("./adOS/arch/x86_64/**");        
+        for Object_Dir  use  "obj/x64";
         
     end case;
 
-    for Object_Dir   use  "obj";
     for Exec_Dir     use  ".";
 
     for Languages use ("ada", "c", "nasm");

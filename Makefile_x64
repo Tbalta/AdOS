@@ -1,9 +1,13 @@
 .POSIX:
 .PHONY: clean run run-img main.elf folder
 
-OBJ = obj
+OBJ = obj/x64
 
 qemu_param = -no-reboot -boot d -D ./log.txt -d int,guest_errors,in_asm -serial mon:stdio -m 2G
+
+ifeq ($(DEBUG), TRUE)
+	qemu_param += -S -s
+endif
 
 ifeq ($(SKIP_RAMDISK), TRUE)
 docker_make_flags = SKIP_RAMDISK=TRUE
@@ -45,7 +49,7 @@ make_dir:
 
 userland: make_dir
 	$(MAKE) -C userland
-	cp userland/bin/* iso/bin/
+	cp userland/bin/x64/* iso/bin/
 
 
 main.elf: ramdisk_content.o
@@ -92,14 +96,14 @@ ifeq ($(SKIP_RAMDISK), TRUE)
 ramdisk_content.o: userland
 	$(RM) main.elf
 	$(RM) iso/boot/main.elf
-	$(RM) -r obj/ramdisk_content.o ramdisk.iso
+	$(RM) -r $(OBJ)/ramdisk_content.o ramdisk.iso
 	genisoimage -o ramdisk.iso /dev/null
-	objcopy --input binary --output elf64-x86-64 ramdisk.iso obj/ramdisk_content.o
+	objcopy --input binary --output elf64-x86-64 ramdisk.iso $(OBJ)/ramdisk_content.o
 else
 ramdisk_content.o: userland
 	$(RM) main.elf
 	$(RM) iso/boot/main.elf
-	$(RM) -r obj/ramdisk_content.o ramdisk.iso
+	$(RM) -r $(OBJ)/ramdisk_content.o ramdisk.iso
 	genisoimage -o ramdisk.iso iso/
-	objcopy --input binary --output elf64-x86-64 ramdisk.iso obj/ramdisk_content.o
+	objcopy --input binary --output elf64-x86-64 ramdisk.iso $(OBJ)/ramdisk_content.o
 endif

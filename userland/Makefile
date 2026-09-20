@@ -1,9 +1,9 @@
 ifeq ($(x86_64), TRUE)
 export CC = x86_64-elf-gcc
-export CFLAGS = -ffreestanding -O0 -nostdlib -fno-builtin -Wall -Wextra  -ffunction-sections -fdata-sections -fno-stack-protector -fno-zero-initialized-in-bss -I../libc -L ../libc/ -l:libc.a -D__x86_64__
+export CFLAGS = -ffreestanding -O0 -nostdlib -fno-builtin -Wall -Wextra  -ffunction-sections -fdata-sections -fno-stack-protector -fno-zero-initialized-in-bss -I../libc -L ../libc/obj/x64 -l:libc.a -D__x86_64__
 else
 export CC = i386-elf-gcc
-export CFLAGS = -ffreestanding -O0 -nostdlib -fno-builtin -Wall -Wextra  -ffunction-sections -fdata-sections -fno-stack-protector -fno-zero-initialized-in-bss -I../libc -L ../libc/ -l:libc.a -D__i386__
+export CFLAGS = -ffreestanding -O0 -nostdlib -fno-builtin -Wall -Wextra  -ffunction-sections -fdata-sections -fno-stack-protector -fno-zero-initialized-in-bss -I../libc -L ../libc/obj/i386 -l:libc.a -D__i386__
 endif
 
 BIN_DIR = bin
@@ -18,6 +18,8 @@ all: make_dir $(PROJECTS)
 
 make_dir:
 	mkdir -p $(BIN_DIR)
+	mkdir -p $(BIN_DIR)/x64
+	mkdir -p $(BIN_DIR)/i386
 
 $(PROJECTS):
 	$(MAKE) -C $@
