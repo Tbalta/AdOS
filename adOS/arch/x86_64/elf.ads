@@ -28,6 +28,7 @@ package ELF is
    end record
    with Pack => True, Size => 128;
 
+   -- !format off
    for ELF_Identifier use
      record
        EI_MAG at 0 range 0 .. 31;
@@ -38,6 +39,8 @@ package ELF is
        EI_ABIVERSION at 8 range 0 .. 7;
        EI_PAD at 9 range 0 .. 55;
      end record;
+   -- !format on
+
 
    type Object_File_Type is (NONE, REL, EXEC, DYN, CORE, LOOS, HIOS, LOPROC, HIPROC);
    for Object_File_Type use

@@ -45,9 +45,6 @@ package body SERIAL is
       Write_Divisor_High (COM, divisor_high);
    end Set_Divisor;
 
-   ------------------------
-   -- Set Line Control --
-   ------------------------
    procedure Set_Line_Control (COM : x86.Port_IO.Port_Address; Data_Length : Character_Length; Stop : Boolean; Parity : Parity_Kind; Break_Enable : Boolean) is
       LCR : Line_Control_Register := (Data        => Data_Length,
                                      Stop         => Stop,
@@ -58,12 +55,10 @@ package body SERIAL is
       Write_Line_Control_Register (COM, LCR);
    end Set_Line_Control;
 
-   procedure outb is new x86.Port_IO.Outb (Unsigned_8);
-   function inb is new x86.Port_IO.Inb (Unsigned_8);
 
-   procedure Write_COM1_Transmit_Buffer is new
-     x86.Port_IO.Write_Port_8 (COM1, Interfaces.Unsigned_8);
-
+   ------------------------
+   -- Set Line Control --
+   ------------------------
    procedure Set_Baud_Rate (port : COM_Port; divisor : Baudrate_Divisor) is
    begin
       Write_Interrupt_Enable_Register (port, (others => False));

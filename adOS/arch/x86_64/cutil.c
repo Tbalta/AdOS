@@ -158,24 +158,13 @@ void loader_x64(void) {
     hhdm_response = *hhdm_request.response;
     executable_cmdline_response = *executable_cmdline_request.response;
     executable_address_response = *executable_address_request.response;
-    // for (int i = 0; i < 4096 * 15; i++) {
-    //     astack[i] = 0xA;
-    // }
-
-    //     asm volatile (
-    //     "mov %[stack_top], %%rsp\n\t"
-    //     "xor %%rbp, %%rbp\n\t"
-    //     :
-    //     : [stack_top] "r" ((uintptr_t)astack + sizeof(astack) - 1)
-    // );
 
     LOG("Hello from adOS kernel!");
     adainit();
     LOG("Ada runtime initialized.");
     _ada_main(0);
 
-    // We're done, just hang...
-       for (;;) {
+    for (;;) {
         asm ("hlt");
     }
 }

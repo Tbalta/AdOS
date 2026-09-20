@@ -50,6 +50,10 @@ project Default is
         "-fdata-sections",
         "-fno-omit-frame-pointer",
         "-fno-lto",
+        "-fstack-protector",
+        "-c",
+        "-fstack-usage",
+        "-fdump-rtl-dfinish",
         "-ggdb",
         "-g");
       
@@ -79,7 +83,8 @@ project Default is
       --   "-mno-sse",
         "-mno-sse2",
         "-mno-red-zone",
-        "-mcmodel=kernel"
+        "-mcmodel=kernel",
+        "-Wstack-usage=4096"
       );
 
 
