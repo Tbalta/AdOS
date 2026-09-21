@@ -34,6 +34,15 @@ package Syscall is
    end record;
    pragma Unchecked_Union (Syscall_Result);
 
+
+   type Syscall_Parameters is record
+      arg1 : Syscall_Arg;
+      arg2 : Syscall_Arg;
+      arg3 : Syscall_Arg;
+      arg4 : Syscall_Arg;
+      arg5 : Syscall_Arg;
+   end record;
+
    procedure Handle_Syscall
      (number  : in Syscall_Arg;
       arg1    : in Syscall_Arg;

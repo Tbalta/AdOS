@@ -1,3 +1,12 @@
+------------------------------------------------------------------------------
+--                               X86.VARIANT                                --
+--                                                                          --
+--                                 S p e c                                  --
+-- (c) 2026 Tanguy Baltazart                                                --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
 with Pic;
 with SERIAL;
 with System;
@@ -14,30 +23,18 @@ with x86.Port_IO;
 with Programmable_Interval_Timer;
 with Keyboard;
 with Util;
+
+with x86.idt.Variant;   use x86.idt.Variant;
 package body x86.idt is
    package Logger renames Loggers.Serial_Logger;
 
-   procedure add_entry
-     (index     : Interrupt_ID;
-      ISR       : System.Address;
-      selector  : Unsigned_16;
-      DPL       : Cpu_Privilege_Level;
-      type_attr : gate_type)
-   is
-      offset : Unsigned_64 := Unsigned_64 (To_Integer (ISR));
-   begin
-      interrupt_vector (index) :=
-        (offset_low  => Unsigned_16 (offset and 16#FFFF#),
-         selector    => selector,
-         IST         => 0,
-         DPL         => DPL,
-         present     => True,
-         offset_high => Unsigned_48 (Shift_Right (offset, 16)),
-         entry_type  => type_attr,
-         zero_1      => 0,
-         zero_2      => 0);
-   --  Logger.Log_Info (interrupt_vector (index)'Image);
-   end add_entry;
+   type interrupt_vector_t is array (Interrupt_Id'Range) of idt_entry;
+   interrupt_vector : interrupt_vector_t
+   with Alignment => 16, Volatile;
+
+   function To_Hex is new Util.To_Hex (System.Address);
+
+
 
    procedure load_idt (idt_ptr : idt_ptr_t) is
    begin
@@ -45,44 +42,23 @@ package body x86.idt is
         ("lidt (%0)", Inputs => System.Address'Asm_Input ("r", idt_ptr'Address), Volatile => True);
    end load_idt;
 
-   procedure Print_Stack_Frame (stf : access Stack_Frame)
-   is
-   begin
-      Logger.Log_Info ("rax:" & stf.rax'Image);
-      Logger.Log_Info ("rbx:" & stf.rbx'Image);
-      Logger.Log_Info ("rcx:" & stf.rcx'Image);
-      Logger.Log_Info ("rdx:" & stf.rdx'Image);
-      Logger.Log_Info ("rsi:" & stf.rsi'Image);
-      Logger.Log_Info ("rdi:" & stf.rdi'Image);
-      Logger.Log_Info ("interrupt_code:" & stf.interrupt_code'Image);
-      Logger.Log_Info ("error_code:" & stf.error_code'Image);
-
-      Logger.Log_Info ("rip:" & stf.rip'Image);
-      Logger.Log_Info ("cs:" & stf.cs'Image);
-      Logger.Log_Info ("rflags:" & stf.rflags'Image);
-
-      Logger.Log_Info ("old_rsp:" & stf.old_esp'Image);
-      Logger.Log_Info ("old_ss:" & stf.old_ss'Image);
-
-   end Print_Stack_Frame;
 
    procedure handle_page_fault (stf : access stack_frame) is
-      function To_Error_Code is new Ada.Unchecked_Conversion (Unsigned_64, Page_Fault_Error_Code);
-      function To_Hex is new Util.To_Hex (Unsigned_64);
-      function Get_CR2 return Unsigned_64 is
-         CR2_Value : Unsigned_64;
+      function To_Error_Code is new Ada.Unchecked_Conversion (Register_Type, Page_Fault_Error_Code);
+      function Get_CR2 return System.Address is
+         CR2_Value : System.Address;
       begin
          ASM
            ("mov %%cr2, %0",
-            Outputs  => Interfaces.Unsigned_64'Asm_Output ("=r", CR2_Value),
+            Outputs  => System.Address'Asm_Output ("=r", CR2_Value),
             Volatile => True);
          return CR2_Value;
       end Get_CR2;
 
       error_code       : Page_Fault_Error_Code := To_Error_Code (stf.error_code);
-      faulting_address : constant Unsigned_64 := Get_CR2;
+      faulting_address : constant System.Address := Get_CR2;
    begin
-      x86.pmm.Print_PMM_Info;
+      -- x86.pmm.Print_PMM_Info;
       Print_Stack_Frame (stf);
       if error_code.User_Mode then
          Logger.Log_Info ("Userland memory:");
@@ -91,7 +67,7 @@ package body x86.idt is
          Logger.Log_Info ("Kernel memory:");
          x86.vmm.Print_Mapped_Memory (x86.vmm.Get_Kernel_CR3);
       end if;
-      Logger.Log_Error ("Page Fault at : " & To_Hex (stf.rip));
+      Logger.Log_Error ("Page Fault at : " & To_Hex (stf.Instruction_Pointer));
       Logger.Log_Error ("Faulting address is: " & To_Hex (faulting_address));
       if error_code.Present then
          Logger.Log_Error (" - caused by a protection violation.");
@@ -137,12 +113,13 @@ package body x86.idt is
       idt_ptr : idt_ptr_t;
    begin
       for i in error_vector_t'Range loop
-         add_entry (i, error_vector (i), 8, CPL0, trap_gate_64_bits);
+         interrupt_vector (i) :=  Create_Entry (error_vector (i), 8, CPL0, trap_gate);
       end loop;
-      add_entry (TIMER_INTERRUPT, timer_callback'Address, 8, CPL3, interrupt_64_bits);
-      add_entry (KEYBOARD_INTERRUPT, keyboard_callback'Address, 8, CPL3, interrupt_64_bits);
-      add_entry (SYSCALL_INTERRUPT, syscall'Address, 8, CPL3, interrupt_64_bits);
-      add_entry (129, debug'Address, 8, CPL3, interrupt_64_bits);
+      
+      interrupt_vector (TIMER_INTERRUPT) := Create_Entry (timer_callback'Address, 8, CPL3, interrupt_gate);
+      interrupt_vector (KEYBOARD_INTERRUPT) := Create_Entry (keyboard_callback'Address, 8, CPL3, interrupt_gate);
+      interrupt_vector (SYSCALL_INTERRUPT) := Create_Entry (syscall'Address, 8, CPL3, interrupt_gate);
+      interrupt_vector (129) := Create_Entry (debug'Address, 8, CPL3, interrupt_gate);
       idt_ptr.base := interrupt_vector'Address;
       idt_ptr.limit := interrupt_vector'Size / 8 - 1;
 
@@ -161,32 +138,28 @@ package body x86.idt is
       Keyboard.Handle_Keyboard;
    end handle_keyboard;
 
-   procedure handler (stf : access stack_frame) is
-      interrupt_code : Unsigned_64 renames stf.interrupt_code;
-      error_code     : Unsigned_64 renames stf.error_code;
-      rip            : Unsigned_64 renames stf.rip;
-      cs             : Unsigned_64 renames stf.cs;
-      rax            : Unsigned_64 renames stf.rax;
-      rbx            : Unsigned_64 renames stf.rbx;
-      rcx            : Unsigned_64 renames stf.rcx;
-      rdx            : Unsigned_64 renames stf.rdx;
-      rsi            : Unsigned_64 renames stf.rsi;
-      rdi            : Unsigned_64 renames stf.rdi;
-      process_CR3    : x86.vmm.CR3_register := x86.vmm.Get_Current_CR3;
-      syscall_result : Syscall.Syscall_Result (signed => False);
-   begin
-      --  Logger.Log_Info ("Interrupt: " & interrupt_code'Image);
-      x86.vmm.Set_Process_CR3 (process_CR3);
-      if interrupt_code = 128 then
-         Syscall.Handle_Syscall (rax, rbx, rcx, rdx, rsi, rdi, process_CR3, syscall_result);
-         rax := syscall_result.Unsigned_Value;
-      end if;
 
-      if interrupt_code = 42 then
-         Logger.Log_Error ("Stack Segment Fault at : ");
-         while True loop
-            ASM ("hlt", Volatile => True);
-         end loop;
+   procedure Interrupt_Handler (stf : access stack_frame);
+   pragma Export (C, Interrupt_Handler, "ada_interrupt_handler");
+   procedure Interrupt_Handler (stf : access stack_frame) is
+      interrupt_code : Register_Type renames stf.interrupt_code;
+
+      process_CR3    : x86.vmm.CR3_register := x86.vmm.Get_Current_CR3;
+      Syscall_Result : Syscall.Syscall_Result (signed => False);
+   begin
+      x86.vmm.Set_Process_CR3 (process_CR3);
+      --  Logger.Log_Info ("Interrupt: " & interrupt_code'Image);
+      if interrupt_code = 128 then
+         Syscall.Handle_Syscall (
+            number => Get_Syscall_Number (stf),
+            arg1 => Get_Arg1 (stf),
+            arg2 => Get_Arg2 (stf),
+            arg3 => Get_Arg3 (stf),
+            arg4 => Get_Arg4 (stf),
+            arg5 => Get_Arg5 (stf),
+            process => process_CR3,
+            result => Syscall_Result);
+         Set_Syscall_Value (stf, syscall_result.Unsigned_Value);
       end if;
    
       if interrupt_code = 14 then
@@ -207,10 +180,6 @@ package body x86.idt is
          Handle_Debug (stf);
       end if;
 
-
-      --  while True loop
-      --     ASM ("hlt", Volatile => True);
-      --  end loop;
       x86.vmm.Load_CR3 (process_CR3);
-   end handler;
+   end Interrupt_Handler;
 end x86.idt;

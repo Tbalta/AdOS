@@ -1,11 +1,19 @@
+------------------------------------------------------------------------------
+--                             X86.IDT.VARIANT                              --
+--                                                                          --
+--                                 S p e c                                  --
+-- (c) 2026 Tanguy Baltazart                                                --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
 with Interfaces;     use Interfaces;
 with Ada.Interrupts; use Ada.Interrupts;
 
-package x86.idt is
+package x86.idt.Variant is
    pragma Preelaborate;
-   --  pragma Suppress (Index_Check);
-   --  pragma Suppress (Overflow_Check);
-   --  pragma Suppress (All_Checks);
+
+   subtype Register_Type is Unsigned_32;
 
    type stack_frame (Privilege_Level_Change : Boolean := False) is record
       eax            : Unsigned_32;
@@ -17,7 +25,7 @@ package x86.idt is
       interrupt_code : Unsigned_32;
       error_code     : Unsigned_32;
 
-      eip    : Unsigned_32;
+      Instruction_Pointer    : System.Address;
       cs     : Unsigned_32;
       eflags : Unsigned_32;
 
@@ -43,7 +51,7 @@ package x86.idt is
        edi at 20 range 0 .. 31;
        interrupt_code at 24 range 0 .. 31;
        error_code at 28 range 0 .. 31;
-       eip at 32 range 0 .. 31;
+       Instruction_Pointer at 32 range 0 .. 31;
        cs at 36 range 0 .. 31;
        eflags at 40 range 0 .. 31;
        old_esp at 44 range 0 .. 31;
@@ -67,24 +75,12 @@ package x86.idt is
        Instruction_Fetch at 0 range 4 .. 4;
      end record;
 
-   type Handler_Proc is access procedure (stf : stack_frame);
-
-   type gate_type is
-     (task_gate, interrupt_16_bits, trap_gate_16_bits, interrupt_32_bits, trap_gate_32_bits)
-   with Size => 4;
-   for gate_type use
-     (task_gate         => 16#5#,
-      interrupt_16_bits => 16#6#,
-      trap_gate_16_bits => 16#7#,
-      interrupt_32_bits => 16#E#,
-      trap_gate_32_bits => 16#F#);
-
    type idt_entry is record
       offset      : Unsigned_16;
       selector    : Unsigned_16;
       entry_type  : gate_type;
       zero        : Unsigned_8 range 0 .. 1;
-      DPL         : Unsigned_8 range 0 .. 3;
+      DPL         : Cpu_Privilege_Level;
       present     : Boolean;
       offset_high : Unsigned_16;
    end record
@@ -100,35 +96,22 @@ package x86.idt is
        offset_high at 0 range 48 .. 63;
      end record;
 
-   type interrupt_vector_t is array (Interrupt_Id'Range) of idt_entry;
-   interrupt_vector : interrupt_vector_t
-   with
-     Export,
-     Alignment => 16,
-     Convention => Assembler,
-     External_Name => "interrupt_descriptor_table",
-     Volatile;
+   function Create_Entry
+     (ISR       : System.Address;
+      selector  : Unsigned_16;
+      DPL       : Cpu_Privilege_Level;
+      type_attr : gate_type) return idt_entry;
 
-   type error_vector_t is array (Interrupt_Id range 0 .. 31) of System.Address;
-   for error_vector_t'Component_Size use 32;
-   type error_vector_ptr_t is access error_vector_t;
 
-   type idt_ptr_t is record
-      limit : Unsigned_16;
-      base  : System.Address;
-   end record
-   with Size => 48;
-   for idt_ptr_t use
-     record
-       limit at 0 range 0 .. 15;
-       base at 0 range 16 .. 47;
-     end record;
+   procedure Print_Stack_Frame (stf : access Stack_Frame);
+   function Get_Syscall_Number (stf : access stack_frame) return Unsigned_32 is (stf.eax);
+   function Get_Arg1 (stf : access stack_frame) return Unsigned_32 is (stf.ebx);
+   function Get_Arg2 (stf : access stack_frame) return Unsigned_32 is (stf.ecx);
+   function Get_Arg3 (stf : access stack_frame) return Unsigned_32 is (stf.edx);
+   function Get_Arg4 (stf : access stack_frame) return Unsigned_32 is (stf.esi);
+   function Get_Arg5 (stf : access stack_frame) return Unsigned_32 is (stf.edi);
+   procedure Set_Syscall_Value (stf : access stack_frame; Value : Unsigned_32);
 
-   error_vector : error_vector_t;
-   pragma Import (C, error_vector, "x86_handler_vector");
-   procedure init_idt;
-   procedure Handler (stf : access stack_frame);
-   pragma Export (C, handler, "ada_interrupt_handler");
 
 private
-end x86.idt;
+end x86.idt.Variant;
