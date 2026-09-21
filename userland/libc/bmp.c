@@ -15,7 +15,7 @@ void load_rgba(bmp_image_t *image)
     bmp_palette_entry_t *palette = image->palette;
     uint8_t *bmp_buffer = image->bmp_buffer;
 
-    const int padding = (((8 * width + 31) / 32) * 4) - width;
+    const int padding = 0;
     for (int h = 0; h < height; h++)
     {
         for (int w = 0; w < width; w++)
@@ -26,6 +26,27 @@ void load_rgba(bmp_image_t *image)
             image->rgba_buffer[h * width + w].b = palette[pixel].b;
             image->rgba_buffer[h * width + w].a = 0;
         }
+    }
+}
+
+void load_bmp(bmp_image_t* image, int fd, uint32_t offset)
+{
+    if (fd == -1)
+        return;
+    
+    int width = image->width;
+    int height = image->height;
+    // image->bmp_buffer = malloc(width * height);
+    uint8_t *bmp_buffer = image->bmp_buffer;
+
+    lseek(fd, offset, SEEK_SET);
+
+    const int padding = (((8 * width + 31) / 32) * 4) - width;
+    for (int h = 0; h < height; h++)
+    {
+        uint8_t *line = bmp_buffer + (h * width);
+        read(fd, line, width);
+        lseek(fd, padding, SEEK_CUR);
     }
 }
 
@@ -68,8 +89,7 @@ int open_bmp(const char *path, bmp_image_t *image)
     read(fd, image->palette, sizeof(bmp_palette_entry_t) * dib_header.BITMAPINFOHEADER.colors_in_color_table);
     printf("palette[0]: %d, %d, %d\n", image->palette[0].r, image->palette[0].g, image->palette[0].b);
     image->bmp_buffer = malloc(dib_header.BITMAPINFOHEADER.image_size);
-    lseek(fd, file_header.data_offset, SEEK_SET);
-    read(fd, image->bmp_buffer, dib_header.BITMAPINFOHEADER.image_size);
+    load_bmp (image, fd, file_header.data_offset);
     close(fd);    
 }
 

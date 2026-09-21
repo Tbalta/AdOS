@@ -78,11 +78,6 @@ void draw_at (void *buffer, const bmp_image_t *image, const framebuffer_informat
     draw_image(buffer, image, fb_info, buffer_destination, get_image_box(image));
 }
 
-// void copy_image (void *buffer, const char *image, dimensions_t buffer_dims)
-// {
-//     draw_image (buffer, image, buffer_dims, buffer_dims,  (point_t){0, 0}, (point_t){0, 0}, buffer_dims);
-// }
-
 
 void busy_wait_ms (int systick_fd, int ms)
 {
