@@ -7,6 +7,7 @@ package Arch is
    subtype Syscall_Arg is Unsigned_64;
    subtype Signed_Syscall_Output is Integer_64;
    subtype Unsigned_Syscall_Output is Unsigned_64;
+   subtype Register_Type is Unsigned_64;
 
 private
    

@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
---                             X86.VARIANT.GDT                              --
+--                             X86.GDT.VARIANT                              --
 --                                                                          --
 --                                 S p e c                                  --
 -- (c) 2026 Tanguy Baltazart                                                --
@@ -9,8 +9,8 @@
 
 with Interfaces; use Interfaces;
 with System;     use System;
-
-package x86.Variant.gdt is
+with System.Storage_Elements; use System.Storage_Elements;
+package x86.gdt.Variant is
    pragma Preelaborate;
 
    type Segment_Type is (Null_Segment, Kernel_Code, Kernel_Data, User_Code, User_Data, TSS_Low);
@@ -22,12 +22,10 @@ package x86.Variant.gdt is
    subtype Descriptor_Entry is segment_descriptor;
    function Get_Segment (Segment : Segment_Type) return Descriptor_Entry;
 
-   -------------------------------------------------
-   -- Figure 9-2. 32-Bit Task-State Segment (TSS) --
-   -------------------------------------------------
+   -- Vol-3.9.2.1 Figure 9-2. 32-Bit Task-State Segment (TSS)
    type TSS_Entry is record
-      prev_tss : System.Address := 0;
-      esp0     : System.Address := 0;
+      prev_tss : Address := 0;
+      esp0     : Address := 0;
       ss0      : Unsigned_16 := 0;
       IOPB     : Unsigned_16 := 0;
    end record
@@ -50,4 +48,4 @@ private
         External_Name => "tss_stack",
         Size => 8192 * 8;
 
-end x86.Variant.gdt;
+end x86.gdt.Variant;

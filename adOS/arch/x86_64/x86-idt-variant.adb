@@ -7,24 +7,16 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with Pic;
-with SERIAL;
 with System;
-with System.Storage_Elements; use System.Storage_Elements;
-with System.Machine_Code;     use System.Machine_Code;
 with Loggers;
-with Ada.Interrupts;          use Ada.Interrupts;
-with Ada.Interrupts.Names;    use Ada.Interrupts.Names;
-with Syscall;
-with x86.pmm;
-with x86.vmm;
-with Ada.Unchecked_Conversion;
-with x86.Port_IO;
-with Programmable_Interval_Timer;
-with Keyboard;
 with Util;
+
+with Arch; use Arch;
 package body x86.idt.Variant is
    package Logger renames Loggers.Serial_Logger;
+
+   function To_Hex is new Util.To_Hex (Register_Type);
+   function To_Hex is new Util.To_Hex (System.Address);
 
    function Create_Entry
      (ISR       : System.Address;
@@ -49,22 +41,21 @@ package body x86.idt.Variant is
    procedure Print_Stack_Frame (stf : access Stack_Frame)
    is
    begin
-      Logger.Log_Info ("rax:" & stf.rax'Image);
-      Logger.Log_Info ("rbx:" & stf.rbx'Image);
-      Logger.Log_Info ("rcx:" & stf.rcx'Image);
-      Logger.Log_Info ("rdx:" & stf.rdx'Image);
-      Logger.Log_Info ("rsi:" & stf.rsi'Image);
-      Logger.Log_Info ("rdi:" & stf.rdi'Image);
+      Logger.Log_Info ("rax:" & To_Hex (stf.rax));
+      Logger.Log_Info ("rbx:" & To_Hex (stf.rbx));
+      Logger.Log_Info ("rcx:" & To_Hex (stf.rcx));
+      Logger.Log_Info ("rdx:" & To_Hex (stf.rdx));
+      Logger.Log_Info ("rsi:" & To_Hex (stf.rsi));
+      Logger.Log_Info ("rdi:" & To_Hex (stf.rdi));
       Logger.Log_Info ("interrupt_code:" & stf.interrupt_code'Image);
       Logger.Log_Info ("error_code:" & stf.error_code'Image);
 
-      Logger.Log_Info ("rip:" & stf.Instruction_Pointer'Image);
+      Logger.Log_Info ("rip:" & To_Hex (stf.Instruction_Pointer));
       Logger.Log_Info ("cs:" & stf.cs'Image);
-      Logger.Log_Info ("rflags:" & stf.rflags'Image);
+      Logger.Log_Info ("rflags:" & To_Hex (stf.rflags));
 
-      Logger.Log_Info ("old_rsp:" & stf.old_esp'Image);
+      Logger.Log_Info ("old_rsp:" & To_Hex (stf.old_esp));
       Logger.Log_Info ("old_ss:" & stf.old_ss'Image);
-
    end Print_Stack_Frame;
 
    procedure Set_Syscall_Value (stf : access stack_frame; Value : Unsigned_64)

@@ -8,12 +8,9 @@
 ------------------------------------------------------------------------------
 
 with Interfaces;     use Interfaces;
-with Ada.Interrupts; use Ada.Interrupts;
 
 package x86.idt.Variant is
    pragma Preelaborate;
-
-   subtype Register_Type is Unsigned_32;
 
    type stack_frame (Privilege_Level_Change : Boolean := False) is record
       eax            : Unsigned_32;
@@ -25,20 +22,20 @@ package x86.idt.Variant is
       interrupt_code : Unsigned_32;
       error_code     : Unsigned_32;
 
-      Instruction_Pointer    : System.Address;
-      cs     : Unsigned_32;
-      eflags : Unsigned_32;
+      Instruction_Pointer : System.Address;
+      cs                  : Unsigned_32;
+      eflags              : Unsigned_32;
 
       case Privilege_Level_Change is
          when True =>
             old_esp : Unsigned_32;
             old_ss  : Unsigned_32;
-
          when False =>
             null;
       end case;
    end record
-   with Pack => True, Volatile;
+      with Pack => True, Volatile;
+   pragma Unchecked_Union(stack_frame);
 
    --!format off
    for stack_frame use
@@ -59,22 +56,7 @@ package x86.idt.Variant is
      end record;
    --!format on
 
-   type Page_Fault_Error_Code is record
-      Present           : Boolean := False;
-      Write             : Boolean := False;
-      User_Mode         : Boolean := False;
-      Instruction_Fetch : Boolean := False;
-   end record
-   with Size => 32;
-
-   for Page_Fault_Error_Code use
-     record
-       Present at 0 range 0 .. 0;
-       Write at 0 range 1 .. 1;
-       User_Mode at 0 range 2 .. 2;
-       Instruction_Fetch at 0 range 4 .. 4;
-     end record;
-
+   -- Vol.3.7.12 Figure 7-2. IDT Gate Descriptors
    type idt_entry is record
       offset      : Unsigned_16;
       selector    : Unsigned_16;
@@ -84,7 +66,7 @@ package x86.idt.Variant is
       present     : Boolean;
       offset_high : Unsigned_16;
    end record
-   with Size => 64;
+      with Size => 64;
    for idt_entry use
      record
        offset at 0 range 0 .. 15;

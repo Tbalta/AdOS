@@ -10,7 +10,7 @@
 with Interfaces; use Interfaces;
 with System;     use System;
 with System.Storage_Elements; use System.Storage_Elements;
-package x86.Variant.gdt is
+package x86.gdt.Variant is
    pragma Preelaborate;
 
    type Segment_Type is (Null_Segment, Kernel_Code, Kernel_Data, User_Code, User_Data, TSS_Low, TSS_High);
@@ -19,18 +19,7 @@ package x86.Variant.gdt is
    procedure Init_TSS;
    procedure Set_Interrupt_Stack (Address : Virtual_Address; Size : Storage_Count);
 
-      ------------------------------------------------------------------
-      -- Figure 9-4. Format of TSS and LDT Descriptors in 64-bit Mode --
-      ------------------------------------------------------------------
---    +-----------------------------------+----------+--------------------+
---    |31                               13|12       8|7                  0|  4
---    |              reserved             | zero     |     reserved       |  
---    +-----------------------------------+----------+--------------------+
-
---    +---------------------------------+---------------------------------+
---    |31                                                                0|  0
---    |              base[63:32]                                          |  
---    +-------------------------------------------------------------------+
+   -- Vol-3.9.2.4 Figure 9-4. Format of TSS and LDT Descriptors in 64-bit Mode
    type TSS_Descriptor_High is record
       base_high : Unsigned_32;
       zero : Unsigned_4 := 0;
@@ -56,20 +45,18 @@ package x86.Variant.gdt is
    pragma Unchecked_Union (Descriptor_Entry);
    function Get_Segment (Segment : Segment_Type) return Descriptor_Entry;
 
-   ------------------------------------
-   -- Figure 9-11. 64-Bit TSS Format --
-   ------------------------------------
+   -- Vol-3.9.7 Figure 9-11. 64-Bit TSS Format --
    type TSS_Entry is record
-      RSP0     : System.Address := 0;
-      RSP1     : System.Address := 0;
-      RSP2     : System.Address := 0;
-      IST1     : System.Address := 0;
-      IST2     : System.Address := 0;
-      IST3     : System.Address := 0;
-      IST4     : System.Address := 0;
-      IST5     : System.Address := 0;
-      IST6     : System.Address := 0;
-      IST7     : System.Address := 0;
+      RSP0     : Address := 0;
+      RSP1     : Address := 0;
+      RSP2     : Address := 0;
+      IST1     : Address := 0;
+      IST2     : Address := 0;
+      IST3     : Address := 0;
+      IST4     : Address := 0;
+      IST5     : Address := 0;
+      IST6     : Address := 0;
+      IST7     : Address := 0;
       IOPB     : Unsigned_16 := 0;
    end record
    with Size => 104 * 8;
@@ -91,4 +78,4 @@ package x86.Variant.gdt is
 
 private
    tss : TSS_Entry;
-end x86.Variant.gdt;
+end x86.gdt.Variant;

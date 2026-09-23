@@ -2,10 +2,17 @@ with Loggers;
 with Util;
 with System.Machine_Code;     use System.Machine_Code;
 
-
+with x86.gdt.Variant; use x86.gdt.Variant;
 package body x86.gdt is
    use Standard.ASCII;
    package Logger renames Loggers;
+
+   type Global_Descriptor_Table_T is array (Segment_Type) of Descriptor_Entry;
+   Global_Descriptor_Table : Global_Descriptor_Table_T
+      with Alignment => 16;
+
+
+   gdt_pointer : Global_Descriptor_Pointer_T;
    
    function Craft_Segment_Descriptor
      (base        : System.Address;

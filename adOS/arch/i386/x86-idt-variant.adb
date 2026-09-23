@@ -7,23 +7,15 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with Pic;
-with SERIAL;
 with System;
-with System.Storage_Elements; use System.Storage_Elements;
-with System.Machine_Code;     use System.Machine_Code;
 with Loggers;
-with Ada.Interrupts;          use Ada.Interrupts;
-with Ada.Interrupts.Names;    use Ada.Interrupts.Names;
-with Syscall;
-with x86.vmm;
-with Ada.Unchecked_Conversion;
-with x86.Port_IO;
-with Programmable_Interval_Timer;
-with Keyboard;
 with Util;
+with Arch; use Arch;
 package body x86.idt.Variant is
    package Logger renames Loggers;
+
+   function To_Hex is new Util.To_Hex (Register_Type);
+   function To_Hex is new Util.To_Hex (System.Address);
 
    function Create_Entry
      (ISR       : System.Address;
@@ -47,20 +39,20 @@ package body x86.idt.Variant is
    procedure Print_Stack_Frame (stf : access Stack_Frame)
    is
    begin
-      Logger.Log_Info ("eax:" & stf.eax'Image);
-      Logger.Log_Info ("ebx:" & stf.ebx'Image);
-      Logger.Log_Info ("ecx:" & stf.ecx'Image);
-      Logger.Log_Info ("edx:" & stf.edx'Image);
-      Logger.Log_Info ("esi:" & stf.esi'Image);
-      Logger.Log_Info ("edi:" & stf.edi'Image);
+      Logger.Log_Info ("eax:" & To_Hex (stf.eax));
+      Logger.Log_Info ("ebx:" & To_Hex (stf.ebx));
+      Logger.Log_Info ("ecx:" & To_Hex (stf.ecx));
+      Logger.Log_Info ("edx:" & To_Hex (stf.edx));
+      Logger.Log_Info ("esi:" & To_Hex (stf.esi));
+      Logger.Log_Info ("edi:" & To_Hex (stf.edi));
       Logger.Log_Info ("interrupt_code:" & stf.interrupt_code'Image);
       Logger.Log_Info ("error_code:" & stf.error_code'Image);
 
-      Logger.Log_Info ("eip:" & stf.Instruction_Pointer'Image);
+      Logger.Log_Info ("eip:" & To_Hex (stf.Instruction_Pointer));
       Logger.Log_Info ("cs:" & stf.cs'Image);
-      Logger.Log_Info ("eflags:" & stf.eflags'Image);
+      Logger.Log_Info ("eflags:" & To_Hex (stf.eflags));
 
-      Logger.Log_Info ("old_esp:" & stf.old_esp'Image);
+      Logger.Log_Info ("old_esp:" & To_Hex (stf.old_esp));
       Logger.Log_Info ("old_ss:" & stf.old_ss'Image);
    end Print_Stack_Frame;
 

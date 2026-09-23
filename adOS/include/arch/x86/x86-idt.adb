@@ -8,7 +8,7 @@
 ------------------------------------------------------------------------------
 
 with Pic;
-with SERIAL;
+-- with SERIAL;
 with System;
 with System.Storage_Elements; use System.Storage_Elements;
 with System.Machine_Code;     use System.Machine_Code;
@@ -19,7 +19,7 @@ with Syscall;
 with x86.pmm;
 with x86.vmm;
 with Ada.Unchecked_Conversion;
-with x86.Port_IO;
+-- with x86.Port_IO;
 with Programmable_Interval_Timer;
 with Keyboard;
 with Util;
@@ -33,8 +33,6 @@ package body x86.idt is
    with Alignment => 16, Volatile;
 
    function To_Hex is new Util.To_Hex (System.Address);
-
-
 
    procedure load_idt (idt_ptr : idt_ptr_t) is
    begin

@@ -8,12 +8,9 @@
 ------------------------------------------------------------------------------
 
 with Interfaces;     use Interfaces;
-with Ada.Interrupts; use Ada.Interrupts;
 
 package x86.idt.Variant is
    pragma Preelaborate;
-
-   subtype Register_Type is Unsigned_64;
 
    type stack_frame (Privilege_Level_Change : Boolean := False) is record
       rax            : Unsigned_64;
@@ -35,19 +32,18 @@ package x86.idt.Variant is
       error_code     : Unsigned_64;
 
       Instruction_Pointer : System.Address;
-      cs     : Unsigned_64;
-      rflags : Unsigned_64;
+      cs                  : Unsigned_64;
+      rflags              : Unsigned_64;
 
       case Privilege_Level_Change is
          when True =>
             old_esp : Unsigned_64;
             old_ss  : Unsigned_64;
-
          when False =>
             null;
       end case;
    end record
-   with Pack => True, Volatile;
+      with Pack => True, Volatile;
    pragma Unchecked_Union(stack_frame);
 
    --!format off
@@ -77,42 +73,7 @@ package x86.idt.Variant is
      end record;
    --!format on
 
-   type Page_Fault_Error_Code is record
-      Present           : Boolean := False;
-      Write             : Boolean := False;
-      User_Mode         : Boolean := False;
-      Instruction_Fetch : Boolean := False;
-   end record
-   with Size => 64;
-
-   for Page_Fault_Error_Code use
-     record
-       Present at 0 range 0 .. 0;
-       Write at 0 range 1 .. 1;
-       User_Mode at 0 range 2 .. 2;
-       Instruction_Fetch at 0 range 4 .. 4;
-     end record;
-
-   -- Figure 7-8. 64-Bit IDT Gate Descriptors --
---    +-------------------------------------------------------------------+
---    |31                                                                0|  12
---    |                       reserved                                    |
---    +-------------------------------------------------------------------+
-
---    +-------------------------------------------------------------------+
---    |31                                                                0|  8
---    |                       Offset[63:32]                               |
---    +-------------------------------------------------------------------+
-
---    +---------------------------------+----+-----+---+------+------+----+
---    |31                             16| 15 |14 13|12 |11   8|7    3|2  0|  4
---    |           Offset                | P  | DPL | 0 | Type | 0    | IST|
---    +---------------------------------+----+-----+---+------+------+----+
-
---    +---------------------------------+---------------------------------+
---    |31                             16|15                              0|  0
---    |              Segment Selector   |    Offset[15:0]                 |  
---    +-------------------------------------------------------------------+
+   -- Vol-3.7.14.1 - Figure 7-8. 64-Bit IDT Gate Descriptors
    type idt_entry is record
       offset_low  : Unsigned_16;
       selector    : Unsigned_16;
@@ -126,7 +87,7 @@ package x86.idt.Variant is
 
       offset_high : Unsigned_48;
    end record
-      with Size => 4 * 32;
+      with Size => 128;
 
    for idt_entry use
      record

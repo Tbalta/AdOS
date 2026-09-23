@@ -3,6 +3,7 @@ with SERIAL;
 with VGA.GTF;
 with x86;
 with x86.gdt;
+with x86.gdt.Variant;
 with x86.idt;
 with x86.pmm;                 use x86.pmm;
 with x86.vmm;                 use x86.vmm;
@@ -83,7 +84,7 @@ begin
    CR3 :=  Get_Current_CR3;
    Set_Kernel_CR3 (CR3);
    -- Identity_Map (CR3);
-   x86.gdt.Set_Interrupt_Stack (Kernel_Alloc (CR3, 8192 * 2, Is_Writable => True), 8192 * 2);
+   x86.gdt.Variant.Set_Interrupt_Stack (Kernel_Alloc (CR3, 8192 * 2, Is_Writable => True), 8192 * 2);
 
    ---------------------
    -- Filesystem init --
