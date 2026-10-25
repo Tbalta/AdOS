@@ -10,6 +10,7 @@
 with System;
 with System.Address_To_Access_Conversions;
 with Loggers;
+with x86;
 package body Util is
    package Logger renames Loggers;
 
@@ -66,7 +67,7 @@ package body Util is
       A_Param := A;
       return Result : String (1 .. String_Length + 2) do
          -- check for canical value to add 0 or F prefix
-         if a >= Data_Type'Val (16#800000000000#)  then
+         if a >= Data_Type'Val (x86.Virtual_Address'Last)  then
             Result := (others => 'F');
          else
             Result := (others => '0');

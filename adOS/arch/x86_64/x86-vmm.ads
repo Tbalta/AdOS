@@ -63,7 +63,7 @@ package x86.vmm
 is
    pragma Preelaborate;
 
-   type CR3_Register is private;
+   type CR3_Register;
    type Page_Type is (Not_Mapped, Page_4KB, Page_2MB, Page_1GB);
    type Entry_Level is (Entry_Level_1, Entry_Level_2, Entry_Level_3, Entry_Level_4);
 
@@ -71,11 +71,8 @@ is
    -- Paging Operations --
    -----------------------
    function Is_Paging_Enabled return Boolean;
-   procedure Enable_Paging
-      with Post => Is_Paging_Enabled;
-   procedure Disable_Paging
-      with Post => not Is_Paging_Enabled;
-
+   procedure Enable_Paging;
+   procedure Disable_Paging;
 
    --------------------
    -- CR3 Operations --
@@ -83,15 +80,10 @@ is
    function Create_CR3 return CR3_register;
    procedure Load_CR3 (CR3 : CR3_register);
    function Get_Current_CR3 return CR3_register;
-   function Get_Process_CR3 return CR3_register;
-   function Get_Kernel_CR3 return CR3_register;
-   procedure Set_Kernel_CR3 (CR3 : CR3_register);
-   procedure Set_Process_CR3 (CR3 : CR3_register);
 
-   ---------------------------
-   -- Enable_Kernel_Mapping --
-   ---------------------------
-   procedure Enable_Kernel_Mapping;
+   ---------------------
+   -- Logging Utility --
+   ---------------------
    procedure Print_Mapped_Memory (CR3 : CR3_Register);
    procedure Print_PLM4 (CR3 : CR3_Register);
 
@@ -99,19 +91,27 @@ is
    -- Page counting --
    -------------------
    function Get_Number_Of_Pages (Size : Storage_Count; Offset : Storage_Offset := 0) return Positive;
-   function Find_Next_Space (CR3 : CR3_register; Size : Storage_Count; Start : Virtual_Address) return Virtual_Address;
+   function Get_Free_Size (CR3 : CR3_Register; Address : Virtual_Address) return Storage_Count;
+   function Get_Allocated_Size (CR3 : CR3_Register; Address : Virtual_Address) return Storage_Count;
 
    ------------------
    -- Identity_Map --
    ------------------
    procedure Identity_Map (CR3 : CR3_register)
-      with Post => Is_Paging_Enabled'Old = Is_Paging_Enabled;
-   
-   function Is_Canonical_Address (Address : Virtual_Address) return Boolean;
+    with Post => Is_Paging_Enabled'Old = Is_Paging_Enabled;
 
-   -----------
-   -- Alloc --
-   -----------
+   
+   ------------------------
+   -- Address Conversion --
+   ------------------------
+   function Virtual_To_Physical_Address
+     (CR3 : CR3_register; Address : Virtual_Address) return Physical_Address;
+   function To_Virtual_Address (address : Physical_Address) return Virtual_Address;
+   function To_Physical_Address (address : Virtual_Address) return Physical_Address;
+
+   ---------------------
+   -- Page Allocation --
+   ---------------------
    function Alloc
      (CR3         : CR3_register;
       Address     : Virtual_Address;
@@ -119,57 +119,22 @@ is
       Is_Writable : Boolean := False;
       Is_Usermode : Boolean := False) return Boolean;
    
-   function Alloc_In_Range
-     (CR3         : CR3_register;
-      Size        : Storage_Count;
-      Range_Start, Range_End : Virtual_Address;
-      Is_Writable : Boolean := False;
-      Is_Usermode : Boolean := False) return Virtual_Address;
-   function User_Alloc
-     (CR3         : CR3_register;
-      Size        : Storage_Count;
-      Is_Writable : Boolean := False;
-      Is_Usermode : Boolean := False) return Virtual_Address is
-         (Alloc_In_Range (CR3 => CR3,
-                          Size => Size,
-                          Range_Start => Virtual_Address'First,
-                          Range_End => Limine.Get_HHDM_Offset,
-                          Is_Writable => Is_Writable,
-                          Is_Usermode => Is_Usermode));
-   function Kernel_Alloc
-     (CR3         : CR3_register;
-      Size        : Storage_Count;
-      Is_Writable : Boolean := False;
-      Is_Usermode : Boolean := False) return Virtual_Address is
-         (Alloc_In_Range (CR3 => CR3,
-                          Size => Size,
-                          Range_Start => Limine.Get_HHDM_Offset,
-                          Range_End => Virtual_Address'Last,
-                          Is_Writable => Is_Writable,
-                          Is_Usermode => Is_Usermode));
-   ------------------
-   -- Memory_Unmap --
-   ------------------
-   procedure Memory_Unmap
-     (CR3 : CR3_register; Address : Virtual_Address; Size : Storage_Count; Free_Page : Boolean)
-     with Post => Is_Paging_Enabled'Old = Is_Paging_Enabled;
-   function Process_To_Process_Map
-     (Source_CR3     : CR3_register;
-      Source_Address : Virtual_Address;
-      Dest_CR3       : CR3_register;
-      Size           : Storage_Count;
-      Hint           : Virtual_Address := Virtual_Address'First) return Virtual_Address;
+   procedure Map_Physical_Page
+     (
+      Process              : CR3_Register;
+      Destination          : Virtual_Address;
+      Address_To_Map       : Physical_Address;
+      Is_Writable          : Boolean := False;
+      Is_Usermode          : Boolean := False);
 
 
-   function To_Virtual_Address (address : Physical_Address) return Virtual_Address
-      with Post => Is_Canonical_Address (To_Virtual_Address'Result);
-   function To_Physical_Address (address : Virtual_Address) return Physical_Address;
 
-private
-   Paging_Enabled : Boolean := True;
-   PAGE_SIZE      : constant Storage_Count := 4096;
-   PAGE_SIZE_2MB  : constant Storage_Count := 2 ** 21;
-   PAGE_SIZE_1GB  : constant Storage_Count := 2 ** 30;
+
+   Paging_Enabled  : Boolean := True;
+   PAGE_SIZE       : constant Storage_Count := 4096;
+   PAGE_SIZE_2MB   : constant Storage_Count := 2 ** 21;
+   PAGE_SIZE_1GB   : constant Storage_Count := 2 ** 30;
+   PAGE_SIZE_512GB : constant Storage_Count := 2 ** 39;
    type Page_Index     is mod 2 ** 9;
 
 
@@ -190,7 +155,7 @@ private
        Address at 0 range 12 .. 63;
      end record;
 
-  type Page_Entry is record
+   type Page_Entry is record
       Present         : Boolean := False;
       Is_Writable     : Boolean := False;
       Is_Usermode     : Boolean := False;
@@ -231,12 +196,12 @@ private
          when True =>
             Address_2MB : Page_Address_2MB;
          when False =>
-            PML1_Address : Page_Address;
+            Address : Page_Address;
       end case;
    end record
       with  Size => 64,
             Object_Size => 64;
-   for Page_Map_Level_2_Entry use
+  for Page_Map_Level_2_Entry use
      record
        Present       at 0 range 0 .. 0;
        Is_Writable   at 0 range 1 .. 1;
@@ -246,7 +211,7 @@ private
        Accessed      at 0 range 5 .. 5;
        Page_Size     at 0 range 7 .. 7;
        Address_2MB   at 0 range 21 .. 51;
-       PML1_Address  at 0 range 12 .. 51;
+       Address  at 0 range 12 .. 51;
        Execute_Disable at 0 range 63 .. 63;
      end record;
   type Page_Map_Level_3_Entry (Page_Size : Boolean := False) is record
@@ -267,7 +232,7 @@ private
    end record
       with  Size => 64,
             Object_Size => 64;
-   for Page_Map_Level_3_Entry use
+  for Page_Map_Level_3_Entry use
      record
        Present       at 0 range 0 .. 0;
        Is_Writable   at 0 range 1 .. 1;
@@ -285,76 +250,14 @@ private
    type Page_Map_Level_4_Entry is new Page_Entry;
    type Page_Map_Level_4_Entry_Access is access all Page_Map_Level_4_Entry;
   
-   --  type Page_Map_Level_3_Entry is new Page_Entry;
    type Page_Map_Level_3_Entry_Access is access all Page_Map_Level_3_Entry;
 
-   --  type Page_Map_Level_2_Entry is new Page_Entry;
    type Page_Map_Level_2_Entry_Access is access all Page_Map_Level_2_Entry;
 
    type Page_Map_Level_1_Entry is new Page_Entry;
    type Page_Map_Level_1_Entry_Access is access all Page_Map_Level_1_Entry;
 
    subtype Virtual_Address_Offset is Storage_Offset range 0 .. 2 ** 12 - 1;
-
-   type Virtual_Address_Break is record
-      Offset     : Virtual_Address_Offset;
-      PML1_Index : Page_Index;
-      PML2_Index : Page_Index;
-      PML3_Index : Page_Index;
-      PML4_Index : Page_Index;
-      end record
-      with Size => 64;
-
-   for Virtual_Address_Break use
-     record
-       Offset     at 0 range 0 .. 11;
-       PML1_Index at 0 range 12 .. 20;
-       PML2_Index at 0 range 21 .. 29;
-       PML3_Index at 0 range 30 .. 38;
-       PML4_Index at 0 range 39 .. 47;
-     end record;
-
-     type Virtual_Address_Break_2MB is record
-         Offset : Storage_Offset range 0 .. 2 ** 21 - 1;
-         PML2_Index : Page_Index;
-         PML3_Index : Page_Index;
-         PML4_Index : Page_Index;
-      end record
-         with Size => 64;
-      for Virtual_Address_Break_2MB use record
-         Offset at 0 range 0 .. 20;
-         PML2_Index at 0 range 21 .. 29;
-         PML3_Index at 0 range 30 .. 38;
-         PML4_Index at 0 range 39 .. 47;
-      end record;
-
-     type Virtual_Address_Break_1GB is record
-         Offset : Storage_Offset range 0 .. 2 ** 30 - 1;
-         PML2_Index : Page_Index;
-         PML3_Index : Page_Index;
-         PML4_Index : Page_Index;
-      end record
-         with Size => 64;
-      for Virtual_Address_Break_1GB use record
-         Offset     at 0 range 0 .. 29;
-         PML3_Index at 0 range 30 .. 38;
-         PML4_Index at 0 range 39 .. 47;
-      end record;
-
-   function To_Virtual_Address_Break is new
-     Ada.Unchecked_Conversion (Source => Virtual_Address, Target => Virtual_Address_Break);
-   function From_Virtual_Address_Break is new
-     Ada.Unchecked_Conversion (Source => Virtual_Address_Break, Target => Virtual_Address);
-
-   function To_Virtual_Address_Break_2MB is new
-     Ada.Unchecked_Conversion (Source => Virtual_Address, Target => Virtual_Address_Break_2MB);
-   function From_Virtual_Address_Break_2MB is new
-     Ada.Unchecked_Conversion (Source => Virtual_Address_Break_2MB, Target => Virtual_Address);
-
-   function To_Virtual_Address_Break_1GB is new
-     Ada.Unchecked_Conversion (Source => Virtual_Address, Target => Virtual_Address_Break_1GB);
-   function From_Virtual_Address_Break_1GB is new
-     Ada.Unchecked_Conversion (Source => Virtual_Address_Break_1GB, Target => Virtual_Address);
 
    type Page_Map_Level_4 is array (Page_Index) of aliased Page_Map_Level_4_Entry
       with Pack => True,
@@ -377,20 +280,10 @@ private
            Size => PAGE_SIZE * 8;
     type Page_Map_Level_1_Access is access all Page_Map_Level_1;
 
-   package PML4_Conversion is new System.Address_To_Access_Conversions (Page_Map_Level_4);
-   package PML3_Conversion is new System.Address_To_Access_Conversions (Page_Map_Level_3);
-   package PML2_Conversion is new System.Address_To_Access_Conversions (Page_Map_Level_2);
-   package PML1_Conversion is new System.Address_To_Access_Conversions (Page_Map_Level_1);
+   function To_Address (Addr : Page_Address) return Physical_Address is (Physical_Address (Storage_Count (Integer_Address (Addr)) * PAGE_SIZE));
+   function To_Address (Addr : Page_Address_2MB)  return Physical_Address is (Physical_Address (Storage_Count (Integer_Address (Addr)) * PAGE_SIZE_2MB));
 
-  function To_PML4_Access (System_Address : Virtual_Address) return Page_Map_Level_4_Access is (Page_Map_Level_4_Access (PML4_Conversion.To_Pointer (System.Address (System_Address))));
-  function To_PML3_Access (System_Address : Virtual_Address) return Page_Map_Level_3_Access is (Page_Map_Level_3_Access (PML3_Conversion.To_Pointer (System.Address (System_Address))));
-  function To_PML2_Access (System_Address : Virtual_Address) return Page_Map_Level_2_Access is (Page_Map_Level_2_Access (PML2_Conversion.To_Pointer (System.Address (System_Address))));
-  function To_PML1_Access (System_Address : Virtual_Address) return Page_Map_Level_1_Access is (Page_Map_Level_1_Access (PML1_Conversion.To_Pointer (System.Address (System_Address))));
 
-  function To_PML4_Access (System_Address : Physical_Address) return Page_Map_Level_4_Access is (To_PML4_Access (To_Virtual_Address (System_Address)));
-  function To_PML3_Access (System_Address : Physical_Address) return Page_Map_Level_3_Access is (To_PML3_Access (To_Virtual_Address (System_Address)));
-  function To_PML2_Access (System_Address : Physical_Address) return Page_Map_Level_2_Access is (To_PML2_Access (To_Virtual_Address (System_Address)));
-  function To_PML1_Access (System_Address : Physical_Address) return Page_Map_Level_1_Access is (To_PML1_Access (To_Virtual_Address (System_Address)));
 
    type Page_Count is new Long_Long_Long_Integer range 0 .. (2**64 - 1);
    Page_Per_PML1 : constant Page_Count := Page_Map_Level_1'Length;
@@ -402,72 +295,21 @@ private
    pragma Assert (Page_Per_PML3 = 512 * 512 * 512);
    pragma Assert (Page_Per_PML4 = 512 * 512 * 512 * 512);
 
-
-
-
-   Null_Address_Break : constant Virtual_Address_Break := 
-     (PML4_Index => 0,
-      PML3_Index => 0,
-      PML2_Index => 0,
-      PML1_Index => 0,
-      Offset     => 0);
-
-   function To_Address (Addr : Page_Address) return Physical_Address;
-
    function To_Page_Address (Addr : Physical_Address) return Page_Address
       with Pre => Storage_Count (Addr) mod Storage_Count (PAGE_SIZE) = 0;
-   function Can_Fit
-     (CR3 : CR3_register; Address : Virtual_Address; Size : Storage_Count) return Boolean
-      with Pre => not Paging_Enabled,
-           Post => Paging_Enabled'Old = Paging_Enabled;
    
    procedure Unmap_Page
-     (CR3           : CR3_register;
-      Destination   : Virtual_Address_Break;
-      Free_Page     : Boolean)
-      with Pre => not Paging_Enabled,
-           Post => Paging_Enabled'Old = Paging_Enabled; 
+      (CR3         : CR3_Register;
+         Address     : Virtual_Address;
+         Free_Page   : Boolean);
 
-   function Is_Range_Mapped (CR3 : CR3_Register; Address : Virtual_Address; Size : Storage_Count) return Boolean
-      with Pre => not Paging_Enabled,
-           Post => Paging_Enabled'Old = Paging_Enabled;
 
-   Last_Virtual_Address_Break : constant Virtual_Address_Break :=
-     (PML4_Index => Page_Index'Last,
-      PML3_Index => Page_Index'Last,
-      PML2_Index => Page_Index'Last,
-      PML1_Index => Page_Index'Last,
-      Offset     => Virtual_Address_Offset'Last);
-
-   Kernel_CR3        : CR3_register;
-   Process_CR3        : CR3_register;
-   procedure Next (Address : in out Virtual_Address_Break);
-
-  function Is_Mapped
-     (CR3: CR3_Register; Destination : Virtual_Address_Break) return Boolean;
-     function Get_Page_Number (Address : Virtual_Address_Break) return Page_Count;
-
-   generic
-      type Page_Map_Level_Entry is private;
-      type Page_Map_Level_Entry_Access is access all Page_Map_Level_Entry;
-      type Page_Map_Level is array (Page_Index) of aliased Page_Map_Level_Entry;
-      type Page_Map_Level_Access is access all Page_Map_Level;
-      with function Get_Entry_Index (Address : Virtual_Address_Break) return Page_Index;
-      with function Get_PML (CR3 : CR3_Register; Address : Virtual_Address_Break) return Page_Map_Level_Access;
-   function Get_PML_Entry (CR3 : CR3_Register; Address : Virtual_Address_Break) return Page_Map_Level_Entry_Access;
-   function Get_PML4_Index (Address : Virtual_Address_Break) return Page_Index is (Address.PML4_Index);
-   function Get_PML3_Index (Address : Virtual_Address_Break) return Page_Index is (Address.PML3_Index);
-   function Get_PML2_Index (Address : Virtual_Address_Break) return Page_Index is (Address.PML2_Index);
-   function Get_PML1_Index (Address : Virtual_Address_Break) return Page_Index is (Address.PML1_Index);
-
-   function Get_PML4 (CR3 : CR3_Register; Address : Virtual_Address_Break) return Page_Map_Level_4_Access;
-   function Get_PML3 (CR3 : CR3_Register; Address : Virtual_Address_Break) return Page_Map_Level_3_Access;
-   function Get_PML2 (CR3 : CR3_Register; Address : Virtual_Address_Break) return Page_Map_Level_2_Access;
-   function Get_PML1 (CR3 : CR3_Register; Address : Virtual_Address_Break) return Page_Map_Level_1_Access;
+   function Is_Mapped
+      (CR3: CR3_Register; Address : Virtual_Address) return Boolean;
 
    function Get_Offset (CR3 : CR3_Register; Address : Virtual_Address) return Storage_Offset;
 
    procedure Duplicate_hhdm (Source_CR3, Dest_CR3 : CR3_Register);
-      
 
+   function Is_Last_Address (CR3 : CR3_Register; Address : Virtual_Address) return Boolean;
 end x86.vmm;

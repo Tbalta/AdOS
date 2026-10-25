@@ -61,97 +61,79 @@ package x86.vmm
 is
    pragma Preelaborate;
 
-   type CR3_Register is private;
+   type CR3_Register;
 
    -----------------------
-   -- Is_Paging_Enabled --
+   -- Paging Operations --
    -----------------------
    function Is_Paging_Enabled return Boolean;
-   
-   -------------------
-   -- Enable_Paging --
-   -------------------
    procedure Enable_Paging
       with Post => Is_Paging_Enabled;
-
-   --------------------
-   -- Disable_Paging --
-   --------------------
    procedure Disable_Paging
       with Post => not Is_Paging_Enabled;
 
 
-   ----------------
-   -- Create_CR3 --
-   ----------------
+   --------------------
+   -- CR3 Operations --
+   --------------------
    function Create_CR3 return CR3_register;
-   
-   --------------
-   -- Load_CR3 --
-   --------------
    procedure Load_CR3 (CR3 : CR3_register);
-
-   ---------------------
-   -- Get_Current_CR3 --
-   ---------------------
    function Get_Current_CR3 return CR3_register;
-   function Get_Process_CR3 return CR3_register;
-   
-   --------------------
-   -- Get_Kernel_CR3 --
-   --------------------
-   function Get_Kernel_CR3 return CR3_register;
-   
-   --------------------
-   -- Set_Kernel_CR3 --
-   --------------------
-   procedure Set_Kernel_CR3 (CR3 : CR3_register);
-   
-   procedure Set_Process_CR3 (CR3 : CR3_register);
-   ---------------------------
-   -- Enable_Kernel_Mapping --
-   ---------------------------
-   procedure Enable_Kernel_Mapping;
-   procedure Print_Mapped_Memory (CR3 : CR3_Register);
 
    
+   ---------------------
+   -- Logging Utility --
+   ---------------------
+   procedure Print_Mapped_Memory (CR3 : CR3_Register);
+   -- procedure Print_PLM4 (CR3 : CR3_Register);
+
+   
+   -------------------
+   -- Page counting --
+   -------------------
+   function Get_Number_Of_Pages (Size : Storage_Count; Offset : Storage_Offset := 0) return Positive;
+   function Get_Free_Size (CR3 : CR3_Register; Address : Virtual_Address) return Storage_Count;
+   function Get_Allocated_Size (CR3 : CR3_Register; Address : Virtual_Address) return Storage_Count;
+
 
    ------------------
    -- Identity_Map --
    ------------------
    procedure Identity_Map (CR3 : CR3_register)
       with Post => Is_Paging_Enabled'Old = Is_Paging_Enabled;
+
+
+   ------------------------
+   -- Address Conversion --
+   ------------------------
+   function Virtual_To_Physical_Address
+     (CR3 : CR3_register; Address : Virtual_Address) return Physical_Address;
+   function To_Virtual_Address (address : Physical_Address) return Virtual_Address;
+   -- function To_Physical_Address (address : Virtual_Address) return Physical_Address;
    
-   ------------------
-   -- Kernel_Alloc --
-   ------------------
-   function Kernel_Alloc
+
+   ---------------------
+   -- Page Allocation --
+   ---------------------
+   function Alloc
      (CR3         : CR3_register;
-      Size        : Storage_Count;
+      Address     : Virtual_Address;
+      Data_Size   : Storage_count;
       Is_Writable : Boolean := False;
-      Is_Usermode : Boolean := False) return Virtual_Address
-         with Post => Is_Paging_Enabled'Old = Is_Paging_Enabled;
-   function User_Alloc  (CR3         : CR3_register;
-      Size        : Storage_Count;
-      Is_Writable : Boolean := False;
-      Is_Usermode : Boolean := False) return Virtual_Address renames Kernel_Alloc;
+      Is_Usermode : Boolean := False) return Boolean;
+   
+   procedure Map_Physical_Page
+     (
+      Process              : CR3_Register;
+      Destination          : Virtual_Address;
+      Address_To_Map       : Physical_Address;
+      Is_Writable          : Boolean := False;
+      Is_Usermode          : Boolean := False);
 
-   ------------------
-   -- Memory_Unmap --
-   ------------------
-   procedure Memory_Unmap
-     (CR3 : CR3_register; Address : Virtual_Address; Size : Storage_Count; Free_Page : Boolean)
-     with Post => Is_Paging_Enabled'Old = Is_Paging_Enabled;
-   function Process_To_Process_Map
-     (Source_CR3     : CR3_register;
-      Source_Address : Virtual_Address;
-      Dest_CR3       : CR3_register;
-      Size           : Storage_Count;
-      Hint           : Virtual_Address := Virtual_Address'First) return Virtual_Address;
-
-private
+-- private
    Paging_Enabled : Boolean := False;
    PAGE_SIZE      : constant Storage_Count := 4096;
+   PAGE_SIZE_2MB   : constant Storage_Count := 2 ** 21;
 
    type Page_Address is range 0 .. 2 ** 20 - 1;
    subtype Page_Table_Address is Page_Address;
@@ -171,7 +153,7 @@ private
      end record;
 
 
-   type Page_Table_Entry is record
+   type Page_Map_Level_1_Entry is record
       Present       : Boolean := False;
       Is_Writable   : Boolean := False;
       Is_Usermode   : Boolean := False;
@@ -186,7 +168,7 @@ private
       with Size => 32,
            Object_Size => 32;
    --!format off
-   for Page_Table_Entry use
+   for Page_Map_Level_1_Entry use
      record
        Present       at 0 range 0 .. 0;
        Is_Writable   at 0 range 1 .. 1;
@@ -201,7 +183,7 @@ private
      end record;
    --!format on
 
-   type Page_Directory_Entry is record
+   type Page_Map_Level_2_Entry is record
       Present       : Boolean := False;
       Is_Writable   : Boolean := False;
       Is_Usermode   : Boolean := False;
@@ -214,7 +196,7 @@ private
    end record;
 
    --!format off
-   for Page_Directory_Entry use
+   for Page_Map_Level_2_Entry use
      record
        Present       at 0 range 0 .. 0;
        Is_Writable   at 0 range 1 .. 1;
@@ -228,95 +210,68 @@ private
      end record;
    --!format on
 
-   type Page_Directory_Index is mod 2 ** 10;
-   type Page_Table_Index     is mod 2 ** 10;
+   -- Tood: check this value (maybe it should be 2 ** 9)
+   type Page_Index     is mod 2 ** 10;
    subtype Virtual_Address_Offset is Storage_Offset range 0 .. 2 ** 12 - 1;
 
-   type Virtual_Address_Break is record
-      Directory : Page_Directory_Index;
-      Table     : Page_Table_Index;
-      Offset    : Virtual_Address_Offset;
-      end record
-      with Size => 32;
 
-   for Virtual_Address_Break use
-     record
-       Directory at 0 range 22 .. 31;
-       Table at 0 range 12 .. 21;
-       Offset at 0 range 0 .. 11;
-     end record;
-   function To_Virtual_Address_Break is new
-     Ada.Unchecked_Conversion (Source => Virtual_Address, Target => Virtual_Address_Break);
-   function From_Virtual_Address_Break is new
-     Ada.Unchecked_Conversion (Source => Virtual_Address_Break, Target => Virtual_Address);
+   --  type Virtual_Address_Break is record
+   --     PML2_Index : Page_Index;
+   --     PML1_Index     : Page_Index;
+   --     Offset    : Virtual_Address_Offset;
+   --     end record
+   --     with Size => 32;
 
-   type Page_Table is array (Page_Table_Index) of aliased Page_Table_Entry
+   --  for Virtual_Address_Break use
+   --    record
+   --      PML2_Index at 0 range 22 .. 31;
+   --      PML1_Index at 0 range 12 .. 21;
+   --      Offset at 0 range 0 .. 11;
+   --    end record;
+   --  function To_Virtual_Address_Break is new
+   --    Ada.Unchecked_Conversion (Source => Virtual_Address, Target => Virtual_Address_Break);
+   --  function From_Virtual_Address_Break is new
+   --    Ada.Unchecked_Conversion (Source => Virtual_Address_Break, Target => Virtual_Address);
+
+   type Page_Map_Level_1 is array (Page_Index) of aliased Page_Map_Level_1_Entry
       with Pack => True,
            Component_Size => 32,
            Size => 1024  * 32;
 
-   type Page_Directory is
-     array (Page_Directory_Index range 0 .. 1_023) of aliased Page_Directory_Entry
+   type Page_Map_Level_2 is array (Page_Index) of aliased Page_Map_Level_2_Entry
    with Pack => True, Size => 4_096 * 8;
 
-   package Address_to_Page_Table is new System.Address_To_Access_Conversions (Page_Table);
-   subtype Page_Table_Access is Address_to_Page_Table.Object_Pointer;
+   type Page_Map_Level_1_Access is access all Page_Map_Level_1;
+   type Page_Map_Level_1_Entry_Access is access all Page_Map_Level_1_Entry;
 
-   package Address_to_Page_Directory is new System.Address_To_Access_Conversions (Page_Directory);
-   subtype Page_Directory_Access is Address_to_Page_Directory.Object_Pointer;
-   function To_Page_Directory (Addr : Physical_Address) return Page_Directory_Access
-   is (Address_to_Page_Directory.To_Pointer (System.Address (Addr)));
+   type Page_Map_Level_2_Access is access all Page_Map_Level_2;
+   type Page_Map_Level_2_Entry_Access is access all Page_Map_Level_2_Entry;
 
-   Null_Address_Break : constant Virtual_Address_Break := (Directory => 0, Table => 0, Offset => 0);
+
+   type Page_Count is new Natural;
+   Page_Per_PML1 : constant Page_Count := Page_Map_Level_1'Length;
+   Page_Per_PML2 : constant Page_Count := Page_Map_Level_2'Length * Page_Per_PML1;
 
    function To_Address (Addr : Page_Address) return Physical_Address;
 
    function To_Page_Table_Address (Addr : System.Address) return Page_Table_Address;
    function To_Page_Directory_Address (Addr : System.Address) return Page_Directory_Address;
    function To_Page_Address (Addr : Physical_Address) return Page_Address;
-   function Can_Fit
-     (CR3 : CR3_register; Address : Virtual_Address; Size : Storage_Count) return Boolean
-      with Pre => not Paging_Enabled,
-           Post => Paging_Enabled'Old = Paging_Enabled;
-   function Alloc
-     (CR3         : CR3_register;
-      Address     : Virtual_Address;
-      Data_Size   : Storage_count;
-      Is_Writable : Boolean := False;
-      Is_Usermode : Boolean := False) return Boolean
-      with Pre => not Paging_Enabled,
-           Post => Paging_Enabled'Old = Paging_Enabled; 
    
    procedure Unmap_Page
-     (Page_Directory       : Page_Directory_Access;
-      Page_Directory_Start : Page_Directory_Index;
-      Page_Table_Start     : Page_Table_Index;
+     (CR3                 : CR3_Register;
+      Address : Virtual_Address;
       Free_Page            : Boolean)
       with Pre => not Paging_Enabled,
            Post => Paging_Enabled'Old = Paging_Enabled; 
 
-   
-   function Find_Next_Space
-     (CR3 : CR3_register; Size : Storage_Count; Start : Virtual_Address) return Virtual_Address_Break
-      with Pre => not Paging_Enabled,
-           Post => Paging_Enabled'Old = Paging_Enabled;
 
-   function Is_Range_Mapped (CR3 : CR3_Register; Address : Virtual_Address; Size : Storage_Count) return Boolean
-      with Pre => not Paging_Enabled,
-           Post => Paging_Enabled'Old = Paging_Enabled;
-
-   function To_Page_Table (Addr : Physical_Address) return Page_Table_Access is (Address_to_Page_Table.To_Pointer (System.Address (Addr)));
-   function To_Page_Table (PDE : Page_Directory_Entry) return Page_Table_Access is (To_Page_Table (To_Address (PDE.Address)));
-   function To_Page_Table_Access (Page_Table_Addr : Page_Table_Address) return Page_Table_Access  is (Address_to_Page_Table.To_Pointer (System.Address (To_Address (Page_Table_Addr))));
-
-   Last_Virtual_Address_Break : constant Virtual_Address_Break :=
-     (Directory => Page_Directory_Index'Last, Table => Page_Table_Index'Last, Offset => 0);
-
-   Kernel_CR3        : CR3_register;
-   Process_CR3        : CR3_register;
    procedure Next
-     (Page_Directory_Start : in out Page_Directory_Index;
-      Page_Table_Start     : in out Page_Table_Index);
+     (Page_Directory_Start : in out Page_Index;
+      Page_Table_Start     : in out Page_Index);
+
+   function Is_Last_Address (CR3 : CR3_Register; Address : Virtual_Address) return Boolean;
+   function Get_Offset (CR3 : CR3_Register; Address : Virtual_Address) return Storage_Offset;
 
 
 end x86.vmm;

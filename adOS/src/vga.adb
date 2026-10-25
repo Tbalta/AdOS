@@ -31,6 +31,7 @@ with x86.vmm;
 with System.Storage_Elements;
 with File_System;
 with x86; use x86;
+with vmm;
 
 package body VGA is
    use Standard.ASCII;
@@ -64,12 +65,12 @@ package body VGA is
    procedure Save_Frame_Buffer is
       use all type System.Address;
       use all type System.Storage_Elements.Storage_Offset;
-      CR3 : x86.vmm.CR3_register := x86.vmm.Get_Kernel_CR3;
+      CR3 : x86.vmm.CR3_register := vmm.Get_Kernel_CR3;
       package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
    begin
       if save_buffer_address = Virtual_Address'First then
          save_buffer_address :=
-           x86.vmm.Kernel_Alloc (Size => 320 * 200, CR3 => CR3, Is_Writable => True);
+           vmm.Kernel_Alloc (Size => 320 * 200, CR3 => CR3, Is_Writable => True);
       end if;
 
       if save_buffer_address = Virtual_Address'First then

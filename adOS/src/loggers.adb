@@ -10,7 +10,7 @@ with VGA;
 with x86.vmm;
 with System.Secondary_Stack;
 with System.Machine_Code;     use System.Machine_Code;
-
+with vmm;
 package body Loggers is
 
    procedure Serial_Send_Line (Message : in String) is
@@ -68,7 +68,7 @@ package body Loggers is
       while True loop
          null;
       end loop;
-      x86.vmm.Load_CR3 (x86.vmm.Get_Process_CR3);
+      x86.vmm.Load_CR3 (vmm.Get_Process_CR3);
       x86.vmm.Enable_Paging;
       VGA.Set_Text_Mode (80, 25, 16);
 

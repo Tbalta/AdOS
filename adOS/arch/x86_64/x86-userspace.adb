@@ -1,13 +1,14 @@
 with System.Machine_Code; use System.Machine_Code;
 with SERIAL;
 with Loggers;
+with vmm;
 package body x86.Userspace is
    use Standard.ASCII;
    package Logger renames Loggers;
 
    procedure Jump_To_Userspace (Entry_Point : Virtual_Address; CR3 : x86.vmm.CR3_register) is
       use System;
-      New_Stack : constant Virtual_Address := x86.vmm.User_Alloc (CR3, 8192, True, True) + Storage_Offset (8192);
+      New_Stack : constant Virtual_Address := Standard.vmm.User_Alloc (CR3, 8192, True, True) + Storage_Offset (8192);
    begin
       Logger.Log_Info
         ("Jumping to userspace at " & Entry_Point'Image & " with stack at " & New_Stack'Image);

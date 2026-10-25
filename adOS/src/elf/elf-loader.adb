@@ -11,7 +11,7 @@ with Loggers;
 with System.Address_To_Access_Conversions;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
-
+with vmm;
 package body ELF.Loader is
    package Logger renames Loggers.Serial_Logger;
 
@@ -39,7 +39,7 @@ package body ELF.Loader is
    is
       use all type System.Address;
       use all type x86.Virtual_Address;
-      Kernel_CR3 : x86.vmm.CR3_register := x86.vmm.Get_Kernel_CR3;
+      Kernel_CR3 : x86.vmm.CR3_register := vmm.Get_Kernel_CR3;
       Read_Count : Integer;
 
       subtype Segment_Data is Storage_Array (1 .. Program_Header.p_filesz);
@@ -65,7 +65,7 @@ package body ELF.Loader is
       pragma Assert (Segment'Size / 8 = Program_Header.p_memsz + Segment_Page_Offset);
       
 
-      Kernel_Segment := Conversion.To_Pointer (To_Address (x86.vmm.Kernel_Alloc (Kernel_CR3, Program_Header.p_memsz + Segment_Page_Offset, Is_Writable => True, Is_Usermode => True)));
+      Kernel_Segment := Conversion.To_Pointer (To_Address (vmm.Kernel_Alloc (Kernel_CR3, Program_Header.p_memsz + Segment_Page_Offset, Is_Writable => True, Is_Usermode => True)));
       if Kernel_Segment = null then
          Logger.Log_Error ("Unable to allocate segment for " & Program_Header'Image);
          raise Program_Error with "Unable to allocate elf segment";
@@ -92,7 +92,7 @@ package body ELF.Loader is
       pragma Assert (Read_Count = Integer (Program_Header.p_filesz));
 
       User_Allocated_Buffer :=
-        To_Address (x86.vmm.Process_To_Process_Map
+        To_Address (vmm.Process_To_Process_Map
           (Source_CR3     => Kernel_CR3,
            Source_Address => To_Virtual_Address (Conversion.To_Address (Kernel_Segment)),
            Dest_CR3       => CR3,
@@ -103,7 +103,7 @@ package body ELF.Loader is
 
       Logger.Log_Info ("User space segment mapped at " & User_Allocated_Buffer'Image & " with size " & Program_Header.p_memsz'Image);
 
-      x86.vmm.Memory_Unmap
+      vmm.Memory_Unmap
         (CR3       => Kernel_CR3,
          Address   => To_Virtual_Address (Conversion.To_Address (Kernel_Segment)),
          Size      => Program_Header.p_memsz,

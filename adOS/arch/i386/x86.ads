@@ -20,4 +20,5 @@ package x86 is
    function "+"(Address : Virtual_Address; SC : Storage_Count) return Virtual_Address is (Virtual_Address (Storage_Count (Address) + SC));
    function "-"(A,B : Physical_Address) return Storage_Count;
    function "-"(A, B : Virtual_Address) return Storage_Count is (Storage_Count (A) - Storage_Count (B));
+   function "-"(A : Virtual_Address; B : Storage_Offset) return Virtual_Address is (Virtual_Address (Storage_Count (A) - Storage_Count (B)));
 end x86;

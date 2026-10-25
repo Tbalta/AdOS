@@ -16,7 +16,7 @@ with System.Storage_Elements; use System.Storage_Elements;
 with VGA;
 with System.Machine_Code;
 with x86; use x86;
-
+with vmm;
 package body Syscall is
    package Logger renames Loggers;
    -- Kernel_Map_Hint : System.Address := System.Null_Address;
@@ -33,7 +33,7 @@ package body Syscall is
       process : in x86.vmm.CR3_register;
       result  : out Syscall_Result) is
    begin
-      x86.vmm.Enable_Kernel_Mapping;
+      vmm.Enable_Kernel_Mapping;
       -- Logger.Log_Info ("Handling syscall number: " & number'Image);
       case number is
          when SYSCALL_EXIT =>
@@ -92,7 +92,7 @@ package body Syscall is
       use all type File_System.File_Descriptor;
       use all type System.Address;
 
-      Kernel_CR3    : constant x86.vmm.CR3_register := x86.vmm.Get_Kernel_CR3;
+      Kernel_CR3    : constant x86.vmm.CR3_register := vmm.Get_Kernel_CR3;
       Kernel_Buffer : Virtual_Address := Virtual_Address'First;
 
       type byte_array is array (0 .. Integer (count) - 1) of aliased Unsigned_8 with Pack => True;
@@ -114,7 +114,7 @@ package body Syscall is
       end if;
       fd := File_System.File_Descriptor (arg1);
 
-      Kernel_Buffer := x86.vmm.Process_To_Process_Map (process, To_Virtual_Address (buffer), Kernel_CR3, count);
+      Kernel_Buffer := vmm.Process_To_Process_Map (process, To_Virtual_Address (buffer), Kernel_CR3, count);
       if Kernel_Buffer = Virtual_Address'First then
          Logger.Log_Error ("Write_Syscall: Failed to map user buffer to kernel address");
          result.Signed_Value := -1;
@@ -125,7 +125,7 @@ package body Syscall is
       -- write --
       result.Signed_Value := Signed_Syscall_Output (Write (fd, kernel_buffer_access));
       --  Logger.Log_Info ("Write_Syscall'Result=" & result.Signed_Value'Image);
-      x86.vmm.Memory_Unmap (Kernel_CR3, Kernel_Buffer, count, False);
+      vmm.Memory_Unmap (Kernel_CR3, Kernel_Buffer, count, False);
    end Write_Syscall;
 
 
@@ -142,7 +142,7 @@ package body Syscall is
       use all type File_System.File_Descriptor;
       use all type System.Address;
 
-      Kernel_CR3    : constant x86.vmm.CR3_register := x86.vmm.Get_Kernel_CR3;
+      Kernel_CR3    : constant x86.vmm.CR3_register := vmm.Get_Kernel_CR3;
       Kernel_Buffer : Virtual_Address := Virtual_Address'First;
 
       type byte_array is array (0 .. Integer (count) - 1) of aliased Unsigned_8 with Pack => True;
@@ -162,7 +162,7 @@ package body Syscall is
       end if;
       fd := File_System.File_Descriptor (arg1);
 
-      Kernel_Buffer := x86.vmm.Process_To_Process_Map (process, To_Virtual_Address (buffer), Kernel_CR3, count);
+      Kernel_Buffer := vmm.Process_To_Process_Map (process, To_Virtual_Address (buffer), Kernel_CR3, count);
       if Kernel_Buffer = Virtual_Address'First then
          Logger.Log_Error ("Read_Syscall: Failed to map user buffer to kernel address");
          result.Signed_Value := -1;
@@ -173,7 +173,7 @@ package body Syscall is
       -- read --
       result.Signed_Value := Signed_Syscall_Output (Read (fd, kernel_buffer_access));
       --  Logger.Log_Info ("Read_Syscall'Result=" & result.Signed_Value'Image);
-      x86.vmm.Memory_Unmap (Kernel_CR3, Kernel_Buffer, count, False);
+      vmm.Memory_Unmap (Kernel_CR3, Kernel_Buffer, count, False);
    end Read_Syscall;
 
 
@@ -190,9 +190,9 @@ package body Syscall is
       use Bounded_Path;
       use all type System.Address;
       Max_Length : constant := 256;
-      Kernel_CR3  : constant x86.vmm.CR3_register := x86.vmm.Get_Kernel_CR3;
+      Kernel_CR3  : constant x86.vmm.CR3_register := vmm.Get_Kernel_CR3;
       Kernel_Path : constant Virtual_Address :=
-        x86.vmm.Process_To_Process_Map (process, To_Virtual_Address (File_Path), Kernel_CR3, Max_Length);
+        vmm.Process_To_Process_Map (process, To_Virtual_Address (File_Path), Kernel_CR3, Max_Length);
 
    begin
       if Kernel_Path = Virtual_Address'First then
@@ -211,7 +211,7 @@ package body Syscall is
            ("Open_Syscall: Opening file: " & To_String (Path_String) & " FD: " & result.Signed_Value'Image);
       end;
 
-      x86.vmm.Memory_Unmap (Kernel_CR3, Kernel_Path, Max_Length, False);
+      vmm.Memory_Unmap (Kernel_CR3, Kernel_Path, Max_Length, False);
    end Open_Syscall;
 
    -------------------
@@ -281,7 +281,7 @@ package body Syscall is
 
       fd          : File_System.File_Descriptor;
       File_Buffer : x86.Virtual_Address := x86.Virtual_Address'First;
-      Kernel_CR3  : constant x86.vmm.CR3_register := x86.vmm.Get_Kernel_CR3;
+      Kernel_CR3  : constant x86.vmm.CR3_register := vmm.Get_Kernel_CR3;
    begin
       Logger.Log_Info ("Mmap_Syscall fd: " & Integer (arg5)'Image);
       if not File_System.Is_File_Descriptor (Integer (arg5)) then
@@ -292,7 +292,7 @@ package body Syscall is
 
       if flags = 1 then
          Logger.Log_Info ("Trying to call mmap with flags 1");
-         result.Unsigned_Value := Unsigned_Syscall_Output (x86.vmm.User_Alloc (process, length, True, True));
+         result.Unsigned_Value := Unsigned_Syscall_Output (vmm.User_Alloc (process, length, True, True));
          return;
       end if;
 
@@ -307,7 +307,7 @@ package body Syscall is
 
       result.Unsigned_Value :=
         Unsigned_Syscall_Output
-          (x86.vmm.Process_To_Process_Map
+          (vmm.Process_To_Process_Map
              (Source_CR3     => Kernel_CR3,
               Source_Address => File_Buffer,
               Dest_CR3       => process,

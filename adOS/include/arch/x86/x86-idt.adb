@@ -23,7 +23,7 @@ with Ada.Unchecked_Conversion;
 with Programmable_Interval_Timer;
 with Keyboard;
 with Util;
-
+with vmm;
 with x86.idt.Variant;   use x86.idt.Variant;
 package body x86.idt is
    package Logger renames Loggers.Serial_Logger;
@@ -63,7 +63,7 @@ package body x86.idt is
          x86.vmm.Print_Mapped_Memory (x86.vmm.Get_Current_CR3);
       else
          Logger.Log_Info ("Kernel memory:");
-         x86.vmm.Print_Mapped_Memory (x86.vmm.Get_Kernel_CR3);
+         x86.vmm.Print_Mapped_Memory (Standard.vmm.Get_Kernel_CR3);
       end if;
       Logger.Log_Error ("Page Fault at : " & To_Hex (stf.Instruction_Pointer));
       Logger.Log_Error ("Faulting address is: " & To_Hex (faulting_address));
@@ -145,7 +145,7 @@ package body x86.idt is
       process_CR3    : x86.vmm.CR3_register := x86.vmm.Get_Current_CR3;
       Syscall_Result : Syscall.Syscall_Result (signed => False);
    begin
-      x86.vmm.Set_Process_CR3 (process_CR3);
+      Standard.vmm.Set_Process_CR3 (process_CR3);
       --  Logger.Log_Info ("Interrupt: " & interrupt_code'Image);
       if interrupt_code = 128 then
          Syscall.Handle_Syscall (

@@ -7,6 +7,8 @@ with x86.gdt.Variant;
 with x86.idt;
 with x86.pmm;                 use x86.pmm;
 with x86.vmm;                 use x86.vmm;
+with vmm;                     use vmm;
+
 with pic;
 with System.Machine_Code;
 with Atapi;
