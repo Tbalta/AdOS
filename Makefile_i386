@@ -9,6 +9,11 @@ ifeq ($(SKIP_RAMDISK), TRUE)
 docker_make_flags = SKIP_RAMDISK=TRUE
 endif
 
+ifeq ($(DEBUG), TRUE)
+	qemu_param += -S -s
+endif
+
+
 .PHONY: userland
 
 
