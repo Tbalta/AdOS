@@ -2,7 +2,7 @@
 --                                   UTIL                                   --
 --                                                                          --
 --                                 B o d y                                  --
--- (c) 2025 Tanguy Baltazart                                                --
+-- (c) 2026 Tanguy Baltazart                                                --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
@@ -67,7 +67,7 @@ package body Util is
       A_Param := A;
       return Result : String (1 .. String_Length + 2) do
          -- check for canical value to add 0 or F prefix
-         if a >= Data_Type'Val (x86.Virtual_Address'Last)  then
+         if a > Data_Type'Val (x86.Virtual_Address'Last)  then
             Result := (others => 'F');
          else
             Result := (others => '0');

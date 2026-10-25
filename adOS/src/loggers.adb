@@ -2,7 +2,7 @@
 --                                 LOGGERS                                  --
 --                                                                          --
 --                                 S p e c                                  --
--- (c) 2025 Tanguy Baltazart                                                --
+-- (c) 2026 Tanguy Baltazart                                                --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------

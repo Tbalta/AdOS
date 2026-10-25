@@ -138,7 +138,7 @@ package body vmm is
       Size           : Storage_Count;
       Hint           : Virtual_Address := Virtual_Address'First) return Virtual_Address
    is
-      Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
+      Paging_Currently_Enabled : constant Boolean := Is_Paging_Enabled;
       Offset_In_Page          : constant Virtual_Address_Offset := To_Virtual_Address_Break (Source_Address).Offset;
       Page_Count              : constant Positive := Get_Number_Of_Pages (Size, Offset_In_Page);
       Aligned_Source_Address   : constant Virtual_Address := Source_Address - Offset_In_Page;

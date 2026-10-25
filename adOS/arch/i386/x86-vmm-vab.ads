@@ -2,19 +2,23 @@ package x86.vmm.vab is
    pragma Preelaborate;
 
 
+   -- Vol-5.3 Figure 5-2. Linear-Address Translation to a 4-KByte Page using 32-Bit Paging
    type Virtual_Address_Break is record
       PML2_Index : Page_Index;
-      PML1_Index     : Page_Index;
-      Offset    : Virtual_Address_Offset;
-      end record
+      PML1_Index : Page_Index;
+      Offset     : Virtual_Address_Offset;
+   end record
       with Size => 32;
 
+   -- !format off
    for Virtual_Address_Break use
      record
        PML2_Index at 0 range 22 .. 31;
        PML1_Index at 0 range 12 .. 21;
-       Offset at 0 range 0 .. 11;
+       Offset     at 0 range  0 .. 11;
      end record;
+   -- !format on
+
    function To_Virtual_Address_Break is new
      Ada.Unchecked_Conversion (Source => Virtual_Address, Target => Virtual_Address_Break);
    function From_Virtual_Address_Break is new
