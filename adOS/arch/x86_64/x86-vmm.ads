@@ -112,21 +112,16 @@ is
    ---------------------
    -- Page Allocation --
    ---------------------
-   function Alloc
-     (CR3         : CR3_register;
-      Address     : Virtual_Address;
-      Data_Size   : Storage_count;
+   procedure Create_Page_Entries (CR3 : CR3_Register; Destination : Virtual_Address);
+   procedure Set_Entry_Flags
+     (CR3         : CR3_Register;
+      Destination : Virtual_Address;
       Is_Writable : Boolean := False;
-      Is_Usermode : Boolean := False) return Boolean;
-   
-   procedure Map_Physical_Page
-     (
-      Process              : CR3_Register;
-      Destination          : Virtual_Address;
-      Address_To_Map       : Physical_Address;
-      Is_Writable          : Boolean := False;
-      Is_Usermode          : Boolean := False);
-
+      Is_Usermode : Boolean := False);
+   procedure Set_Entry_Address
+     (CR3            : CR3_Register;
+      Destination    : Virtual_Address;
+      Address_To_Map : Physical_Address);
 
 
 

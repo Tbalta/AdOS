@@ -74,6 +74,7 @@ package x86.vmm.vab is
    function Get_PML1_Index (Address : Virtual_Address_Break) return Page_Index is (Address.PML1_Index);
 
    procedure Next (Address : in out Virtual_Address_Break);
+   procedure Next (Address : in out Virtual_Address);
 
 
 

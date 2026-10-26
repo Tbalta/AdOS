@@ -24,7 +24,6 @@ package body x86.vmm is
    -----------------------------
    -- HHDM Address conversion --
    -----------------------------
-
    function Is_Physical_Address (Address : Physical_Address) return Boolean is
       (Storage_Offset (Address) < hhdm_response.offset);
 
@@ -702,29 +701,31 @@ package body x86.vmm is
    
    procedure Create_Page_Entries
      (CR3 : CR3_Register;
-      Destination : Virtual_Address_Break) is
+      Destination : Virtual_Address)
+   is
+      Address_Break : Virtual_Address_Break := To_Virtual_Address_Break (Destination);
    begin
-      if not Get_PML4_Entry (CR3, Destination).Present then
-         Create_PLM4_Entry (CR3, Destination);
+      if not Get_PML4_Entry (CR3, Address_Break).Present then
+         Create_PLM4_Entry (CR3, Address_Break);
       end if;
-      pragma Assert (not Get_PML4_Entry (CR3, Destination).Page_Size);
+      pragma Assert (not Get_PML4_Entry (CR3, Address_Break).Page_Size);
 
-      if not Get_PML3_Entry (CR3, Destination).Present then
-         Create_PML3_Entry (CR3, Destination);
+      if not Get_PML3_Entry (CR3, Address_Break).Present then
+         Create_PML3_Entry (CR3, Address_Break);
       end if;
-      pragma Assert (not Get_PML3_Entry (CR3, Destination).Page_Size);
+      pragma Assert (not Get_PML3_Entry (CR3, Address_Break).Page_Size);
 
-      if not Get_PML2_Entry (CR3, Destination).Present then
-         Create_PML2_Entry (CR3, Destination);
+      if not Get_PML2_Entry (CR3, Address_Break).Present then
+         Create_PML2_Entry (CR3, Address_Break);
       end if;
-      pragma Assert (not Get_PML2_Entry (CR3, Destination).Page_Size);
+      pragma Assert (not Get_PML2_Entry (CR3, Address_Break).Page_Size);
 
-      if not Get_PML1_Entry (CR3, Destination).Present then
-         Create_PML1_Entry (CR3, Destination);
+      if not Get_PML1_Entry (CR3, Address_Break).Present then
+         Create_PML1_Entry (CR3, Address_Break);
       else
          Logger.Log_Error ("Entry already exist in CR3: " & CR3'Image);
       end if;
-      Invalidate_TLB_Address (From_Virtual_Address_Break (Destination));
+      Invalidate_TLB_Address (Destination);
    end Create_Page_Entries;
 
    function Get_Page_Size (CR3 : CR3_register; Address : Virtual_Address_Break) return Page_Type is
@@ -759,10 +760,12 @@ package body x86.vmm is
 
    procedure Set_Entry_Address
      (CR3            : CR3_Register;
-      Destination    : Virtual_Address_Break;
+      Destination    : Virtual_Address;
       Address_To_Map : Physical_Address)
    is
-      PML1_Entry : Page_Map_Level_1_Entry_Access := Get_PML1_Entry (CR3, Destination);
+      Address_Break : Virtual_Address_Break := To_Virtual_Address_Break (Destination);
+      PML1_Entry : Page_Map_Level_1_Entry_Access := Get_PML1_Entry (CR3, Address_Break);
+
       pragma Assert (not PML1_Entry.Present);
    begin
       if Is_Kernel_Address (Address_To_Map) then
@@ -770,21 +773,23 @@ package body x86.vmm is
       end if;
       PML1_Entry.Present := True;
       PML1_Entry.Address := To_Page_Address (Address_To_Map);
-      Invalidate_TLB_Address (From_Virtual_Address_Break (Destination));
+      Invalidate_TLB_Address (Destination);
    end Set_Entry_Address;
 
    procedure Set_Entry_Flags
      (CR3         : CR3_Register;
-      Destination : Virtual_Address_Break;
+      Destination : Virtual_Address;
       Is_Writable : Boolean := False;
       Is_Usermode : Boolean := False)
    is
-      PML1_Entry : Page_Map_Level_1_Entry_Access := Get_PML1_Entry (CR3, Destination);
-      PML2_Entry : Page_Map_Level_2_Entry_Access := Get_PML2_Entry (CR3, Destination);
-      PML3_Entry : Page_Map_Level_3_Entry_Access := Get_PML3_Entry (CR3, Destination);
-      PML4_Entry : Page_Map_Level_4_Entry_Access := Get_PML4_Entry (CR3, Destination);
+      Address_Break : Virtual_Address_Break := To_Virtual_Address_Break (Destination);
 
-      Page_Level : constant Entry_Level := Get_Entry_Level (CR3, Destination);
+      PML1_Entry : Page_Map_Level_1_Entry_Access := Get_PML1_Entry (CR3, Address_Break);
+      PML2_Entry : Page_Map_Level_2_Entry_Access := Get_PML2_Entry (CR3, Address_Break);
+      PML3_Entry : Page_Map_Level_3_Entry_Access := Get_PML3_Entry (CR3, Address_Break);
+      PML4_Entry : Page_Map_Level_4_Entry_Access := Get_PML4_Entry (CR3, Address_Break);
+
+      Page_Level : constant Entry_Level := Get_Entry_Level (CR3, Address_Break);
    begin
       if Page_Level <= Entry_Level_4 then
          PML4_Entry.Is_Writable := Is_Writable or PML4_Entry.Is_Writable;
@@ -804,28 +809,10 @@ package body x86.vmm is
       PML1_Entry.Is_Writable := Is_Writable;
       PML1_Entry.Is_Usermode := Is_Usermode;
 
-      pragma Assert (x86.vmm.Is_Usermode (CR3, Destination) = Is_Usermode);
-      pragma Assert (x86.vmm.Is_Writable (CR3, Destination) = Is_Writable);
-      Invalidate_TLB_Address (From_Virtual_Address_Break (Destination));
+      pragma Assert (x86.vmm.Is_Usermode (CR3, Address_Break) = Is_Usermode);
+      pragma Assert (x86.vmm.Is_Writable (CR3, Address_Break) = Is_Writable);
+      Invalidate_TLB_Address (Destination);
    end Set_Entry_Flags;
-
-   -----------------------
-   -- Map_Physical_Page --
-   -----------------------
-   procedure Map_Physical_Page
-     (
-      Process              : CR3_Register;
-      Destination          : Virtual_Address;
-      Address_To_Map       : Physical_Address;
-      Is_Writable          : Boolean := False;
-      Is_Usermode          : Boolean := False)
-   is
-      Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Destination);
-   begin
-      Create_Page_Entries (Process, Address_Breakdown);
-      Set_Entry_Address   (Process, Address_Breakdown, Address_To_Map);
-      Set_Entry_Flags     (Process, Address_Breakdown, Is_Writable, Is_Usermode);
-   end Map_Physical_Page;
 
    ----------------
    -- Unmap_Page --
@@ -908,32 +895,6 @@ package body x86.vmm is
       end case;
    end Get_Offset;
 
-   ---------------
-   -- Map_Range --
-   ---------------
-   procedure Map_Range
-     (CR3                        : CR3_Register;
-      Destination                : Virtual_Address_Break;
-      Start_Address, End_Address : Physical_Address;
-      Is_Writable                : Boolean := False;
-      Is_Usermode                : Boolean := False)
-   is
-      pragma Assert (Start_Address < End_Address);
-      Page_Count : Positive := Get_Number_Of_Pages (End_Address - Start_Address);
-      Address_To_Map : Physical_Address := Start_Address;
-      Current_Destination : Virtual_Address_Break := Destination;
-   begin
-      Logger.Log_Info ("Mapping range " & Start_Address'Image & " - " & End_Address'Image);
-      Logger.Log_Info ("Number of pages to map: " & Natural'Image (Page_Count));
-      for i in 1 .. Page_Count loop
-         Create_Page_Entries (CR3, Current_Destination);
-         Set_Entry_Address (CR3, Current_Destination, Address_To_Map);
-         Set_Entry_Flags  (CR3, Current_Destination, Is_Writable, Is_Usermode);
-         Next (Current_Destination);
-         Address_To_Map := Address_To_Map + Storage_Offset (4_096);
-      end loop;
-   end Map_Range;
-
    ------------------
    -- Identity_Map --
    ------------------
@@ -941,40 +902,6 @@ package body x86.vmm is
    begin
       null;
    end Identity_Map;
-
-   -----------
-   -- Alloc --
-   -----------
-   function Alloc
-     (CR3         : CR3_register;
-      Address     : Virtual_Address;
-      Data_Size   : Storage_count;
-      Is_Writable : Boolean := False;
-      Is_Usermode : Boolean := False) return Boolean
-   is
-      Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
-      To_Fit : Storage_Count := Data_Size;
-   begin
-      if not Can_Fit (CR3, Address, Data_Size) then
-         Logger.Log_Error ("Cannot fit " & Data_Size'Image & " at " & Address'Image);
-         return False;
-      end if;
-
-      while To_Fit > 0 loop
-         Create_Page_Entries (CR3, Address_Breakdown);
-
-         Set_Entry_Address (CR3, Address_Breakdown, Allocate_Page);
-         Set_Entry_Flags (CR3, Address_Breakdown, Is_Writable, Is_Usermode);
-
-
-         To_Fit := To_Fit - Storage_Count'Min (To_Fit, PMM_PAGE_SIZE);
-         Address_Breakdown.Offset := 0;
-         Next (CR3, Address_Breakdown);
-      end loop;
-
-      return True;
-   end Alloc;
-
 
    ---------------------
    -- Is_Last_Address --

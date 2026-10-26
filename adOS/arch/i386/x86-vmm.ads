@@ -62,6 +62,14 @@ is
    pragma Preelaborate;
 
    type CR3_Register;
+   type Entry_Level is (Entry_Level_1, Entry_Level_2);
+
+   ----------------------
+   -- Paging Constants --
+   ----------------------
+   PAGE_SIZE     : constant Storage_Count := 4096;
+   PAGE_SIZE_2MB : constant Storage_Count := 2 ** 21;
+
 
    -----------------------
    -- Paging Operations --
@@ -79,14 +87,6 @@ is
    function Create_CR3 return CR3_register;
    procedure Load_CR3 (CR3 : CR3_register);
    function Get_Current_CR3 return CR3_register;
-
-   
-   ---------------------
-   -- Logging Utility --
-   ---------------------
-   procedure Print_Mapped_Memory (CR3 : CR3_Register);
-   -- procedure Print_PLM4 (CR3 : CR3_Register);
-
    
    -------------------
    -- Page counting --
@@ -95,6 +95,11 @@ is
    function Get_Free_Size (CR3 : CR3_Register; Address : Virtual_Address) return Storage_Count;
    function Get_Allocated_Size (CR3 : CR3_Register; Address : Virtual_Address) return Storage_Count;
 
+   ---------------------
+   -- Logging Utility --
+   ---------------------
+   procedure Print_Mapped_Memory (CR3 : CR3_Register);
+   -- procedure Print_PLM4 (CR3 : CR3_Register);
 
    ------------------
    -- Identity_Map --
@@ -104,37 +109,47 @@ is
 
 
    ------------------------
-   -- Address Conversion --
+   -- Address Utility --
    ------------------------
    function Virtual_To_Physical_Address
      (CR3 : CR3_register; Address : Virtual_Address) return Physical_Address;
+
    function To_Virtual_Address (address : Physical_Address) return Virtual_Address;
+   function Is_Last_Address (CR3 : CR3_Register; Address : Virtual_Address) return Boolean;
+   function Get_Offset (CR3 : CR3_Register; Address : Virtual_Address) return Storage_Offset;
+
+
    -- function To_Physical_Address (address : Virtual_Address) return Physical_Address;
    
 
    ---------------------
-   -- Page Allocation --
+   -- Page Management --
    ---------------------
-   function Alloc
-     (CR3         : CR3_register;
-      Address     : Virtual_Address;
-      Data_Size   : Storage_count;
+   procedure Create_Page_Entries (CR3 : CR3_Register; Destination : Virtual_Address);
+   procedure Set_Entry_Flags
+     (CR3         : CR3_Register;
+      Destination : Virtual_Address;
       Is_Writable : Boolean := False;
-      Is_Usermode : Boolean := False) return Boolean;
-   
-   procedure Map_Physical_Page
-     (
-      Process              : CR3_Register;
-      Destination          : Virtual_Address;
-      Address_To_Map       : Physical_Address;
-      Is_Writable          : Boolean := False;
-      Is_Usermode          : Boolean := False);
+      Is_Usermode : Boolean := False);
+   procedure Set_Entry_Address
+     (CR3            : CR3_Register;
+      Destination    : Virtual_Address;
+      Address_To_Map : Physical_Address);
+
+   procedure Unmap_Page
+     (CR3       : CR3_Register;
+      Address   : Virtual_Address;
+      Free_Page : Boolean)
+      with Pre => not Is_Paging_Enabled,
+           Post => Is_Paging_Enabled'Old = Is_Paging_Enabled; 
 
 -- private
-   Paging_Enabled : Boolean := False;
-   PAGE_SIZE      : constant Storage_Count := 4096;
-   PAGE_SIZE_2MB   : constant Storage_Count := 2 ** 21;
 
+
+   -----------------------
+   -- Paging Structures --
+   -----------------------
+   -- Vol-3.5.3 Figure 5-4. Formats of CR3 and Paging-Structure Entries with 32-Bit Paging
    type Page_Address is range 0 .. 2 ** 20 - 1;
    subtype Page_Table_Address is Page_Address;
    subtype Page_Directory_Address is Page_Address;
@@ -152,7 +167,8 @@ is
        Address at 0 range 12 .. 31;
      end record;
 
-
+   function To_Address (Addr : Page_Address) return Physical_Address;
+   function To_Page_Address (Addr : Physical_Address) return Page_Address;
    type Page_Map_Level_1_Entry is record
       Present       : Boolean := False;
       Is_Writable   : Boolean := False;
@@ -210,28 +226,10 @@ is
      end record;
    --!format on
 
-   -- Tood: check this value (maybe it should be 2 ** 9)
+   -- Vol 3-5.2 HIERARCHICAL PAGING STRUCTURES: AN OVERVIEW
    type Page_Index     is mod 2 ** 10;
    subtype Virtual_Address_Offset is Storage_Offset range 0 .. 2 ** 12 - 1;
 
-
-   --  type Virtual_Address_Break is record
-   --     PML2_Index : Page_Index;
-   --     PML1_Index     : Page_Index;
-   --     Offset    : Virtual_Address_Offset;
-   --     end record
-   --     with Size => 32;
-
-   --  for Virtual_Address_Break use
-   --    record
-   --      PML2_Index at 0 range 22 .. 31;
-   --      PML1_Index at 0 range 12 .. 21;
-   --      Offset at 0 range 0 .. 11;
-   --    end record;
-   --  function To_Virtual_Address_Break is new
-   --    Ada.Unchecked_Conversion (Source => Virtual_Address, Target => Virtual_Address_Break);
-   --  function From_Virtual_Address_Break is new
-   --    Ada.Unchecked_Conversion (Source => Virtual_Address_Break, Target => Virtual_Address);
 
    type Page_Map_Level_1 is array (Page_Index) of aliased Page_Map_Level_1_Entry
       with Pack => True,
@@ -247,31 +245,10 @@ is
    type Page_Map_Level_2_Access is access all Page_Map_Level_2;
    type Page_Map_Level_2_Entry_Access is access all Page_Map_Level_2_Entry;
 
-
+private
+   Paging_Enabled : Boolean := False;
    type Page_Count is new Natural;
    Page_Per_PML1 : constant Page_Count := Page_Map_Level_1'Length;
    Page_Per_PML2 : constant Page_Count := Page_Map_Level_2'Length * Page_Per_PML1;
-
-   function To_Address (Addr : Page_Address) return Physical_Address;
-
-   function To_Page_Table_Address (Addr : System.Address) return Page_Table_Address;
-   function To_Page_Directory_Address (Addr : System.Address) return Page_Directory_Address;
-   function To_Page_Address (Addr : Physical_Address) return Page_Address;
-   
-   procedure Unmap_Page
-     (CR3                 : CR3_Register;
-      Address : Virtual_Address;
-      Free_Page            : Boolean)
-      with Pre => not Paging_Enabled,
-           Post => Paging_Enabled'Old = Paging_Enabled; 
-
-
-   procedure Next
-     (Page_Directory_Start : in out Page_Index;
-      Page_Table_Start     : in out Page_Index);
-
-   function Is_Last_Address (CR3 : CR3_Register; Address : Virtual_Address) return Boolean;
-   function Get_Offset (CR3 : CR3_Register; Address : Virtual_Address) return Storage_Offset;
-
 
 end x86.vmm;
