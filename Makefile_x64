@@ -23,6 +23,8 @@ all: main.iso
 folder:
 	mkdir -p iso/boot/limine
 	mkdir -p iso/EFI/BOOT
+	mkdir -p iso/bin
+	mkdir -p $(OBJ)
 
 
 main.iso: folder main.elf userland limine
@@ -43,11 +45,7 @@ main.iso: folder main.elf userland limine
 limine:
 	$(MAKE) -C limine
 
-
-make_dir:
-	mkdir -p iso/bin
-
-userland: make_dir
+userland: folder
 	$(MAKE) -C userland
 	cp userland/bin/x64/* iso/bin/
 
