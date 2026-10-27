@@ -1,32 +1,36 @@
 .POSIX:
-.PHONY: clean run run-img main.elf
+.PHONY: clean run run-img main.elf folder
 
 OBJ = obj/i386
 
 qemu_param = -no-reboot -boot d -serial mon:stdio -m 2G
 
-ifeq ($(SKIP_RAMDISK), TRUE)
-docker_make_flags = SKIP_RAMDISK=TRUE
-endif
-
 ifeq ($(DEBUG), TRUE)
 	qemu_param += -S -s
 endif
 
+ifeq ($(SKIP_RAMDISK), TRUE)
+docker_make_flags = SKIP_RAMDISK=TRUE
+endif
+
+export x86_64 = FALSE
 
 .PHONY: userland
 
 
 all: main.iso
 
-main.iso: main.elf userland
+folder:
+	mkdir -p iso/bin
+	mkdir -p $(OBJ)
+
+
+main.iso: folder main.elf userland limine
 	cp main.elf iso/boot
 	grub-mkrescue /usr/lib/grub/i386-pc -o '$@' iso
 
-make_dir:
-	mkdir -p iso/bin
 
-userland: make_dir
+userland: folder
 	$(MAKE) -C userland
 	cp userland/bin/i386/* iso/bin/
 
@@ -36,11 +40,12 @@ main.elf: ramdisk_content.o
 	gprbuild -Xplatform=i386-elf
 
 clean:
-	cd runtime && gprclean
+	cd runtime && gprclean -Xplatform=i386-elf
 	$(MAKE) -C userland clean
 	$(RM) -r iso/bin ramdisk.iso
 	$(RM) iso/boot/main.elf
-	gprclean
+	gprclean -Xplatform=i386-elf
+	$(RM) -r $(OBJ)
 
 run:
 	qemu-system-i386 -cdrom main.iso $(qemu_param)
@@ -55,18 +60,18 @@ docker-make:
 	docker-compose -f .docker/docker-compose.yml run --rm ados make -f Makefile_i386 $(docker_make_flags)
 	qemu-system-i386 -cdrom main.iso $(qemu_param)
 
+docker-clean:
+	docker-compose -f .docker/docker-compose.yml run --rm ados make clean -f Makefile_i386
+
 docker-build:
 	docker-compose -f .docker/docker-compose.yml build ados
 
 docker-run:
 	docker-compose -f .docker/docker-compose.yml run --rm ados
 
-docker-clean:
-	docker-compose -f .docker/docker-compose.yml run --rm ados make clean -f Makefile_i386
-
 docker-debug:
 	docker-compose -f .docker/docker-compose.yml run --rm ados make
-	qemu-system-i386.exe -cdrom main.iso $(qemu_param) -s -S
+	qemu-system-i386 -cdrom main.iso $(qemu_param) -s -S
 
 gdb:
 	gdb -ex "target remote localhost:1234" main.elf

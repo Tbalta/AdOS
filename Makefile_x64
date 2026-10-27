@@ -55,11 +55,12 @@ main.elf: ramdisk_content.o
 	gprbuild -Xplatform=x86_64-elf
 
 clean:
-	cd runtime && gprclean
+	cd runtime && gprclean -Xplatform=x86_64-elf
 	$(MAKE) -C userland clean
 	$(RM) -r iso/bin ramdisk.iso
 	$(RM) iso/boot/main.elf
-	gprclean
+	gprclean -Xplatform=x86_64-elf
+	$(RM) -r $(OBJ)
 
 run:
 	qemu-system-x86_64 -cdrom main.iso $(qemu_param)

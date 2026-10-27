@@ -71,8 +71,6 @@ package body Syscall is
       (Status : in  Syscall_Arg;
       Process : in x86.vmm.CR3_Register) is
    begin
-      VGA.Set_Text_Mode (80, 25, 16);
-      VGA.load_palette (File_System.To_Path ("vga_tui.hex"));
       Logger.Log_Info ("Process exited with status " & Status'Image);
       while True loop
          System.Machine_Code.Asm (Template => "hlt", Volatile => True);
