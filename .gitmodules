@@ -1,7 +1,8 @@
 [submodule "userland/doomgeneric"]
 	path = userland/doomgeneric
 	url = git@github.com:Tbalta/doomgeneric_ados.git
-[submodule "Limine"]
+	branch = master
+[submodule "limine"]
 	path = limine
-	url = https://codeberg.org/Limine/Limine.git
+	url = git@github.com:Limine-Bootloader/Limine.git
 	branch = v10.x-binary

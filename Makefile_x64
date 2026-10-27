@@ -1,5 +1,5 @@
 .POSIX:
-.PHONY: clean run run-img main.elf folder
+.PHONY: clean run run-img main.elf folder limine
 
 OBJ = obj/x64
 
