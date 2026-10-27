@@ -21,6 +21,7 @@ export x86_64 = FALSE
 all: main.iso
 
 folder:
+	mkdir -p runtime/build/adalib
 	mkdir -p iso/bin
 	mkdir -p $(OBJ)
 

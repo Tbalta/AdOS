@@ -21,6 +21,7 @@ export x86_64 = TRUE
 all: main.iso
 
 folder:
+	mkdir -p runtime/build/adalib
 	mkdir -p iso/boot/limine
 	mkdir -p iso/EFI/BOOT
 	mkdir -p iso/bin
