@@ -2,7 +2,7 @@
 --                                   PIC                                    --
 --                                                                          --
 --                                 B o d y                                  --
--- (c) 2025 Tanguy Baltazart                                                --
+-- (c) 2026 Tanguy Baltazart                                                --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
@@ -11,7 +11,7 @@ with Interfaces; use Interfaces;
 with Loggers;
 
 package body pic is
-   package Logger renames Loggers.VGA_Logger;
+   package Logger renames Loggers;
 
    ----------
    -- Init --

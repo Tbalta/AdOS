@@ -56,7 +56,7 @@ package body File_System.IRQ is
          case fd is
             when SYSTICK_FD =>
                --  Logger.Log_Info ("Read_Systick " & Programmable_Interval_Timer.Get_Systick'Image);
-               Buffer.all := To_Read_Type (Programmable_Interval_Timer.Get_Systick);
+               Buffer.all := To_Read_Type (Integer (Programmable_Interval_Timer.Get_Systick));
 
             when KEYBOARD_FD =>
                Buffer.all := To_Read_Type (Keyboard.Get_Key_Code);

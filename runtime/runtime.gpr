@@ -1,4 +1,8 @@
 library project Runtime is
+   type Platform_Type is ("i386-elf", "x86_64-elf");
+   Platform    := external ("platform", "i386-elf");
+
+
    --  Tells Gprbuild to create any missing directories in the build process.
    for Create_Missing_Dirs use "True";
    --  The source files for the run-time library.
@@ -9,7 +13,14 @@ library project Runtime is
    --  second is to function as the run-time library's spec includes.
    for Source_Dirs use ("build/adainclude/**", "libc/**");
    --  The directory used for build artifacts.
-   for Object_Dir use "obj";
+
+   case Platform is
+      when "i386-elf" =>
+         for Object_Dir use "obj/i386";
+      when "x86_64-elf" =>
+         for Object_Dir use "obj/x64";
+   end case;
+
  
    for Languages use (
      "Ada",
@@ -29,7 +40,7 @@ library project Runtime is
    end Builder;
    --  For a list of all compiler switches refer to: https://gcc.gnu.org/onlinedocs/gcc-9.2.0/gnat_ugn/Alphabetical-List-of-All-Switches.html#Alphabetical-List-of-All-Switches
    package Compiler is
-      for Default_Switches ("Ada") use (
+      Basic_Switches := (
         "-O0",
         --  Using these directives instructs the Gnat GCC backend to place
         --  each function and data object in its own section in the resulting
@@ -37,22 +48,40 @@ library project Runtime is
         --  perform dead code elimination within the runtime library.
         --  For more information refer to:
         --    https://gcc.gnu.org/onlinedocs/gnat_ugn/Compilation-options.html
-        "-ffunction-sections", 
+        "-ffunction-sections",
         "-fdata-sections",
         "-gnat2020",
-        --  This switch enables GNAT's Internal implementation mode. This 
-        --  allows us to modify internal packages such as 'Ada' or 'System'
-        --  which are needed to build a run-time library. This switch is only
-        --  needed when building the run-time and should be disabled for all 
-        --  other development.
         "-gnatg",
-        --  Instructs GNAT to remove dead code from the runtime library.
-        --  Requires the use of the '-ffunction-sections' and
-        --  '-fdata-sections' directives as detailed above.
-        "-Wl,--gc-sections",
+         "-Wl,--gc-sections",
         "-g",
-        "-fno-exceptions"
+        -- "-mno-sse",
+        "-mno-red-zone",
+        "-fno-exceptions");
+      
+      x86_64_Switches := (
+        "-mno-sse2",
+        "-mno-red-zone",
+        "-mcmodel=kernel",
+        "-fno-stack-protector",
+        "-fno-stack-check",
+        "-fno-lto",
+        "-fno-PIC",
+        "-m64",
+        "-march=x86-64",
+        "-mabi=sysv",
+        "-mno-80387",
+        "-mno-mmx"
       );
+
+      i386_Switches := (
+      );
+
+      case Platform is
+         when "i386-elf" =>
+            for Default_Switches ("Ada") use Basic_Switches & i386_Switches;
+         when "x86_64-elf" =>
+            for Default_Switches ("Ada") use Basic_Switches & x86_64_Switches;
+      end case;
       for Default_Switches ("C") use ("-g");
    end Compiler;
  
@@ -72,5 +101,5 @@ library project Runtime is
    --  itself.
    for Runtime ("Ada") use "build";
  
-   for Target use "i386-elf";
+   for Target use Platform;
 end Runtime;

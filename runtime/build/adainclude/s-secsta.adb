@@ -639,12 +639,9 @@ package body System.Secondary_Stack is
       known_stack : constant SS_Stack_Ptr := Sec_Stack'Access;
 
       --  Start of processing for SS_Init
-
    begin
       pragma Assert (Stack = null);
-      --  if Size = Unspecified_Size then
       Stack := known_stack;
-      --  end if;
       --  The static chunk becomes the chunk indicated by the stack pointer.
       --  Note that the stack may still hold dynamic chunks, which in turn may
       --  be reused or freed.

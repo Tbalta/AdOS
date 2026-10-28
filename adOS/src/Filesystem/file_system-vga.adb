@@ -23,13 +23,13 @@ package body File_System.VGA is
            (Width       => Integer (File.Width),
             Height      => Integer (File.Height),
             Color_Depth => Integer (File.Color_Depth));
-         load_palette ("vga_gui.hex");
+         load_palette (To_Path ("vga_gui.hex"));
       else
          Set_Text_Mode
            (Width       => Integer (File.Width),
             Height      => Integer (File.Height),
             Color_Depth => Integer (File.Color_Depth));
-         load_palette ("vga_tui.hex");
+         load_palette (To_Path ("vga_tui.hex"));
       end if;
    end Start_VGA;
 

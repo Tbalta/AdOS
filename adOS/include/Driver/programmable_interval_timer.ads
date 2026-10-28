@@ -16,13 +16,14 @@ with Interfaces;  use Interfaces;
 package Programmable_Interval_Timer is
    pragma Preelaborate;
 
+   type Systick_Type is mod Positive'Last;
    procedure set_timer_period (ms : Positive);
    procedure Handle_Systick;
-   function Get_Systick return Integer;
+   function Get_Systick return Systick_Type;
 
 
 private
-   Systick : Integer := 0;
+   Systick : Systick_Type := 0;
    type Select_Counter is (Select_Counter_0, Select_Counter_1, Select_Counter_2, Read_Back_Command);
    for Select_Counter use
      (Select_Counter_0  => 2#00#,

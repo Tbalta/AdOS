@@ -7,7 +7,7 @@ set -e
 # to `i686-elf` from source.
 
 # The target triplet for the build.
-export BUILD_TARGET="i386-elf"
+export BUILD_TARGET="$1"
 # The install prefix.
 export BUILD_PREFIX="/opt/cross/${BUILD_TARGET}"
 # The host target triplet.
@@ -32,7 +32,7 @@ local_lib_dir="/usr/local"
 # The directory where the source directories are located.
 source_dir="/src"
 # The directory to use as storage for the intermediate build dirs.
-build_dir="/src/build"
+build_dir="/src/build/${BUILD_TARGET}"
 
 # The versions of each dependency to build.
 binutils_version="2.40"
@@ -49,14 +49,15 @@ fi
 
 cd "${build_dir}/${binutils_dir}" || exit 1
 
-${source_dir}/${binutils_dir}/configure          \
-	--target="${BUILD_TARGET}"               \
-	--prefix="${BUILD_PREFIX}"               \
-	--host="${HOST}"                         \
-	--disable-nls                            \
-	--disable-multilib                       \
-	--disable-shared                         \
-        --with-sysroot || exit 1
+echo "Configuring Binutils..."
+${source_dir}/${binutils_dir}/configure        \
+	--target="${BUILD_TARGET}"                 \
+	--prefix="${BUILD_PREFIX}"                 \
+	--host="${HOST}"                           \
+	--disable-nls                              \
+	--disable-multilib                         \
+	--disable-shared                           \
+    --with-sysroot || exit 1
 
 # Check the host environment.
 make configure-host || exit 1
@@ -73,6 +74,7 @@ fi
 
 cd "${build_dir}/${gcc_dir}" || exit 1
 
+echo "Configuring initial GCC without Ada support..."
 ${source_dir}/${gcc_dir}/configure          \
 	--target="${BUILD_TARGET}"          \
 	--prefix="${BUILD_PREFIX}"          \
@@ -98,6 +100,7 @@ fi
 
 cd "${build_dir}/${gcc_dir}" || exit 1
 
+echo "Configuring GCC with Ada support..."
 ${source_dir}/${gcc_dir}/configure          \
 	--target="${BUILD_TARGET}"          \
 	--prefix="${BUILD_PREFIX}"          \

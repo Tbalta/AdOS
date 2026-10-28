@@ -10,6 +10,7 @@ void stdlib_init(void);
 
 int _start()
 {
+    // asm volatile("mov %rsp, %rax\nint $0x81");
     stdout = &_stdout;
     stderr = &_stderr;
     char *argv[3] = {

@@ -1,11 +1,12 @@
 with System;
 with System.Storage_Elements; use System.Storage_Elements;
+with Ada.Strings.Bounded;
 
 package File_System
   with Preelaborate
 is
 
-   type File_System_Type is (SERIAL_FS, ISO_FS, VGA_FS, PIT_FS, INVALID_FS);
+   type File_System_Type is (SERIAL_FS, ISO_FS, VGA_FS, PIT_FS, LIMINE_FS, INVALID_FS);
 
    type File_Descriptor_With_Error is new Integer range -1 .. 255;
    subtype File_Descriptor is File_Descriptor_With_Error range 0 .. 255;
@@ -20,7 +21,14 @@ is
    for whence use (SEEK_SET => 0, SEEK_CUR => 1, SEEK_END => 2);
    subtype off_t is Storage_Offset;
 
-   type Path is new String;
+   Path_Max_Lenght : constant := 256;
+   package Bounded_Path is new Ada.Strings.Bounded.Generic_Bounded_Length (Max => Path_Max_Lenght);
+   subtype Path is Bounded_Path.Bounded_String;
+   use all type Path;
+   function To_Path (Str : String) return Path is (Bounded_Path.To_Bounded_String (Str));
+
+
+   -- type Path is new String;
 
    generic
       type Read_Type is private;

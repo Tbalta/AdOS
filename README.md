@@ -1,41 +1,48 @@
 # AdOS
-AdOS is a proof of concept for an operating system kernel written in Ada. <br />
+AdOS is a proof of concept for an operating system kernel written in Ada for i386 and x64 architectures. <br />
 
 
 # Project status
 Currently AdOS support:
-- Booting through GRUB2
-- Serial output
-- Basic memory management with paging
-- Basic file system support for ISO9660
+- Serial Driver
+- Paging
+- Basic ISO9660 driver
 - ELF loading and execution in user space
-- Read, Write, Open syscalls
+- Limited syscall support
 
+# Setup
+```bash
+git clone git@github.com:Tbalta/AdOS.git
+cd AdOS/
+git submodule update --init
+```
+
+## Doomgeneric
+You need to provide your own wad file, place it in `./iso/<file>.wad`
 
 
 # Building
 # Prerequisites
-- qemu-system-i386 should be installed on the host system
+- `qemu-system-i386` and `qemu-system-x86_64` should be installed on the host system
 
-## Build with Docker
+## Build with Docker (Recommended)
 ```bash
-# 1. Create the AdOS docker image
-make docker-build
 
-# 2. Build AdOS using the docker image then run it in QEMU
-make docker-make
+# 1. Create the AdOS docker image (choose 1, both command do the same)
+make -f Makefile_x64 docker-build
+make -f Makefile_i386 docker-build
+
+# 2. Build AdOS using the docker then run it on QEMU
+make -f Makefile_x64 docker-make
+make -f Makefile_i386 docker-make
 ```
 
 ## Build natively
 ### Dependencies
-- nasm
-- grub-pc-bin
-- grub-common
-- gcc-i366-elf
-- gnat-i386-elf
+- Follow the steps described in [Dockerfile](.docker/Dockerfile)
 - gnatformat (installed through alr, see below)
 
-### gcc-i386-elf and gnat-i386-elf cross compiler installation
+### Cross compiler installation
 Follow this tutorial: <br />
 https://wiki.osdev.org/GNAT_Cross-Compiler <br />
 
@@ -87,6 +94,7 @@ sudo cp bin/gnatformat /usr/local/bin
 ### 8259 PIC 
 https://wiki.osdev.org/8259_PIC <br />
 https://pdos.csail.mit.edu/6.828/2005/readings/hardware/8259A.pdf <br />
+https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html <br />
 
 ## Ada
 https://www.adaic.org/resources/add_content/standards/22rm/rm-bar.pdf <br />

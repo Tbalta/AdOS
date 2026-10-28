@@ -57,8 +57,8 @@ package body File_System.SERIAL is
 
       Standard.SERIAL.send_raw_buffer
         (Descriptors (fd).COM, Conversion.To_Address (Conversion.Object_Pointer (Buffer)), count);
-      VGA.Terminal.send_raw_buffer
-        (Conversion.To_Address (Conversion.Object_Pointer (Buffer)), count);
+      --  VGA.Terminal.send_raw_buffer
+      --    (Conversion.To_Address (Conversion.Object_Pointer (Buffer)), count);
       
       return Integer (count);
    end write;

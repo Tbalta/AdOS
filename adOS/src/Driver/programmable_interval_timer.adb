@@ -2,7 +2,7 @@
 --                       Programmable_Interval_Timer                        --
 --                                                                          --
 --                                 B o d y                                  --
--- (c) 2025 Tanguy Baltazart                                                --
+-- (c) 2026 Tanguy Baltazart                                                --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
@@ -32,12 +32,12 @@ package body Programmable_Interval_Timer is
    begin
       Systick := Systick + 1;
 
-      --  if Systick mod 100 = 0 then
-      --     Logger.Log_Info ("Systick: " & Integer (Systick / 100)'Image);
+      --  if Systick mod 1000 = 0 then
+      --     Logger.Log_Info ("Systick: " & Positive (Systick / 1000)'Image);
       --  end if;
    end Handle_Systick;
 
-   function Get_Systick return Integer is
+   function Get_Systick return Systick_Type is
    begin
       return Systick;
    end Get_Systick;

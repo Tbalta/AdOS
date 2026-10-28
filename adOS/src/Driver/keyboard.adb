@@ -20,7 +20,7 @@ package body Keyboard is
          return;
       end if;
 
-      --  Logger.Log_Info ("Received: " & key'Image & " from keyboard");
+      Logger.Log_Info ("Received: " & key'Image & " from keyboard");
       Push (Keycode_Buffer'Access, Key);
 
    end Handle_Keyboard;

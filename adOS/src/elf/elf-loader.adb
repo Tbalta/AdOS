@@ -2,7 +2,7 @@
 --                                ELF.LOADER                                --
 --                                                                          --
 --                                 B o d y                                  --
--- (c) 2025 Tanguy Baltazart                                                --
+-- (c) 2026 Tanguy Baltazart                                                --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
@@ -11,7 +11,7 @@ with Loggers;
 with System.Address_To_Access_Conversions;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
-
+with vmm;
 package body ELF.Loader is
    package Logger renames Loggers.Serial_Logger;
 
@@ -38,49 +38,75 @@ package body ELF.Loader is
       CR3            : in out x86.vmm.CR3_register)
    is
       use all type System.Address;
-      Kernel_CR3 : x86.vmm.CR3_register := x86.vmm.Get_Kernel_CR3;
+      use all type x86.Virtual_Address;
+      Kernel_CR3 : x86.vmm.CR3_register := vmm.Get_Kernel_CR3;
       Read_Count : Integer;
-      type Segment_Data is array (1 .. Program_Header.p_filesz) of Interfaces.Unsigned_8
-      with Pack => True;
 
-      package Conversion is new System.Address_To_Access_Conversions (Segment_Data);
+      subtype Segment_Data is Storage_Array (1 .. Program_Header.p_filesz);
+      --  type Storage_Array_Access is access all Storage_Array;
+   
+      Segment_Page_Offset : constant Storage_Offset := Storage_Offset (Program_Header.p_vaddr mod 4096);
 
-      function Read_Segment_Data is new File_System.read (Segment_Data);
+      type Segment is record
+            Padding : aliased Storage_Array (1 .. Segment_Page_Offset);
+            Data    : aliased Segment_Data;
+            Remaining : aliased Storage_Array (1 .. Program_Header.p_memsz - Program_Header.p_filesz);
+      end record
+         with Pack => True;
+      package Conversion is new System.Address_To_Access_Conversions (Segment);
+      use all type Conversion.Object_Pointer;
 
-      procedure memset (Address : System.Address; Value : Unsigned_8; Size : Unsigned_32);
-      pragma Import (C, memset, "memset");
-
-      Kernel_Buffer         : System.Address;
+      Kernel_Segment        : Conversion.Object_Pointer;
       User_Allocated_Buffer : System.Address;
-      Segment_Page_Offset : Storage_Offset := Storage_Offset (To_Integer (Program_Header.p_vaddr) mod 4096);
+      function Read_Segment_Data is new File_System.read (Segment_Data);
    begin
-      Logger.Log_Info ("Reading segment" & Program_Header'Image);
-      Kernel_Buffer := x86.vmm.Kernel_Alloc (Kernel_CR3, Program_Header.p_memsz, Is_Writable => True, Is_Usermode => True);
-      memset (Kernel_Buffer, 0, Unsigned_32 (Program_Header.p_memsz));
+      Logger.Log_Info ("Reading segment");
+      pragma Assert (Program_Header'Valid_Scalars);
+      pragma Assert (Segment'Size / 8 = Program_Header.p_memsz + Segment_Page_Offset);
+      
 
-      if Kernel_Buffer = System.Null_Address then
+      Kernel_Segment := Conversion.To_Pointer (To_Address (vmm.Kernel_Alloc (Kernel_CR3, Program_Header.p_memsz + Segment_Page_Offset, Is_Writable => True, Is_Usermode => True)));
+      if Kernel_Segment = null then
          Logger.Log_Error ("Unable to allocate segment for " & Program_Header'Image);
          raise Program_Error with "Unable to allocate elf segment";
       end if;
 
+      -- This way we ensure the stack usage for this function is bounded
+      for I in Kernel_Segment.Data'Range loop
+         Kernel_Segment.Data (I) := 0;
+      end loop;
+      for I in Kernel_Segment.Padding'Range loop
+         Kernel_Segment.Padding (I) := 0;
+      end loop;
+      for I in Kernel_Segment.Remaining'Range loop
+         Kernel_Segment.Remaining (I) := 0;
+      end loop;
+
+
+      Logger.Log_Info ("Allocated segment at " & Conversion.To_Address (Kernel_Segment)'Image & " with size " & Integer (Segment'Size / 8)'Image & " bytes");
+      
       File_System.Seek (File, Program_Header.p_offset, File_System.SEEK_SET);
-      Read_Count := Read_Segment_Data (File, Conversion.To_Pointer (Kernel_Buffer + Segment_Page_Offset));
+      Logger.Log_Debug ("Reading " & Integer(Segment_Data'Size / 8)'Image & " bytes from file offset " & Program_Header.p_offset'Image);
+
+      Read_Count := Read_Segment_Data (File, Kernel_Segment.Data'Access);
       pragma Assert (Read_Count = Integer (Program_Header.p_filesz));
 
       User_Allocated_Buffer :=
-        x86.vmm.Process_To_Process_Map
+        To_Address (vmm.Process_To_Process_Map
           (Source_CR3     => Kernel_CR3,
-           Source_Address => Kernel_Buffer,
+           Source_Address => To_Virtual_Address (Conversion.To_Address (Kernel_Segment)),
            Dest_CR3       => CR3,
            Size           => Program_Header.p_memsz,
-           Hint           => Program_Header.p_vaddr);
+           Hint           => Program_Header.p_vaddr));
 
-      pragma Assert (User_Allocated_Buffer = Program_Header.p_vaddr);
+      pragma Assert (User_Allocated_Buffer = To_Address (Program_Header.p_vaddr));
 
-      x86.vmm.Memory_Unmap
+      Logger.Log_Info ("User space segment mapped at " & User_Allocated_Buffer'Image & " with size " & Program_Header.p_memsz'Image);
+
+      vmm.Memory_Unmap
         (CR3       => Kernel_CR3,
-         Address   => Kernel_Buffer,
-         Size      => Storage_Count (Program_Header.p_memsz),
+         Address   => To_Virtual_Address (Conversion.To_Address (Kernel_Segment)),
+         Size      => Program_Header.p_memsz,
          Free_Page => False);
 
       Logger.Log_Info

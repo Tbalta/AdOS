@@ -5,7 +5,7 @@ int write (int fd, const void *buf, unsigned int count);
 
 int read (int fd, void *buf, unsigned int count);
 int close (int fd);
-int open (const char *pathname, int flags);
+int open (const char *pathname, long long flags);
 void _exit (int status);
 
 

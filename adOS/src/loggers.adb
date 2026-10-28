@@ -2,12 +2,15 @@
 --                                 LOGGERS                                  --
 --                                                                          --
 --                                 S p e c                                  --
--- (c) 2025 Tanguy Baltazart                                                --
+-- (c) 2026 Tanguy Baltazart                                                --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
 with VGA;
 with x86.vmm;
+with System.Secondary_Stack;
+with System.Machine_Code;     use System.Machine_Code;
+with vmm;
 package body Loggers is
 
    procedure Serial_Send_Line (Message : in String) is
@@ -18,46 +21,58 @@ package body Loggers is
    procedure Log_Message (Message : in String) is
    begin
       Serial_Logger.Log_Message (Message);
-      VGA_Logger.Log_Message (Message);
+      --  VGA_Logger.Log_Message (Message);
    end Log_Message;
 
    procedure Log_Error (Error_Message : in String) is
    
    begin
       Serial_Logger.Log_Error (Error_Message);
-      VGA_Logger.Log_Error (Error_Message);
+      --  VGA_Logger.Log_Error (Error_Message);
    end Log_Error;
 
    procedure Log_Info (Info_Message : in String) is
    
    begin
-      Serial_Logger.Log_Info (Info_Message);
-      VGA_Logger.Log_Info (Info_Message);
+   Serial_Logger.Log_Info (Info_Message);
+   --  VGA_Logger.Log_Info (Info_Message);
    end Log_Info;
 
    procedure Log_Ok (Ok_Message : in String) is
    
    begin
       Serial_Logger.Log_Ok (Ok_Message);
-      VGA_Logger.Log_Ok (Ok_Message);
+      --  VGA_Logger.Log_Ok (Ok_Message);
    end Log_Ok;
 
    procedure Log_Warning (Warning_Message : in String) is
    begin
       Serial_Logger.Log_Warning (Warning_Message);
-      VGA_Logger.Log_Warning (Warning_Message);
+      --  VGA_Logger.Log_Warning (Warning_Message);
    end Log_Warning;
 
-   procedure Panic (Panic_Message : in String) is
+   procedure Log_Debug (Debug_Message : in String) is
    begin
+      if Debug_Enabled then
+         Serial_Logger.Log_Debug (Debug_Message);
+         --  VGA_Logger.Log_Debug (Debug_Message);
+      end if;
+   end Log_Debug;
+
+   procedure Panic (Panic_Message : in String) is
+      procedure Print_Secondary_Stack is new System.Secondary_Stack.SS_Info (Put_Line => Log_Message);
+   begin
+      System.Machine_Code.Asm (Template => "cli", Volatile => True);
+      Print_Secondary_Stack;
       Serial_Logger.Log_Error (Panic_Message);
-      x86.vmm.Load_CR3 (x86.vmm.Get_Process_CR3);
-      x86.vmm.Enable_Paging;
-      VGA.Set_Text_Mode (80, 25, 16);
-      VGA_Logger.Log_Error (Panic_Message);
       while True loop
          null;
       end loop;
+      x86.vmm.Load_CR3 (vmm.Get_Process_CR3);
+      x86.vmm.Enable_Paging;
+      VGA.Set_Text_Mode (80, 25, 16);
+
+      --  VGA_Logger.Log_Error (Panic_Message);
    end Panic;
 
    procedure Log_C_Char (c : Interfaces.C.char) is

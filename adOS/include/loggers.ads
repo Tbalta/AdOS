@@ -8,6 +8,8 @@ with Interfaces.C;
 package Loggers is
    pragma Preelaborate;
 
+   Debug_Enabled : constant Boolean := True;
+
    procedure Serial_Send_Line (Message : in String);
    package Serial_Logger is new Generic_Logger (Print_Function => Serial_Send_Line);
    package VGA_Logger is new Generic_Logger (Print_Function => VGA.Terminal.Put_String);
@@ -18,6 +20,7 @@ package Loggers is
       with Export, Convention => Ada, External_Name => "__gnat_debug_log";
    procedure Log_Ok (Ok_Message : in String);
    procedure Log_Warning (Warning_Message : in String);
+   procedure Log_Debug (Debug_Message : in String);
    procedure Panic (Panic_Message : in String);
    pragma Export (Ada, Panic, "ADA_PANIC");
    procedure Log_C_Char (c : Interfaces.C.char)

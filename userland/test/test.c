@@ -6,41 +6,49 @@
 #include <stdbool.h>
 #include <syscall.h>
 #include <vga.h>
+#include <framebuffer.h>
+#include <bmp.h>
+
 
 
 int main() {
-    write(0, "Hello World!", 13);
-    int tty = 0;
-    int vga = set_vga_mode (320, 200, 256);
-    if (vga == -1)
+    printf("Hello World!\n");
+    int framebuffer = open_framebuffer();
+    framebuffer_information_t info;
+    get_framebuffer_info(&info);
+
+    box_t framebuffer_box = {
+        .height = info.height,
+        .width  = info.width,
+        .x = 0,
+        .y = 0,
+    };
+
+    if (framebuffer == -1)
     {
-        write (tty, "Unable to open vga", 19);
+        printf("Unable to open framebuffer\n");
         while (true)
         {
             /* code */
         }
     }
-    
-    unsigned char vga_line[320] = {0};
-    char bmp_header[14];
-    char read_buffer[100];
 
-    printf ("Starting AdOS");
+    printf ("Starting AdOS\n");
+
+    bmp_image_t ados_bmp;
+    open_bmp("ados.bmp", &ados_bmp);
+    load_rgba(&ados_bmp);
 
     
-    int ados = open("ados.bmp", 0);
-    read (ados, bmp_header, sizeof (bmp_header));
-    
-    int start = *(int*)(bmp_header + 10);
-    int n = snprintf (read_buffer, sizeof(read_buffer), "bmp_start: %d\n", start);
-    write(tty, read_buffer, n);
-    lseek (ados, start, SEEK_SET);
-    
-    char *vga_buff = mmap(NULL, 320*200, 0, 0, vga, 0);
-    for (int i = 0; i < 200; i++)
-    {
-        int count = read(ados, vga_buff + (i * 320), sizeof(vga_line));
-    }
+    rgba_pixel_t *screen = mmap(NULL, info.width * info.height * (info.bpp / 8), 0, 0, framebuffer, 0);
+    printf("Framebuffer mapped at %d\n", screen);
+
+    #if defined(__i386__)
+        display_indexed(&ados_bmp, &info, (char*)screen, framebuffer_box);
+    #elif defined(__x86_64__)
+        display_rgba(&ados_bmp, &info, screen, framebuffer_box);
+    #endif
+
 
     while (1)
     {

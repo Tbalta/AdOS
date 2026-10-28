@@ -7,6 +7,8 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 with x86.Port_IO;
+with Serial.Generics; use Serial.Generics;
+
 package SERIAL.REGISTERS is
    pragma Preelaborate;
    ----------------------
@@ -49,11 +51,8 @@ package SERIAL.REGISTERS is
    -------------------------------
    -- Divisor Low/High Register --
    -------------------------------
-   procedure Write_Divisor_Low (COM : x86.Port_IO.Port_Address; Value : Unsigned_8);
-   function Get_Divisor_Low_Port (COM : x86.Port_IO.Port_Address) return x86.Port_IO.Port_Address is (COM + DIVISOR_LOW_REGISTER_OFFSET);
-
-   procedure Write_Divisor_High (COM : x86.Port_IO.Port_Address; Value : Unsigned_8);
-   function Get_Divisor_High_Port (COM : x86.Port_IO.Port_Address) return x86.Port_IO.Port_Address is (COM + DIVISOR_HIGH_REGISTER_OFFSET);
+   procedure Write_Divisor_Low is new Write_Serial_Register (DIVISOR_LOW_REGISTER_OFFSET, Unsigned_8);
+   procedure Write_Divisor_High is new Write_Serial_Register (DIVISOR_HIGH_REGISTER_OFFSET, Unsigned_8);
 
    -------------------------------
    -- Interrupt_Enable_Register --
@@ -73,8 +72,7 @@ package SERIAL.REGISTERS is
    for Interrupt_Enable_Register'Size use 8;
    for Interrupt_Enable_Register'Object_Size use 8;
 
-   function Get_Interrupt_Enable_Register_Port (COM : x86.Port_IO.Port_Address) return x86.Port_IO.Port_Address is (COM + INTERUPT_ENABLE_REGISTER_OFFSET);
-   procedure Write_Interrupt_Enable_Register (COM : x86.Port_IO.Port_Address; IER : Interrupt_Enable_Register);
+   procedure Write_Interrupt_Enable_Register is new Write_Serial_Register (INTERUPT_ENABLE_REGISTER_OFFSET, Interrupt_Enable_Register);
 
    ---------------------------
    -- Line_Control_Register --
@@ -122,9 +120,8 @@ package SERIAL.REGISTERS is
    for Line_Control_Register'Size use 8;
    for Line_Control_Register'Object_Size use 8;
 
-   function Get_Line_Control_Register_Port (COM : x86.Port_IO.Port_Address) return x86.Port_IO.Port_Address is (COM + LINE_CONTROL_REGISTER_OFFSET);
-   procedure Write_Line_Control_Register (COM : x86.Port_IO.Port_Address; LCR : Line_Control_Register);
-   function Read_Line_Control_Register (COM : x86.Port_IO.Port_Address) return Line_Control_Register;
+   procedure Write_Line_Control_Register is new Write_Serial_Register (LINE_CONTROL_REGISTER_OFFSET, Line_Control_Register);
+   function Read_Line_Control_Register is new Read_Serial_Register (LINE_CONTROL_REGISTER_OFFSET, Line_Control_Register);
 
 
    ---------------------------
@@ -161,8 +158,7 @@ package SERIAL.REGISTERS is
    for FIFO_Control_Register'Size use 8;
    for FIFO_Control_Register'Object_Size use 8;
 
-   function Get_FIFO_Control_Register_Port (COM : x86.Port_IO.Port_Address) return x86.Port_IO.Port_Address is (COM + FIFO_CONTROL_REGISTER_OFFSET);
-   procedure Write_FIFO_Control_Register (COM : x86.Port_IO.Port_Address; FCR : FIFO_Control_Register);
+   procedure Write_FIFO_Control_Register is new Write_Serial_Register (FIFO_CONTROL_REGISTER_OFFSET, FIFO_Control_Register);
 
    ---------------------------
    -- Line_Status_Register --
@@ -190,8 +186,5 @@ package SERIAL.REGISTERS is
    for Line_Status_Register'Size use 8;
    for Line_Status_Register'Object_Size use 8;
 
-   function Get_Line_Status_Register_Port (COM : x86.Port_IO.Port_Address) return x86.Port_IO.Port_Address is (COM + LINE_STATUS_REGISTER_OFFSET);
-   function Read_Line_Status_Register (COM : x86.Port_IO.Port_Address) return Line_Status_Register;
-private
-
+   function Read_Line_Status_Register is new Read_Serial_Register (LINE_STATUS_REGISTER_OFFSET, Line_Status_Register);
 end SERIAL.REGISTERS;

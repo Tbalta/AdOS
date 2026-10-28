@@ -46,7 +46,10 @@ private
    subtype Baudrate_Divisor is Unsigned_16;
    procedure Set_Baud_Rate (port : COM_Port; divisor : Baudrate_Divisor);
    function can_send_byte (port : COM_Port) return Boolean;
-
    DLAB_Enabled : Boolean;
+
+
+
+   subtype Register_Kind is x86.Port_IO.Port_Address range 0 .. 7;
 
 end SERIAL;

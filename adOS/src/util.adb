@@ -2,7 +2,7 @@
 --                                   UTIL                                   --
 --                                                                          --
 --                                 B o d y                                  --
--- (c) 2025 Tanguy Baltazart                                                --
+-- (c) 2026 Tanguy Baltazart                                                --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
@@ -10,6 +10,7 @@
 with System;
 with System.Address_To_Access_Conversions;
 with Loggers;
+with x86;
 package body Util is
    package Logger renames Loggers;
 
@@ -51,6 +52,7 @@ package body Util is
       String_Length : Positive := 1;
 
       A_Param : Data_Type := A;
+
    begin
       if Size = 0 then
          while (A_Param / Data_Type'Val (16)) /= Data_Type'Val (0) loop
@@ -64,11 +66,17 @@ package body Util is
 
       A_Param := A;
       return Result : String (1 .. String_Length + 2) do
-         Result := (others => '0');
+         -- check for canical value to add 0 or F prefix
+         if a > Data_Type'Val (x86.Virtual_Address'Last)  then
+            Result := (others => 'F');
+         else
+            Result := (others => '0');
+         end if;
 
          for I in reverse 3 .. Result'Last loop
             Result (I) := hex_array (Positive ((Data_Type'Pos (A_Param) mod 16) + 1));
             A_Param := A_Param / Data_Type'Val (16);
+            exit when A_Param = Data_Type'Val (0);
          end loop;
          Result (1 .. 2) := "0x";
       end return;

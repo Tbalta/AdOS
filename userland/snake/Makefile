@@ -1,15 +1,28 @@
 SRC = $(wildcard *.c)
-OBJ = $(SRC:.c=.o)
 
-CC = i386-elf-gcc
-CFLAGS = -ffreestanding -O0 -nostdlib -fno-builtin -Wall -Wextra -m32  -ffunction-sections -fdata-sections -fno-stack-protector -fno-zero-initialized-in-bss -I../libc -L ../libc/ -l:libc.a
+ifeq ($(x86_64), TRUE)
+	OBJDIR=obj/x64
+	BIN_DIR=../bin/x64
+else
+	OBJDIR=obj/i386
+	BIN_DIR=../bin/i386
+endif
 
-BIN_DIR = ../bin
+OBJ = $(addprefix $(OBJDIR)/, $(SRC:.c=.o))
 
-all: snake
+all: $(OBJDIR) snake
+
+$(OBJDIR)/%.o: %.c
+	$(CC) $(CFLAGS) -c $^ -o $@
+
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
 
 snake: $(OBJ)
-	$(CC) -o $(BIN_DIR)/$@.elf $(OBJ) ../libc/crt0.o $(CFLAGS)
+	$(CC) -o $(BIN_DIR)/$@.elf $(OBJ) ../libc/$(OBJDIR)/crt0.o $(CFLAGS)
 
 clean:
 	rm -f $(OBJ)
+
+.PHONY: $(OBJDIR)

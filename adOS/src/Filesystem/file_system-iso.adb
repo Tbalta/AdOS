@@ -102,7 +102,7 @@ package body File_System.ISO is
          return null;
       end Locate_File;
 
-      file : iso_dir_ptr := Locate_File (To_Upper (String (File_Path)), root_lba, root_dirsize);
+      file : iso_dir_ptr := Locate_File (To_Upper (To_String (File_Path)), root_lba, root_dirsize);
 
       FD : Driver_File_Descriptor_With_Error;
    begin
@@ -152,6 +152,10 @@ package body File_System.ISO is
 
       if f_offset = f_size then
          return 0;
+      end if;
+
+      if Read_Type'Size <= 0 then
+         Logger.Log_Error ("Invalid read size:" & Read_Type'Size'Image);
       end if;
 
       declare

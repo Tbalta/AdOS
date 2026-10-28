@@ -2,7 +2,7 @@
 --                              GENERIC_LOGGER                              --
 --                                                                          --
 --                                 B o d y                                  --
--- (c) 2025 Tanguy Baltazart                                                --
+-- (c) 2026 Tanguy Baltazart                                                --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
@@ -45,4 +45,12 @@ package body Generic_Logger is
    begin
       Print_Function (WARNING & " " & Warning_Message);
    end Log_Warning;
+
+   ---------------
+   -- Log_Debug --
+   ---------------
+   procedure Log_Debug (Debug_Message : in String) is
+   begin
+      Print_Function (DEBUG & " " & Debug_Message);
+   end Log_Debug;
 end Generic_Logger;
