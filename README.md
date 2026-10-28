@@ -10,6 +10,15 @@ Currently AdOS support:
 - ELF loading and execution in user space
 - Limited syscall support
 
+# Setup
+```bash
+git clone git@github.com:Tbalta/AdOS.git
+cd AdOS/
+git submodule update --init
+```
+
+## Doomgeneric
+You need to provide your own wad file, place it in `./iso/<file>.wad`
 
 
 # Building
@@ -85,6 +94,7 @@ sudo cp bin/gnatformat /usr/local/bin
 ### 8259 PIC 
 https://wiki.osdev.org/8259_PIC <br />
 https://pdos.csail.mit.edu/6.828/2005/readings/hardware/8259A.pdf <br />
+https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html <br />
 
 ## Ada
 https://www.adaic.org/resources/add_content/standards/22rm/rm-bar.pdf <br />
