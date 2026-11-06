@@ -73,20 +73,20 @@ format:
 	gnatformat  -P default.gpr -w 100 $(shell find adOS/ -name '*.adb' -or -name '*.ads')
 
 docker-make:
-	docker-compose -f .docker/docker-compose.yml run --rm ados make -f Makefile_x64 $(docker_make_flags)
+	docker compose -f .docker/docker-compose.yml run --rm ados make -f Makefile_x64 $(docker_make_flags)
 	qemu-system-x86_64 -cdrom main.iso $(qemu_param)
 
 docker-clean:
-	docker-compose -f .docker/docker-compose.yml run --rm ados make -f Makefile_x64 clean
+	docker compose -f .docker/docker-compose.yml run --rm ados make -f Makefile_x64 clean
 
 docker-build:
-	docker-compose -f .docker/docker-compose.yml build ados
+	docker compose -f .docker/docker-compose.yml build ados
 
 docker-run:
-	docker-compose -f .docker/docker-compose.yml run --rm ados
+	docker compose -f .docker/docker-compose.yml run --rm ados
 
 docker-debug:
-	docker-compose -f .docker/docker-compose.yml run --rm ados make
+	docker compose -f .docker/docker-compose.yml run --rm ados make
 	qemu-system-x86_64 -cdrom main.iso $(qemu_param) -s -S
 
 gdb:
