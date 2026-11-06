@@ -1,3 +1,12 @@
+------------------------------------------------------------------------------
+--                                 X86-VMM                                  --
+--                                                                          --
+--                                 B o d y                                  --
+-- (c) 2026 AdOS                                                            --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
 with System.Machine_Code;     use System.Machine_Code;
 with System.Storage_Elements; use System.Storage_Elements;
 with config;                  use config;

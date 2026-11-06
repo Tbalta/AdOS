@@ -1,11 +1,12 @@
 ------------------------------------------------------------------------------
---                                 VMM.ADS                                  --
+--                                   VMM                                    --
 --                                                                          --
 --                                 S p e c                                  --
--- (c) 2026 Tanguy Baltazart                                                --
+-- (c) 2026 AdOS                                                            --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
+
 with x86; use x86;
 with x86.vmm; use x86.vmm;
 with System.Storage_Elements; use System.Storage_Elements;

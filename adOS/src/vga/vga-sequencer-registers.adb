@@ -1,8 +1,8 @@
 ------------------------------------------------------------------------------
---                             VGA-SEQUENCER                                --
+--                         VGA-SEQUENCER-REGISTERS                          --
 --                                                                          --
 --                                 B o d y                                  --
--- (c) 2026 Tanguy Baltazart                                                --
+-- (c) 2026 AdOS                                                            --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------

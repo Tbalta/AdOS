@@ -1,3 +1,12 @@
+------------------------------------------------------------------------------
+--                                   SSE                                    --
+--                                                                          --
+--                                 B o d y                                  --
+-- (c) 2026 AdOS                                                            --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
 with System.Machine_Code; use System.Machine_Code;
 package body SSE is
       use Standard.ASCII;

@@ -2,12 +2,9 @@
 --                            VGA-CRTC-REGISTERS                            --
 --                                                                          --
 --                                 S p e c                                  --
--- (c) 2025 Tanguy Baltazart                                                --
+-- (c) 2026 AdOS                                                            --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
---                                                                          --
---  Description:                                                            --
---    register definition for CRTC registers                                --
 ------------------------------------------------------------------------------
 
 with System;

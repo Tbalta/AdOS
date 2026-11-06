@@ -1,3 +1,12 @@
+------------------------------------------------------------------------------
+--                                 PROFILER                                 --
+--                                                                          --
+--                                 S p e c                                  --
+-- (c) 2026 AdOS                                                            --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
 with Programmable_Interval_Timer;
 package profiler is
    pragma Preelaborate;

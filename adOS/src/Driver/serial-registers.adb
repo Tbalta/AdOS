@@ -1,11 +1,12 @@
 ------------------------------------------------------------------------------
---                             SERIAL.REGISTERS                             --
+--                             SERIAL-REGISTERS                             --
 --                                                                          --
 --                                 B o d y                                  --
--- (c) 2026 Tanguy Baltazart                                                --
+-- (c) 2026 AdOS                                                            --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
+
 with x86.Port_IO;
 with System.Storage_Elements; use System.Storage_Elements;
 with System;

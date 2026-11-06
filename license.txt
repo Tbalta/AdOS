@@ -1,4 +1,4 @@
-Copyright (c) 2025, Tanguy Baltazart
+Copyright (c) 2026, AdOS
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,

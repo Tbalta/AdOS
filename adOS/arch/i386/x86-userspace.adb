@@ -1,3 +1,12 @@
+------------------------------------------------------------------------------
+--                              X86-USERSPACE                               --
+--                                                                          --
+--                                 B o d y                                  --
+-- (c) 2026 AdOS                                                            --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
 with System.Machine_Code; use System.Machine_Code;
 with SERIAL;
 with Loggers;

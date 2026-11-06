@@ -1,3 +1,12 @@
+------------------------------------------------------------------------------
+--                                 RAMDISK                                  --
+--                                                                          --
+--                                 B o d y                                  --
+-- (c) 2026 AdOS                                                            --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
 with System.Storage_Elements; use System.Storage_Elements;
 with System.Address_To_Access_Conversions;
 
