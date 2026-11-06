@@ -1,3 +1,12 @@
+------------------------------------------------------------------------------
+--                                 X86-UTIL                                 --
+--                                                                          --
+--                                 B o d y                                  --
+-- (c) 2026 AdOS                                                            --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
 package body x86.util is
    procedure gnat_personality is
    begin

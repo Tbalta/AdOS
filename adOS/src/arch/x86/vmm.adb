@@ -1,11 +1,12 @@
 ------------------------------------------------------------------------------
---                                 VMM.ADB                                  --
+--                                   VMM                                    --
 --                                                                          --
 --                                 B o d y                                  --
--- (c) 2026 Tanguy Baltazart                                                --
+-- (c) 2026 AdOS                                                            --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
+
 with Util;
 with Loggers;
 with x86.pmm; use x86.pmm;

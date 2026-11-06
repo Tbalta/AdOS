@@ -2,12 +2,9 @@
 --                                   PIC                                    --
 --                                                                          --
 --                                 S p e c                                  --
--- (c) 2025 Tanguy Baltazart                                                --
+-- (c) 2026 AdOS                                                            --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
---                                                                          --
---  Description:                                                            --
---    Programmable Interrupt Controller initialization.                     --
 ------------------------------------------------------------------------------
 
 --  TODO: This unit needs to be revised to add PIC register records.

@@ -1,8 +1,8 @@
 ------------------------------------------------------------------------------
---                       Programmable_Interval_Timer                        --
+--                       PROGRAMMABLE_INTERVAL_TIMER                        --
 --                                                                          --
 --                                 B o d y                                  --
--- (c) 2026 Tanguy Baltazart                                                --
+-- (c) 2026 AdOS                                                            --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------

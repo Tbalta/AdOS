@@ -1,3 +1,12 @@
+------------------------------------------------------------------------------
+--                            X86-VMM-STRUCTURES                            --
+--                                                                          --
+--                                 B o d y                                  --
+-- (c) 2026 AdOS                                                            --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
 with System;
 
 package body x86.Vmm.Structures is

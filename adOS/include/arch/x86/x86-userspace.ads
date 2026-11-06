@@ -1,11 +1,12 @@
 ------------------------------------------------------------------------------
---                              X86.USERSPACE                               --
+--                              X86-USERSPACE                               --
 --                                                                          --
 --                                 S p e c                                  --
--- (c) 2025 Tanguy Baltazart                                                --
+-- (c) 2026 AdOS                                                            --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
+
 with x86.vmm;
 
 package x86.Userspace is

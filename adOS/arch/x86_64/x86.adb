@@ -1,3 +1,12 @@
+------------------------------------------------------------------------------
+--                                   X86                                    --
+--                                                                          --
+--                                 B o d y                                  --
+-- (c) 2026 AdOS                                                            --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
 with System.Storage_Elements; use System.Storage_Elements;
 package body x86 is
    

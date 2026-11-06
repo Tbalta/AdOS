@@ -1,11 +1,12 @@
 ------------------------------------------------------------------------------
---                                 X86.PMM                                  --
+--                                 X86-PMM                                  --
 --                                                                          --
 --                                 B o d y                                  --
--- (c) 2026 Tanguy Baltazart                                                --
+-- (c) 2026 AdOS                                                            --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
+
 with Limine;
 with SERIAL;
 with Interfaces;              use Interfaces;

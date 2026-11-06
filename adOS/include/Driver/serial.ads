@@ -2,10 +2,11 @@
 --                                  SERIAL                                  --
 --                                                                          --
 --                                 S p e c                                  --
--- (c) 2025 Tanguy Baltazart                                                --
+-- (c) 2026 AdOS                                                            --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
+
 with Interfaces;              use Interfaces;
 with Interfaces.C;            use Interfaces.C;
 with System;

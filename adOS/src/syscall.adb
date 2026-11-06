@@ -2,10 +2,11 @@
 --                                 SYSCALL                                  --
 --                                                                          --
 --                                 B o d y                                  --
--- (c) 2026 Tanguy Baltazart                                                --
+-- (c) 2026 AdOS                                                            --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
+
 with File_System;
 with Loggers;
 with SERIAL;

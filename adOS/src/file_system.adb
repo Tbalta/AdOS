@@ -1,3 +1,12 @@
+------------------------------------------------------------------------------
+--                               FILE_SYSTEM                                --
+--                                                                          --
+--                                 B o d y                                  --
+-- (c) 2026 AdOS                                                            --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
 with File_System;
 with File_System.ISO;
 with File_System.SERIAL;

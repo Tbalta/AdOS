@@ -1,14 +1,12 @@
 ------------------------------------------------------------------------------
---                               X86.PORT_IO                                --
+--                               X86-PORT_IO                                --
 --                                                                          --
 --                                 S p e c                                  --
--- (c) 2025 Tanguy Baltazart                                                --
+-- (c) 2026 AdOS                                                            --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
---                                                                          --
---  Description:                                                            --
---    port-mapped I/O communication for x86.                                --
 ------------------------------------------------------------------------------
+
 with System;
 
 package x86.Port_IO is

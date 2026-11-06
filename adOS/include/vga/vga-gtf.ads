@@ -2,12 +2,9 @@
 --                                 VGA-GTF                                  --
 --                                                                          --
 --                                 S p e c                                  --
--- (c) 2025 Tanguy Baltazart                                                --
+-- (c) 2026 AdOS                                                            --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
---                                                                          --
---  Description:                                                            --
---    GTF computation for VGA.                                              --
 ------------------------------------------------------------------------------
 
 package VGA.GTF is

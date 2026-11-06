@@ -1,3 +1,12 @@
+------------------------------------------------------------------------------
+--                              GENERIC_LOGGER                              --
+--                                                                          --
+--                                 S p e c                                  --
+-- (c) 2026 AdOS                                                            --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
 generic
    with procedure Print_Function (Message : in String);
 package Generic_Logger is

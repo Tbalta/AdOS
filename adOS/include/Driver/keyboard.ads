@@ -2,12 +2,9 @@
 --                                 KEYBOARD                                 --
 --                                                                          --
 --                                 S p e c                                  --
--- (c) 2025 Tanguy Baltazart                                                --
+-- (c) 2026 AdOS                                                            --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
---                                                                          --
---  Description:                                                            --
---    PS2 keyboard driver                                                   --
 ------------------------------------------------------------------------------
 
 with x86.Port_IO; use x86.Port_IO;

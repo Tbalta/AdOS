@@ -1,3 +1,12 @@
+------------------------------------------------------------------------------
+--                                 X86-VMM                                  --
+--                                                                          --
+--                                 B o d y                                  --
+-- (c) 2026 AdOS                                                            --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
 with Ada.Strings.Text_Buffers.Unbounded;
 with Interfaces.C;
 with System.Machine_Code;     use System.Machine_Code;

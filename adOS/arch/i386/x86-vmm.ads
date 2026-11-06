@@ -1,11 +1,12 @@
 ------------------------------------------------------------------------------
---                                 X86.VMM                                  --
+--                                 X86-VMM                                  --
 --                                                                          --
 --                                 S p e c                                  --
--- (c) 2026 Tanguy Baltazart                                                --
+-- (c) 2026 AdOS                                                            --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
+
 with Interfaces;              use Interfaces;
 with System;                  use System;
 with System.Address_To_Access_Conversions;

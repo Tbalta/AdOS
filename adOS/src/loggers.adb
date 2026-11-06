@@ -1,11 +1,12 @@
 ------------------------------------------------------------------------------
 --                                 LOGGERS                                  --
 --                                                                          --
---                                 S p e c                                  --
--- (c) 2026 Tanguy Baltazart                                                --
+--                                 B o d y                                  --
+-- (c) 2026 AdOS                                                            --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
 ------------------------------------------------------------------------------
+
 with VGA;
 with x86.vmm;
 with System.Secondary_Stack;

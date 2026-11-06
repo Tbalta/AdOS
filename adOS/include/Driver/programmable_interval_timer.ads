@@ -1,13 +1,10 @@
 ------------------------------------------------------------------------------
---                       Programmable_Interval_Timer                        --
+--                       PROGRAMMABLE_INTERVAL_TIMER                        --
 --                                                                          --
 --                                 S p e c                                  --
--- (c) 2025 Tanguy Baltazart                                                --
+-- (c) 2026 AdOS                                                            --
 -- License : See license.txt in the root directory.                         --
 --                                                                          --
---                                                                          --
---  Description:                                                            --
---    PIT register definition                                               --
 ------------------------------------------------------------------------------
 
 with x86.Port_IO; use x86.Port_IO;

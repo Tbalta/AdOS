@@ -1,3 +1,12 @@
+------------------------------------------------------------------------------
+--                                MULTIBOOT                                 --
+--                                                                          --
+--                                 S p e c                                  --
+-- (c) 2026 AdOS                                                            --
+-- License : See license.txt in the root directory.                         --
+--                                                                          --
+------------------------------------------------------------------------------
+
 with Interfaces.C; use Interfaces.C;
 with Interfaces;   use Interfaces;
 with System;
