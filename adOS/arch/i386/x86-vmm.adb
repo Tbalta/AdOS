@@ -81,6 +81,8 @@ package body x86.vmm is
       return To_Address (PT (Address_Breakdown.PML1_Index).Address) + Address_Breakdown.Offset;
    end Virtual_To_Physical_Address;
 
+   function To_Physical_Address (address : Virtual_Address) return Physical_Address is (Physical_Address (Integer_Address (address)));
+
    function Is_Last_Address (CR3 : CR3_Register; Address : Virtual_Address) return Boolean is
       Address_Breakdown : Virtual_Address_Break := To_Virtual_Address_Break (Address);
       PML2_Entry : Page_Map_Level_2_Entry_Access := Get_PML2_Entry (CR3, Address_Breakdown);

@@ -120,7 +120,7 @@ is
    function Get_Offset (CR3 : CR3_Register; Address : Virtual_Address) return Storage_Offset;
 
 
-   -- function To_Physical_Address (address : Virtual_Address) return Physical_Address;
+   function To_Physical_Address (address : Virtual_Address) return Physical_Address;
    
 
    ---------------------

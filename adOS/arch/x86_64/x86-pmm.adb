@@ -153,7 +153,6 @@ package body x86.pmm is
 
       pmmEntryCount     : Natural := 0;
       pmmHeaderCount    : Integer := 0;
-      firstValidAddress : System.Address := System.Null_Address;
       
       function Round_64 is new Standard.Util.Round (Unsigned_64);
       function To_Hex is new Util.To_Hex (Unsigned_64);

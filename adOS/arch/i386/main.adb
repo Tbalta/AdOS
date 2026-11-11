@@ -8,18 +8,14 @@
 ------------------------------------------------------------------------------
 
 with SERIAL;
-with VGA.GTF;
 with x86.gdt;
 with x86.idt;
 with x86.pmm;                 use x86.pmm;
 with x86.vmm;                 use x86.vmm;
 with vmm; use vmm;
 with pic;
-with System.Machine_Code;
 with Atapi;
-with Ada.Unchecked_Conversion;
 with Interfaces;              use Interfaces;
-with Interfaces.C;            use Interfaces.C;
 with System.Address_To_Access_Conversions;
 with System;                  use System;
 with System.Storage_Elements; use System.Storage_Elements;
@@ -27,19 +23,13 @@ with MultiBoot;               use MultiBoot;
 with System.Machine_Code;     use System.Machine_Code;
 with File_System;
 with File_System.ISO;
-with ELF;
 with ELF.Loader;
 with x86.Userspace;           use x86.Userspace;
 with Loggers;
-with Ada.Assertions;
 with Util;
 with VGA;
-with VGA.GTF;
-with Interfaces;
-with VGA.CRTC;
 with Programmable_Interval_Timer;
-with Keyboard;
-with VGA.Terminal;
+--  with Keyboard;
 
 procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Address) is
    package MultiBoot_Conversion is new System.Address_To_Access_Conversions (multiboot_info);
@@ -53,16 +43,6 @@ begin
    SERIAL.Init_COM (SERIAL.COM1, SERIAL.Baudrate'Last);
    Logger.Log_Info ("Starting adOS...");
 
-   ------------------------------------
-   --  Multiboot information display --
-   ------------------------------------
-   Logger.Log_Info ("magic: " & magic'Image);
-   Logger.Log_Info ("multiboot_info: " & info.all'Image);
-   declare
-      str : String := Util.Read_String_From_Address (info.cmdline);
-   begin
-      Logger.Log_Info ("cmdline: " & str);
-   end;
 
    ----------------------------------
    ---- GDT and IDT initialization --
@@ -145,30 +125,6 @@ begin
 
    VGA.load_palette (File_System.To_Path ("vga_tui.hex"));
 
-   --  declare
-   --     use File_System;
-   --     fd : File_System.File_Descriptor_With_Error := FD_ERROR;
-
-   --     type vga_buffer is array (Integer range 1 .. 320 * 200) of Unsigned_8 with Pack => True;
-   --     package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
-
-   --     Buffer : access vga_buffer := null;
-   --     count  : Integer := 0;
-   --  begin
-   --     VGA.Set_Graphic_Mode (320, 200, 256);
-   --     VGA.load_palette ("vga_gui.hex");
-   --     Buffer := Conversion.To_Pointer (VGA.Get_Frame_Buffer);
-   --     Buffer (1 .. 320 * 200) := (others => 5);
-   --     Buffer (1 .. 320 * 150) := (others => 70);
-   --     Buffer (1 .. 320 * 100) := (others => 90);
-   --     Buffer (1 .. 320 * 50) := (others => 250);
-   --  end;
-   --  VGA.Set_Text_Mode (80, 25, 16);
-   --  VGA.load_palette ("vga_tui.hex");
-   --  Logger.Log_Info ("Hello World!");
-   --  while True loop
-   --     null;
-   --  end loop;
 
    Programmable_Interval_Timer.set_timer_period (1);
    --  Keyboard.Init;

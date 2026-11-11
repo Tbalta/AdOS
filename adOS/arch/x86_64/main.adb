@@ -55,11 +55,13 @@ procedure Main is
 begin
    SERIAL.Init_COM (SERIAL.COM1, SERIAL.Baudrate'Last);
    Logger.Log_Info ("Starting adOS...");
+
    Logger.Log_Ok ("AdOS is loaded at");
-   
    Logger.Log_Info ("   Virtual:  " & To_Hex (config.Kernel_Start) & " - " & To_Hex (config.Kernel_End));
    Logger.Log_Info ("   Physical: " & To_Hex (Limine.executable_address_response.physical_base) & " - " & To_Hex (Limine.executable_address_response.physical_base + config.Kernel_Size));
    Logger.Log_Info ("HHDM at: " & To_Hex (Integer_Address (Limine.hhdm_response.offset), 16));
+   
+   
    ----------------------------------
    ---- GDT and IDT initialization --
    ----------------------------------
@@ -71,12 +73,6 @@ begin
    ------------------------
    -- PIC initialization --
    ------------------------
-   declare
-      RSP : System.Address := 0;
-   begin
-      Asm ("movq %%rsp, %0", Outputs => (System.Address'Asm_Output ("=r", RSP)), Volatile => True);
-      Logger.Log_Info ("RSP: " & To_Hex (Integer_Address (RSP), 16));
-   end;
    pic.init;
 
    ------------------------
@@ -87,10 +83,10 @@ begin
    Logger.Log_Info ("Next free page: " & x86.pmm.Offset_To_Address (x86.pmm.Get_Next_Free_Page)'Image);
    x86.pmm.Print_PMM_Info;
 
+
    ------------------------
    -- VMM initialization --
    ------------------------
-
    Logger.Log_Info ("Initializing VMM");
    CR3 :=  Get_Current_CR3;
    Set_Kernel_CR3 (CR3);
@@ -112,21 +108,6 @@ begin
       Logger.Log_Info ("  Resolution: " & Limine.framebuffer_response.framebuffers (i).all.width'Image & "x" & Limine.framebuffer_response.framebuffers (i).all.height'Image);
       Logger.Log_Info ("  Pitch: " & Limine.framebuffer_response.framebuffers (i).all.pitch'Image);
    end loop;
-   declare
-      Width : Unsigned_64 := Limine.framebuffer_response.framebuffers (1).width;
-      Height : Unsigned_64 := Limine.framebuffer_response.framebuffers (1).height;
-
-      type vga_buffer is array (Unsigned_64 range 1 .. Width * Height) of Unsigned_32 with Pack => True;
-      package Conversion is new System.Address_To_Access_Conversions (vga_buffer);
-
-      Buffer : access vga_buffer := null;
-   begin
-      Buffer := Conversion.To_Pointer (Limine.framebuffer_response.framebuffers (1).all.address);
-      Buffer (1 .. Width * Height) := (others => 255);
-      Buffer (1 .. (Width * Height) / 2) := (others => 70);
-      Buffer (1 .. (Width * Height) / 4) := (others => 90);
-      Buffer (1 .. (Width * Height) / 8) := (others => 250);
-   end;
 
    Programmable_Interval_Timer.set_timer_period (1);   
    -- Enable interrupts then PIT IRQ lines
