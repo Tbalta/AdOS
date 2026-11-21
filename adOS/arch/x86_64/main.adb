@@ -15,6 +15,7 @@ with x86.gdt;
 with x86.gdt.Variant;
 with x86.idt;
 with x86.pmm;                 use x86.pmm;
+with x86.pmm.Variant;
 with x86.vmm;                 use x86.vmm;
 with vmm;                     use vmm;
 
@@ -46,12 +47,14 @@ with Keyboard;
 with VGA.Terminal;
 with Limine;
 with SSE;
-procedure Main is
+procedure Main (mem : Limine.Mem_Map_Response_Access) is
    package Logger renames Loggers.Serial_Logger;
    CR3 : CR3_register;
 
    function To_Hex is new Util.To_Hex (Integer_Address);
    function To_Hex is new Util.To_Hex (System.Address);
+
+   procedure PMM_Init is new x86.pmm.Init (Limine.Mem_Map_Entry_Access,  Positive, Limine.Entry_Map_Array, x86.pmm.Variant.Memory_Available, x86.pmm.Variant.Base_Address, x86.pmm.Variant.Entry_Length, x86.pmm.Variant.Find_PMM_Start);
 begin
    SERIAL.Init_COM (SERIAL.COM1, SERIAL.Baudrate'Last);
    Logger.Log_Info ("Starting adOS...");
@@ -78,10 +81,16 @@ begin
    ------------------------
    -- PMM initialization --
    ------------------------
-   Logger.Log_Info ("Number of memory map entries: " & Limine.memmap_response.Entry_Map_Count'Image);
-   x86.pmm.Init (Limine.memmap_response);
-   Logger.Log_Info ("Next free page: " & x86.pmm.Offset_To_Address (x86.pmm.Get_Next_Free_Page)'Image);
-   x86.pmm.Print_PMM_Info;
+   declare
+      Mem_Map : Limine.Entry_Map_Array := mem.entry_map.all;
+   begin
+      Logger.Log_Info ("Memory map entries: " & Mem_Map'Length'Image);
+      PMM_Init (Mem_Map);
+   end;
+   --  Logger.Log_Info ("Number of memory map entries: " & mem.entry_map.all'Length'Image);
+   --  PMM_Init (mem.entry_map.all);
+   --  Logger.Log_Info ("Next free page: " & x86.pmm.Offset_To_Address (x86.pmm.Get_Next_Free_Page)'Image);
+   --  x86.pmm.Variant.Print_PMM_Info;
 
 
    ------------------------

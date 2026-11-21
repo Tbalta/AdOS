@@ -9,12 +9,16 @@
 
 with System;
 with System.Storage_Elements; use System.Storage_Elements;
+with Limine;
 package x86 is
-   pragma Pure;
+   pragma Preelaborate;
    use all type System.Address;
 
    type Physical_Address is new System.Address;
    type Virtual_Address is new  System.Address range 0 .. System.Address (2**48 - 1);
+
+   subtype Mem_Map_Entry is Limine.Mem_Map_Entry_Access;
+   subtype Memory_Map is Limine.Entry_Map_Array;
 
    CANONICAL_ADDRESS_MASK : constant System.Address := 16#FFFF_FFFF_FFFF#;
 

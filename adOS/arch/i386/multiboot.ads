@@ -154,6 +154,7 @@ package MultiBoot is
        length at 12 range 0 .. 63;
        entry_type at 20 range 0 .. 31;
      end record;
+   type multiboot_mmap is array (Natural range <>) of aliased multiboot_mmap_entry with Pack;
 
 
 private

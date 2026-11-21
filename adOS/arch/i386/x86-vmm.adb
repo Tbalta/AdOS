@@ -573,7 +573,7 @@ package body x86.vmm is
    procedure Identity_Map (CR3 : CR3_register) is
       PD                  : Page_Map_Level_2_Access := Get_PML2 (CR3);
       Address_Breakdown   : Virtual_Address := (Virtual_Address (Null_Address));
-      PMM_Start_Breakdown : Virtual_Address := (To_Virtual_Address (PMM.Get_Pmm_Start_Address));
+      PMM_Start_Breakdown : Virtual_Address := (PMM.Get_Pmm_Start_Address);
       Kernel_Start_Break  : Virtual_Address := (To_Virtual_Address (Kernel_Start));
       Paging_Currently_Enabled : constant Boolean := Paging_Enabled;
    begin
@@ -600,8 +600,8 @@ package body x86.vmm is
       Standard.vmm.Map_Range
         (CR3,
          PMM_Start_Breakdown,
-         PMM.Get_Pmm_Start_Address,
-         PMM.Get_Pmm_End_Address,
+         To_Physical_Address (PMM.Get_Pmm_Start_Address),
+         To_Physical_Address (PMM.Get_Pmm_End_Address),
          Is_Writable => False,
          Is_Usermode => False);
 

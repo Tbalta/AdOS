@@ -12,6 +12,7 @@ with x86.gdt;
 with x86.idt;
 with x86.pmm;                 use x86.pmm;
 with x86.vmm;                 use x86.vmm;
+with x86.pmm.Variant;
 with vmm; use vmm;
 with pic;
 with Atapi;
@@ -38,6 +39,8 @@ procedure Main (magic : Interfaces.Unsigned_32; multiboot_address : System.Addre
    package Logger renames Loggers;
    package VGA_Logger renames Loggers.VGA_Logger;
    CR3 : CR3_register;
+
+   procedure PMM_Init is new x86.pmm.Init (Multiboot.multiboot_mmap_entry,  Natural, Multiboot.multiboot_mmap, x86.pmm.Variant.Memory_Available, x86.pmm.Variant.Base_Address, x86.pmm.Variant.Entry_Length, x86.pmm.Variant.Find_PMM_Start);
 begin
    VGA_Logger.Log_Info ("Starting adOS...");
    SERIAL.Init_COM (SERIAL.COM1, SERIAL.Baudrate'Last);
@@ -72,7 +75,7 @@ begin
    begin
       Logger.Log_Info ("mmap_count / size: " & entry_map_count'Image & " / " & entry_map_size'Image);
       print_mmap (multiboot_address);
-      x86.pmm.Init (entry_map.all);
+      PMM_Init (entry_map.all);
       Logger.Log_Info
         ("Next free page: " & x86.pmm.Offset_To_Address (x86.pmm.Get_Next_Free_Page)'Image);
    end;

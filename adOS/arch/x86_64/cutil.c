@@ -152,7 +152,8 @@ void loader_x64(void) {
     extern struct limine_hhdm_request hhdm_request;
     extern struct limine_executable_cmdline_request executable_cmdline_request;
     extern struct limine_executable_address_request executable_address_request;
-
+    
+    adainit();
     framebuffer_response = *framebuffer_request.response;
     memmap_response = *memmap_request.response;
     hhdm_response = *hhdm_request.response;
@@ -160,9 +161,8 @@ void loader_x64(void) {
     executable_address_response = *executable_address_request.response;
 
     LOG("Hello from adOS kernel!");
-    adainit();
     LOG("Ada runtime initialized.");
-    _ada_main(0);
+    _ada_main(&memmap_response);
 
     for (;;) {
         asm ("hlt");

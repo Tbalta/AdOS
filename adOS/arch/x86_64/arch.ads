@@ -22,9 +22,9 @@ package Arch is
 
 
    function Get_User_Address_Space_Start return Virtual_Address is (Virtual_Address'First);
-   function Get_User_Address_Space_End   return Virtual_Address is (Limine.Get_HHDM_Offset);
+   function Get_User_Address_Space_End   return Virtual_Address is (To_Virtual_Address (Limine.Get_HHDM_Offset));
 
-   function Get_Kernel_Address_Space_Start return Virtual_Address is (Limine.Get_HHDM_Offset);
+   function Get_Kernel_Address_Space_Start return Virtual_Address is (To_Virtual_Address (Limine.Get_HHDM_Offset));
    function Get_Kernel_Address_Space_End   return Virtual_Address is (Virtual_Address'Last);
 
 private

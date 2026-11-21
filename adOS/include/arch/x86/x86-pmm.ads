@@ -7,22 +7,18 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-with Limine;                  use Limine;
 with System;
 with System.Storage_Elements; use System.Storage_Elements;
 with System.Address_To_Access_Conversions;
 with Interfaces;              use Interfaces;
-with config;                  use config;
-
+with Arch;
 package x86.pmm is
    pragma Preelaborate;
    use all type System.Address;
 
-   PMM_PAGE_SIZE : constant := 4_096;
+   PMM_PAGE_SIZE : constant Storage_Count := 4_096;
 
-   type multiboot_mmap is array (Natural range <>) of aliased Mem_Map_Entry with Pack;
    type PMM_Bitmap_Entry is (PMM_Bitmap_Entry_Free, PMM_Bitmap_Entry_Used) with Size => 1;
-
    type PMM_Bitmap is array (Natural range <>) of PMM_Bitmap_Entry with Component_Size => 1;
 
 
@@ -35,8 +31,16 @@ package x86.pmm is
    with Convention => C;
    type PMM_Headers_Array is array (Positive range <>) of PMM_Header_Entry with Convention => C;
 
-   procedure Init (Mem_Map : Mem_Map_Response);
-   procedure Print_PMM_Info;
+
+   generic
+      type Mem_Map_Entry is private;
+      type Memory_Map_Index is range <>;
+      type Memory_Map is array (Memory_Map_Index range <>) of Mem_Map_Entry;
+      with function Memory_Available (MB : Mem_Map_Entry) return Boolean;
+      with function Base_Address (MB : Mem_Map_Entry) return Physical_Address;
+      with function Entry_Length (MB : Mem_Map_Entry) return Unsigned_64;
+      with function Find_PMM_Start (Storage_Size_Needed : Storage_Count; Mem_Map : Memory_Map) return Virtual_Address;
+   procedure Init (Mem_Map : Memory_Map);
 
    function check (cond : Boolean; msg : String) return Boolean;
 
@@ -51,9 +55,9 @@ package x86.pmm is
        check
          (Integer_Address ((Storage_Count (addr) / PMM_PAGE_SIZE) * PMM_PAGE_SIZE)
           = To_Integer (Offset_To_Address_Unchecked (Address_To_Offset'Result)),
-          addr'Image
+          To_Integer (addr)'Image
           & " /= "
-          & Offset_To_Address_Unchecked (Address_To_Offset'Result)'Image
+          & To_Integer (Offset_To_Address_Unchecked (Address_To_Offset'Result))'Image
           & " offset: "
           & Address_To_Offset'Result'Image);
    -----------------------
@@ -73,18 +77,26 @@ package x86.pmm is
 
    function Get_Next_Free_Page return Natural;
 
-   function Allocate_Page return Physical_Address
-   with
-     Post =>
-       check (Get_Next_Free_Page'Old = Address_To_Offset (Allocate_Page'Result), "Incorrect Page allocated") and
-       check (Get_Next_Free_Page'Old < Get_Next_Free_Page, "No page allocated returned: " & Get_Next_Free_Page'Image & " old was " & Get_Next_Free_Page'Old'Image) and
-       check (not Is_Kernel_Address (Allocate_Page'Result), "Allocate_Page: Allocating system page (" & Address_To_Offset (Allocate_Page'Result)'Image & ")");
+   function Get_Pmm_Start_Address return Virtual_Address;
+   function Get_Pmm_End_Address return Virtual_Address;
+   function Get_Pmm_Start_Address return Physical_Address;
+   function Get_Pmm_End_Address return Physical_Address;
+   function Is_In_PMM_Address (addr : Physical_Address) return Boolean;
+
+   function Allocate_Page return Physical_Address;
+   --  with
+   --    Post =>
+   --      check (Get_Next_Free_Page'Old = Address_To_Offset (Allocate_Page'Result), "Incorrect Page allocated") and
+   --      check (Get_Next_Free_Page'Old < Get_Next_Free_Page, "No page allocated returned: " & Get_Next_Free_Page'Image & " old was " & Get_Next_Free_Page'Old'Image) and
+   --      check (not Is_System_Address (Allocate_Page'Result), "Allocate_Page: Allocating system page (" & Address_To_Offset (Allocate_Page'Result)'Image & ")");
 
    procedure Free_Page (addr : Physical_Address)
-   with Pre => check (not Is_Kernel_Address (addr) , "Free_Page: Trying to free system page"),
+   with Pre => check (not Is_In_PMM_Address (addr) , "Free_Page: Trying to free system page"),
         Post => check (Get_Next_Free_Page <= Address_To_Offset (addr), "Free_Page: Page not freed");
 
 private
+
+
    type PMM_Info_Settings is record
       Header_Count : Positive;
       Bitmap_Length : Positive;
@@ -103,8 +115,8 @@ private
    end record;
    type PMM_Info_Access is access all PMM_Info;
 
+   PMM_Header_Address        : System.Address;
+   PMM_Bitmap_End_Address    : System.Address;
    Number_Of_Remaining_Pages : Natural;
    PMM_Info_Ptr              : PMM_Info_Access := null;
-
-
 end x86.pmm;

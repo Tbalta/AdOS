@@ -10,7 +10,7 @@
 with System;
 
 package x86.Port_IO is
-   pragma Pure;
+   pragma Preelaborate;
 
    type Port_Address is new System.Address;
    ----------------------------------------------------------------------------

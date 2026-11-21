@@ -10,7 +10,7 @@
 with Interfaces;              use Interfaces;
 with System;
 with System.Storage_Elements; use System.Storage_Elements;
-with x86;   use x86;
+-- with x86;   use x86;
 with Interfaces.C;
 with Interfaces.C.Strings;
 package Limine is
@@ -48,7 +48,7 @@ package Limine is
       LIMINE_MEMMAP_ACPI_TABLES =>            8);
 
    type Mem_Map_Entry is record
-      base   : Physical_Address;
+      base   : System.Address;
       length : Unsigned_64;
       flags  : Limine_Mem_Type;
    end record;
@@ -59,7 +59,6 @@ package Limine is
    end record;
    type Mem_Map_Entry_Access is access all Mem_Map_Entry;
    pragma Convention (C, Mem_Map_Entry_Access);
-
 
    type Entry_Map_Array is array (Positive range <>) of Mem_Map_Entry_Access;
    type Entry_Map_Array_Access is access all Entry_Map_Array;
@@ -257,7 +256,7 @@ package Limine is
 
    -- mem_map_request : constant limine_memmap_request;
    --  pragma Import (C, mem_map_request, "memmap_request");
-   memmap_response : Mem_Map_Response (1);
+   memmap_response : Mem_Map_Response (2);
    pragma Import (C, memmap_response, "memmap_response");
 
    -- framebuffer_request : constant limine_framebuffer_request;
@@ -274,5 +273,5 @@ package Limine is
    pragma Import (C, executable_address_response, "executable_address_response");
 
 
-   function Get_HHDM_Offset return Virtual_Address is (To_Virtual_Address (System.Address (hhdm_response.offset)));
+   function Get_HHDM_Offset return System.Address is (System.Address (hhdm_response.offset));
 end Limine;

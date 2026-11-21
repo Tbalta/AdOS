@@ -254,9 +254,9 @@ package body Syscall is
       fd := File_System.File_Descriptor (arg1);
 
       if not File_System.Is_Valid_Whence (Integer (arg3)) then
-         Logger.Log_Error ("not in SEEK_SET .. SEEK_END" & arg3'Image);
          Logger.Log_Error (arg3'Image & "not in SEEK_SET .. SEEK_END");
          result.Signed_Value := -1;
+         return;
       end if;
       whence := File_System.whence'Enum_Val (arg3);
 
@@ -294,8 +294,8 @@ package body Syscall is
          result.Unsigned_Value := Unsigned_Syscall_Output (vmm.User_Alloc (process, length, True, True));
          return;
       end if;
-
       fd := File_System.File_Descriptor (arg5);
+
 
       File_Buffer := To_Virtual_Address (File_System.mmap (fd, length));
       if File_Buffer = x86.Virtual_Address'First then

@@ -53,7 +53,7 @@ package body x86.vmm is
       if not Is_Virtual_Address (Address) then
          Logger.Log_Error (To_Hex (Address) & " is not a valid virtual address");
       end if;
-      return Physical_Address (Address - Limine.Get_HHDM_Offset);
+      return Physical_Address (Address - To_Virtual_Address (Limine.Get_HHDM_Offset));
    end To_Physical_Address;
 
 
@@ -685,7 +685,7 @@ package body x86.vmm is
 
    procedure Duplicate_hhdm (Source_CR3, Dest_CR3 : CR3_Register)
    is
-      Kernel_Start : Virtual_Address_Break := To_Virtual_Address_Break (Limine.Get_HHDM_Offset);
+      Kernel_Start : Virtual_Address_Break := To_Virtual_Address_Break (To_Virtual_Address (Limine.Get_HHDM_Offset));
 
       Source_PML4 : Page_Map_Level_4_Access := Get_PML4 (Source_CR3);
       Dest_PML4 : Page_Map_Level_4_Access := Get_PML4 (Dest_CR3);
